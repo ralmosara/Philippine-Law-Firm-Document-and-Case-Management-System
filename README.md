@@ -1,10 +1,12 @@
 # Lex PH — Practice Management for Philippine Law Firms
 
 Case, deadline, document, trust-account and billing management built around
-Philippine practice: Rules of Court reglementary periods, the notarial
-register, IBP/MCLE compliance, 12% VAT billing, and client trust accounting.
+Philippine practice: Rules of Court reglementary periods and pleadings, the
+notarial register, IBP/MCLE compliance, 12% VAT billing with withholding tax
+and BIR Form 2307, client trust accounting, and the Data Privacy Act. A client
+portal lets clients follow their matters, pay, sign, message and upload.
 
-**Stack:** Laravel 13 (PHP 8.4) API · React 19 + TypeScript SPA · PostgreSQL 16 · Redis
+**Stack:** Laravel 13 (PHP 8.4) API · React 19 + TypeScript SPA · PostgreSQL 16 (row-level security) · Redis · Laravel Reverb (WebSockets) · Caddy (HTTPS) · ClamAV · Tesseract OCR
 
 ---
 
@@ -67,15 +69,53 @@ npm run dev                         # http://localhost:5173 (proxies /api to :80
 
 Open **http://localhost:5173**. Always use the Vite URL: the SPA and API must share an origin for cookie authentication.
 
+In development the notification bell polls once a minute. For live updates, set `BROADCAST_CONNECTION=reverb` and the `REVERB_*` values in `backend/.env` and run `php artisan reverb:start` in another terminal. The simplest way to see everything working together (HTTPS, workers, WebSockets, virus scanning, OCR, backups) is Docker, below.
+
 ### Demo accounts (password: `password`)
 
 | Email | Role | Try |
 |---|---|---|
-| `ceo@demofirm.ph` | Managing Partner | Home analytics, Firm Settings, audit log, invoicing, trust disbursements |
-| `partner@demofirm.ph` | Partner | Invoices, trust accounts, notarial register |
-| `lawyer1@demofirm.ph` | Associate | Matters, deadlines, documents, timer, MCLE |
+| `ceo@demofirm.ph` | Managing Partner | Home analytics, Firm Settings (import data, audit log), Data Privacy, Time & Billing → Collections and Form 2307, trust disbursements |
+| `partner@demofirm.ph` | Partner | Invoices and payments, trust accounts, notarial register, reports |
+| `lawyer1@demofirm.ph` | Associate | Matters (Documents → Draft a pleading; Files → Request documents), Court day, deadlines, timer, MCLE, the notification bell |
 | `paralegal@demofirm.ph` | Paralegal | Tasks, conflict checks, time entries |
-| `client1@corporate.com` | Client (portal) | Sign in at **/portal** |
+| `client1@corporate.com` | Client (portal) | Sign in at **/portal**: privacy notice, matters, invoices, messages, document uploads, My data |
+
+The demo firm is for trying the system; never load it into a database that holds real client data.
+
+## Trying the full system on your computer (Docker)
+
+Needs Docker Desktop (about 4 GB of free memory; ClamAV alone uses 1.5 GB) and nothing else listening on ports 80 and 443.
+
+```bash
+cp .env.example .env
+cp backend/.env.example backend/.env    # then set APP_KEY, e.g. with: docker compose run --rm app php artisan key:generate --show
+```
+
+In `.env` set `DOMAIN=localhost`, `APP_URL=https://localhost`, `SANCTUM_STATEFUL_DOMAINS=localhost` and `HSTS_MAX_AGE=0`, and give every secret a random value. This prints suitable values:
+
+```bash
+node -e "const r=n=>require('crypto').randomBytes(n).toString('base64url');for (const k of ['DB_PASSWORD','DB_ROOT_PASSWORD','BACKUP_PASSPHRASE','REVERB_APP_KEY','REVERB_APP_SECRET','HEALTH_TOKEN']) console.log(k+'='+r(24))"
+```
+
+Then:
+
+```bash
+docker compose up -d --build                                        # first build takes a few minutes
+docker compose exec app php artisan migrate --force --seed          # tables and reference data (Rules of Court periods, holidays)
+docker compose exec app php artisan db:seed --class=EnterpriseDemoSeeder --force   # the demo firm
+```
+
+Open **https://localhost** and accept the browser's certificate warning (Caddy's local certificate). Sign in with the demo accounts above. ClamAV needs a few minutes after the first start to download its virus signatures; until then uploads are refused.
+
+```bash
+docker compose ps                  # what is running
+docker compose logs -f app         # follow the app log (e-mails are written here while MAIL_MAILER=log)
+docker compose stop                # stop; data is kept in Docker volumes
+docker compose up -d               # start again
+```
+
+`COMPOSE_PROJECT_NAME=lexph` in `.env` names the containers and volumes `lexph-…`, so they never mix with volumes from an older checkout of this folder (a `dbdata` volume from an old MySQL setup would stop PostgreSQL from starting).
 
 ## Running in production (Docker)
 
@@ -88,7 +128,7 @@ docker compose exec app php artisan migrate --force --seed
 docker compose exec app php artisan db:seed --class=EnterpriseDemoSeeder --force   # optional demo data
 ```
 
-Point `DOMAIN` at the server and open ports 80 and 443; Caddy then gets and renews the Let's Encrypt certificate itself. To try it on your own computer, see the end of `.env.example`: it runs on `https://localhost` with Caddy's local certificate.
+Use strong random values for every password and key (the command in the section above prints some), and do not load the demo firm. Point `DOMAIN` at the server and open ports 80 and 443; Caddy then gets and renews the Let's Encrypt certificate itself. Set `MAIL_*` in `backend/.env` to a real mail service: password resets, portal invitations, reminders and alerts are all e-mail.
 
 | Service | Role |
 |---|---|
