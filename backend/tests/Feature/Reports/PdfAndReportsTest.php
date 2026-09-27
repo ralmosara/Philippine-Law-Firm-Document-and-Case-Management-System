@@ -6,6 +6,7 @@ use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Billing\Services\InvoiceGenerator;
+use App\Domain\Billing\Services\InvoicePayments;
 use App\Domain\Documents\Actions\CreateDocumentVersion;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Matters\Models\Client;
@@ -98,7 +99,9 @@ class PdfAndReportsTest extends TestCase
 
         $this->getJson('/api/v1/reports/collections?from='.today()->subMonth()->toDateString())
             ->assertJsonPath('rows.0.lawyer', 'Atty. Maria Santos')
-            ->assertJsonPath('rows.0.fees', 1_000_000)
+            ->assertJsonPath('rows.0.payments', 1)
+            ->assertJsonPath('rows.0.received', $paid->total_cents)
+            ->assertJsonPath('rows.0.withheld', 0)
             ->assertJsonPath('totals.total', $paid->total_cents);
 
         $this->getJson('/api/v1/reports/matter-profitability')
@@ -108,6 +111,31 @@ class PdfAndReportsTest extends TestCase
             ->assertJsonPath('rows.0.collected', 1_000_000)
             ->assertJsonPath('rows.0.unbilled', 250_000)
             ->assertJsonPath('rows.0.collection_rate', 100);
+    }
+
+    public function test_partial_payments_count_by_date_received_and_age_only_the_open_balance(): void
+    {
+        $invoice = $this->issuedInvoice(60, 1_000_000); // 10,000 fees + 1,200 VAT = 11,200
+        $payments = app(InvoicePayments::class);
+        $payments->record($invoice, ['method' => 'bank_transfer', 'amount_cents' => 500_000, 'withholding_cents' => 100_000, 'received_on' => today()->toDateString()], $this->partner);
+
+        $this->getJson('/api/v1/reports/aged-receivables')
+            ->assertJsonPath('totals.total', 520_000);
+
+        $this->getJson('/api/v1/reports/collections?from='.today()->toDateString())
+            ->assertJsonPath('totals.received', 500_000)
+            ->assertJsonPath('totals.withheld', 100_000)
+            ->assertJsonPath('totals.total', 600_000);
+
+        // 600,000 of 1,120,000 settled: that share of the 1,000,000 in fees.
+        $this->getJson('/api/v1/reports/matter-profitability')
+            ->assertJsonPath('rows.0.billed', 1_000_000)
+            ->assertJsonPath('rows.0.collected', 535_714);
+
+        $text = $this->pdfText($this->get("/api/v1/invoices/{$invoice->id}/pdf")->assertOk()->getContent());
+        $this->assertStringContainsString('Partially paid', $text);
+        $this->assertStringContainsString('Balance due', $text);
+        $this->assertStringContainsString('₱5,200.00', $text);
     }
 
     public function test_reports_export_as_csv_and_are_restricted_to_finance(): void

@@ -16,6 +16,16 @@ return [
     'default' => env('QUEUE_CONNECTION', 'database'),
 
     /*
+    | Where slow jobs go (see App\Jobs\Concerns\RunsOnHeavyQueue). Without
+    | QUEUE_HEAVY_CONNECTION they use the default connection (e.g. "sync" in
+    | tests), on a queue named "heavy".
+    */
+    'heavy' => [
+        'connection' => env('QUEUE_HEAVY_CONNECTION', env('QUEUE_CONNECTION', 'database')),
+        'queue' => env('QUEUE_HEAVY_QUEUE', 'heavy'),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Queue Connections
     |--------------------------------------------------------------------------
@@ -71,6 +81,18 @@ return [
             'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
             'block_for' => null,
             'after_commit' => false,
+        ],
+
+        // Slow jobs (OCR, the AI assistant) run on their own queue and worker,
+        // with a longer retry window than their 600 s time limit, so they
+        // never hold up deadline reminders or emails on the default queue.
+        'redis-heavy' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'heavy',
+            'retry_after' => (int) env('REDIS_HEAVY_QUEUE_RETRY_AFTER', 900),
+            'block_for' => null,
+            'after_commit' => true,
         ],
 
         'deferred' => [

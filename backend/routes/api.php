@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\FirmController;
 use App\Http\Controllers\Api\V1\HolidayController;
 use App\Http\Controllers\Api\V1\IntakeController;
 use App\Http\Controllers\Api\V1\InvoiceController;
+use App\Http\Controllers\Api\V1\InvoicePaymentController;
 use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MatterController;
 use App\Http\Controllers\Api\V1\MatterDeadlineController;
@@ -33,10 +34,15 @@ use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WorkflowTemplateController;
 use App\Http\Controllers\ClientPortalController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PayMongoWebhookController;
 use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PublicIntakeController;
 use Illuminate\Support\Facades\Route;
+
+// For uptime monitors. /up (Laravel's) only proves PHP runs; this checks
+// the database, workers, scheduler, virus scanner and backups.
+Route::get('health', HealthController::class)->middleware('throttle:60,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -157,6 +163,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('invoices/{invoice}/pay', [InvoiceController::class, 'pay']);
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void']);
         Route::post('invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink']);
+        Route::get('invoices/{invoice}/payments', [InvoicePaymentController::class, 'index']);
+        Route::post('invoices/{invoice}/payments', [InvoicePaymentController::class, 'store']);
+        Route::get('invoice-payments/awaiting-2307', [InvoicePaymentController::class, 'awaiting2307']);
+        Route::post('invoice-payments/{invoicePayment}/void', [InvoicePaymentController::class, 'void']);
+        Route::post('invoice-payments/{invoicePayment}/form-2307', [InvoicePaymentController::class, 'receive2307']);
 
         Route::apiResource('conflict-checks', ConflictCheckController::class)->only(['index', 'store', 'show']);
         Route::post('conflict-checks/{conflictCheck}/resolve', [ConflictCheckController::class, 'resolve']);

@@ -202,7 +202,7 @@ class ClientPortalController extends Controller
     public function getInvoicePdf(Request $request, int $invoice, PdfRenderer $pdf): Response
     {
         $model = $this->client($request)->invoices()
-            ->whereIn('status', [InvoiceStatus::Issued->value, InvoiceStatus::Paid->value])
+            ->whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value])
             ->findOrFail($invoice);
 
         return $pdf->download('pdf.invoice', InvoiceController::pdfData($model), "billing-statement-{$model->number}");
@@ -212,7 +212,7 @@ class ClientPortalController extends Controller
     {
         $invoices = $this->client($request)->invoices()
             ->with('matter:id,reference,title')
-            ->whereIn('status', [InvoiceStatus::Issued->value, InvoiceStatus::Paid->value])
+            ->whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value])
             ->latest('issued_at')
             ->get()
             ->map(fn ($invoice) => [
@@ -222,6 +222,8 @@ class ClientPortalController extends Controller
                 'is_overdue' => $invoice->isOverdue(),
                 'can_pay_online' => $payments->canPay($invoice),
                 'total_cents' => $invoice->total_cents,
+                'paid_cents' => $invoice->settled_cents,
+                'balance_cents' => $invoice->balanceDue(),
                 'issued_at' => $invoice->issued_at?->toDateString(),
                 'due_at' => $invoice->due_at?->toDateString(),
                 'paid_at' => $invoice->paid_at?->toDateString(),
@@ -230,7 +232,7 @@ class ClientPortalController extends Controller
 
         return response()->json([
             'data' => $invoices,
-            'outstanding_cents' => (int) $invoices->where('status', InvoiceStatus::Issued->value)->sum('total_cents'),
+            'outstanding_cents' => (int) $invoices->sum('balance_cents'),
         ]);
     }
 

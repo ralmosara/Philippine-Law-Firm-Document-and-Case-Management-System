@@ -171,36 +171,31 @@ class InvoiceGenerator
     }
 
     /**
-     * Record payment. When a trust account is given, the invoice total is
-     * disbursed from client trust funds in the same transaction, so the
-     * ledger and the invoice can never disagree.
+     * Settle the whole remaining balance in one payment. When a trust account
+     * is given, the balance is disbursed from client trust funds in the same
+     * transaction, so the ledger and the invoice can never disagree.
      */
     public function markPaid(Invoice $invoice, ?User $by, ?string $reference = null, ?TrustAccount $fromTrust = null): Invoice
     {
-        return DB::transaction(function () use ($invoice, $by, $reference, $fromTrust) {
+        if (! $invoice->status->isReceivable()) {
             $this->transition($invoice, InvoiceStatus::Paid);
+        }
 
-            if ($fromTrust !== null) {
-                if ($fromTrust->client_id !== $invoice->client_id) {
-                    throw ValidationException::withMessages([
-                        'trust_account_id' => 'Trust funds can only be applied to the same client\'s invoices.',
-                    ]);
-                }
+        app(InvoicePayments::class)->settleInFull($invoice, $by, $reference, $fromTrust);
 
-                $transaction = $this->trust->disburse($fromTrust, $invoice->total_cents, "Payment of invoice {$invoice->number}", $invoice->number, $by);
-                $reference ??= "TRUST-TX-{$transaction->id}";
-            }
-
-            $invoice->forceFill(['paid_at' => now(), 'payment_reference' => $reference])->save();
-
-            return $invoice;
-        });
+        return $invoice->refresh();
     }
 
     /** Void an invoice and release its time entries for re-billing. */
     public function void(Invoice $invoice): Invoice
     {
         return DB::transaction(function () use ($invoice) {
+            if ($invoice->invoicePayments()->active()->exists()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Void the payments recorded on this invoice first.',
+                ]);
+            }
+
             $this->transition($invoice, InvoiceStatus::Void);
             TimeEntry::where('invoice_id', $invoice->id)->update(['invoice_id' => null]);
             Expense::where('invoice_id', $invoice->id)->update(['invoice_id' => null]);

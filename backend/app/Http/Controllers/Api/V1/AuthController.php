@@ -117,7 +117,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => new UserResource($user),
-            'firm' => $user->firm()->first(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor']),
+            'firm' => $user->firm()->first(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'default_withholding_bps']),
             'abilities' => [
                 'manage_firm' => $user->role->canManageFirm(),
                 'manage_finances' => $user->role->canManageFinances(),

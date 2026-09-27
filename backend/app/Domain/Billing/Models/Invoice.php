@@ -32,6 +32,8 @@ class Invoice extends Model
 
     protected $attributes = [
         'status' => 'draft',
+        'settled_cents' => 0,
+        'withholding_cents' => 0,
     ];
 
     protected function casts(): array
@@ -45,7 +47,29 @@ class Invoice extends Model
             'issued_at' => DateOnly::class,
             'due_at' => DateOnly::class,
             'paid_at' => 'datetime',
+            'settled_cents' => 'integer',
+            'withholding_cents' => 'integer',
         ];
+    }
+
+    /** Still owed: the total less cash received and tax withheld. */
+    public function balanceDue(): int
+    {
+        return max(0, $this->total_cents - (int) ($this->attributes['settled_cents'] ?? 0));
+    }
+
+    /**
+     * Largest creditable withholding still allowed: the tax base is the
+     * professional fees (before VAT); expenses billed at cost are excluded.
+     */
+    public function withholdingRoom(): int
+    {
+        return max(0, $this->subtotal_cents - (int) ($this->attributes['withholding_cents'] ?? 0));
+    }
+
+    public function invoicePayments(): HasMany
+    {
+        return $this->hasMany(InvoicePayment::class)->orderBy('received_on')->orderBy('id');
     }
 
     public static function nextNumber(int $firmId, int $year): string
@@ -65,7 +89,7 @@ class Invoice extends Model
 
     public function isOverdue(): bool
     {
-        return $this->status === InvoiceStatus::Issued && $this->due_at?->isPast();
+        return $this->status->isReceivable() && $this->due_at?->isPast();
     }
 
     public function client(): BelongsTo

@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { del, get, patch, post, put } from '@/shared/api/axios'
 import { useApiMutation } from '@/shared/api/hooks'
-import type { Expense, Invoice, InvoiceStatus, Paginated, TimeEntry } from '@/shared/api/types'
+import type { Expense, Invoice, InvoicePayment, InvoiceStatus, Paginated, PaymentMethod, TimeEntry } from '@/shared/api/types'
 
 type WithTotals<T> = Paginated<T> & { totals: { minutes: number; amount_cents: number } }
 
@@ -71,12 +71,59 @@ export function useGenerateInvoice() {
 export function useInvoiceAction(id: number) {
   return {
     issue: useApiMutation(() => post<Invoice>(`/v1/invoices/${id}/issue`), { invalidate: invoiceInvalidate, success: 'Invoice issued' }),
-    pay: useApiMutation((input: { payment_reference?: string; trust_account_id?: number }) => post<Invoice>(`/v1/invoices/${id}/pay`, input), {
-      invalidate: invoiceInvalidate,
-      success: 'Payment recorded',
-    }),
     void: useApiMutation(() => post<Invoice>(`/v1/invoices/${id}/void`), { invalidate: invoiceInvalidate, success: 'Invoice voided; its time is billable again' }),
   }
+}
+
+export interface PaymentInput {
+  received_on: string
+  method: PaymentMethod
+  amount_cents: number
+  withholding_cents: number
+  reference?: string
+  notes?: string
+  trust_account_id?: number
+  form_2307?: File | null
+}
+
+const paymentInvalidate = [...invoiceInvalidate, ['invoice-payments']]
+
+/** Record a full or partial payment; sent as multipart when a Form 2307 scan is attached. */
+export function useRecordPayment(invoiceId: number) {
+  return useApiMutation(
+    (input: PaymentInput) => {
+      const { form_2307, ...fields } = input
+      if (!form_2307) return post<InvoicePayment>(`/v1/invoices/${invoiceId}/payments`, fields)
+      const body = new FormData()
+      for (const [key, value] of Object.entries(fields)) if (value !== undefined && value !== '') body.append(key, String(value))
+      body.append('form_2307', form_2307)
+      return post<InvoicePayment>(`/v1/invoices/${invoiceId}/payments`, body)
+    },
+    { invalidate: paymentInvalidate, success: 'Payment recorded', toastErrors: false },
+  )
+}
+
+export function useVoidPayment() {
+  return useApiMutation(({ id, reason }: { id: number; reason: string }) => post<InvoicePayment>(`/v1/invoice-payments/${id}/void`, { reason }), {
+    invalidate: paymentInvalidate,
+    success: 'Payment voided',
+  })
+}
+
+export function useReceive2307() {
+  return useApiMutation(
+    ({ id, file }: { id: number; file?: File | null }) => {
+      const body = new FormData()
+      if (file) body.append('form_2307', file)
+      return post<InvoicePayment>(`/v1/invoice-payments/${id}/form-2307`, body)
+    },
+    { invalidate: paymentInvalidate, success: 'Form 2307 recorded' },
+  )
+}
+
+/** Tax withheld by clients whose BIR Form 2307 has not arrived yet. */
+export function useAwaiting2307(enabled = true) {
+  return useQuery({ queryKey: ['invoice-payments', 'awaiting-2307'], queryFn: () => get<InvoicePayment[]>('/v1/invoice-payments/awaiting-2307'), enabled })
 }
 
 /** A PayMongo checkout link to send to the client; the invoice updates itself when paid. */

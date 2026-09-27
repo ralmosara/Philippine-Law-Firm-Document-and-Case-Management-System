@@ -7,6 +7,7 @@ use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Billing\Services\InvoiceGenerator;
+use App\Domain\Billing\Services\InvoicePayments;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Firm;
 use App\Domain\Matters\Models\Matter;
@@ -107,6 +108,25 @@ class OnlinePaymentTest extends TestCase
 
         $this->assertSame(InvoiceStatus::Issued, $this->invoice->fresh()->status);
         $this->assertDatabaseHas('payments', ['checkout_id' => 'cs_test_abc', 'status' => Payment::UNAPPLIED]);
+    }
+
+    public function test_after_a_partial_payment_the_checkout_charges_only_the_balance(): void
+    {
+        app(InvoicePayments::class)->record($this->invoice, ['method' => 'check', 'amount_cents' => 200_000], null);
+
+        $this->actingAs($this->client, 'client');
+        $this->getJson('/api/portal/invoices')
+            ->assertJsonPath('data.0.status', 'partially_paid')
+            ->assertJsonPath('data.0.balance_cents', 300_000)
+            ->assertJsonPath('outstanding_cents', 300_000);
+
+        $this->postJson("/api/portal/invoices/{$this->invoice->id}/checkout")->assertCreated();
+        Http::assertSent(fn (HttpRequest $request) => $request['data']['attributes']['line_items'][0]['amount'] === 300_000);
+
+        $this->postWebhook($this->paidEvent(300_000))->assertOk();
+
+        $this->assertSame(InvoiceStatus::Paid, $this->invoice->fresh()->status);
+        $this->assertDatabaseHas('invoice_payments', ['invoice_id' => $this->invoice->id, 'method' => 'online', 'amount_cents' => 300_000, 'reference' => 'PAYMONGO-pay_test_1']);
     }
 
     public function test_the_firm_can_create_a_payment_link(): void

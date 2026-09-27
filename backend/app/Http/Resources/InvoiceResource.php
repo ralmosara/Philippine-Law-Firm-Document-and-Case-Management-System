@@ -21,6 +21,10 @@ class InvoiceResource extends JsonResource
             'vat_cents' => $this->vat_cents,
             'expenses_cents' => $this->expenses_cents,
             'total_cents' => $this->total_cents,
+            'settled_cents' => $this->settled_cents,
+            'withholding_cents' => $this->withholding_cents,
+            'balance_cents' => $this->balanceDue(),
+            'withholding_room_cents' => $this->withholdingRoom(),
             'issued_at' => $this->issued_at?->toDateString(),
             'due_at' => $this->due_at?->toDateString(),
             'paid_at' => $this->paid_at?->toIso8601String(),
@@ -52,6 +56,7 @@ class InvoiceResource extends JsonResource
                 'paid_at' => $payment->paid_at?->toIso8601String(),
                 'created_at' => $payment->created_at?->toIso8601String(),
             ])),
+            'invoice_payments' => InvoicePaymentResource::collection($this->whenLoaded('invoicePayments')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

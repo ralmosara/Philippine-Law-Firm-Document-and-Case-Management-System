@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
+use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Compliance\Models\McleCredit;
@@ -18,6 +19,7 @@ use App\Domain\Documents\Scanning\VirusScanner;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
 use App\Models\User;
+use App\Support\Ops\OpsAlert;
 use App\Support\Tenancy\DatabaseTenancy;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -27,9 +29,12 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -64,9 +69,22 @@ class AppServiceProvider extends ServiceProvider
             'signature_request' => SignatureRequest::class,
             'payment' => Payment::class,
             'expense' => Expense::class,
+            'invoice_payment' => InvoicePayment::class,
         ]);
 
         $this->configureDatabaseTenancy();
+
+        // Behind the TLS proxy PHP sees plain HTTP; links and redirects must still be https.
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
+        // A job that has used up its retries: a reminder or OCR that will not happen.
+        Queue::failing(fn (JobFailed $event) => OpsAlert::send(
+            'job-failed:'.$event->job->resolveName(),
+            'Background job failed: '.class_basename($event->job->resolveName()),
+            "Queue: {$event->job->getQueue()}\nError: ".$event->exception->getMessage()."\n\nInspect and retry with: php artisan queue:failed / queue:retry",
+        ));
 
         // Password reset emails link to the SPA, not to a Laravel route.
         ResetPassword::createUrlUsing(fn (User $user, string $token) => rtrim(config('app.frontend_url'), '/')

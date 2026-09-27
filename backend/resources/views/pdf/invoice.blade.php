@@ -16,7 +16,7 @@
             <h1>BILLING STATEMENT</h1>
             No. {{ $invoice->number }}<br>
             <span class="muted">Issued {{ $invoice->issued_at?->format('F j, Y') ?? '—' }} · Due {{ $invoice->due_at?->format('F j, Y') ?? '—' }}</span><br>
-            <span class="muted">Status: {{ ucfirst($invoice->status->value) }}</span>
+            <span class="muted">Status: {{ ucfirst(str_replace('_', ' ', $invoice->status->value)) }}</span>
         </td>
     </tr>
 </table>
@@ -44,6 +44,11 @@
     <tr><td>VAT (12%)</td><td class="right">{{ $money($invoice->vat_cents) }}</td></tr>
     @if ($invoice->expenses_cents > 0)<tr><td>Reimbursable expenses</td><td class="right">{{ $money($invoice->expenses_cents) }}</td></tr>@endif
     <tr><td style="font-weight:bold;border-bottom:0;border-top:1pt solid #1f2328">Total due</td><td class="right" style="font-weight:bold;border-bottom:0;border-top:1pt solid #1f2328">{{ $money($invoice->total_cents) }}</td></tr>
+    @if ($invoice->settled_cents > 0 && $invoice->status->value !== 'void')
+        <tr><td>Less: payments received</td><td class="right">({{ $money($invoice->settled_cents - $invoice->withholding_cents) }})</td></tr>
+        @if ($invoice->withholding_cents > 0)<tr><td>Less: creditable tax withheld</td><td class="right">({{ $money($invoice->withholding_cents) }})</td></tr>@endif
+        <tr><td style="font-weight:bold;border-bottom:0">Balance due</td><td class="right" style="font-weight:bold;border-bottom:0">{{ $money($invoice->balanceDue()) }}</td></tr>
+    @endif
 </table>
 
 @if ($invoice->status->value === 'paid')

@@ -76,13 +76,14 @@ export function ClientDashboard() {
                   <tr key={i.id}>
                     <Td className="font-medium">{i.number} <a href={`/api/portal/invoices/${i.id}/pdf`} download className="ml-1 text-xs font-normal text-primary hover:underline">PDF</a><div className="text-xs font-normal text-on-surface-variant">{i.matter?.title}</div></Td>
                     <Td>{date(i.due_at)}</Td>
-                    <Td>{i.status === 'paid' ? <Badge tone="success">Paid</Badge> : i.is_overdue ? <Badge tone="danger">Overdue</Badge> : <Badge tone="warning">Unpaid</Badge>}</Td>
+                    <Td>{i.status === 'paid' ? <Badge tone="success">Paid</Badge> : i.is_overdue ? <Badge tone="danger">Overdue</Badge> : i.status === 'partially_paid' ? <Badge tone="primary">Partly paid</Badge> : <Badge tone="warning">Unpaid</Badge>}</Td>
                     <Td align="right">
                       {money(i.total_cents)}
+                      {i.status === 'partially_paid' && <div className="text-xs text-on-surface-variant">Balance {money(i.balance_cents)}</div>}
                       {i.can_pay_online && (
                         <div className="mt-1">
                           <Button size="sm" icon={<CreditCard className="size-4" />} loading={pay.isPending && pay.variables === i.id} disabled={pay.isPending} onClick={() => pay.mutate(i.id)}>
-                            Pay
+                            {i.status === 'partially_paid' ? `Pay ${money(i.balance_cents)}` : 'Pay'}
                           </Button>
                         </div>
                       )}

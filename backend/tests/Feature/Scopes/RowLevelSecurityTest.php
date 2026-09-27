@@ -56,6 +56,21 @@ class RowLevelSecurityTest extends TestCase
             SQL);
     }
 
+    public function test_every_table_holding_firm_data_has_row_level_security(): void
+    {
+        // A new table with a firm_id but no policy would be open across firms.
+        $unprotected = DB::table('information_schema.columns as col')
+            ->join('pg_class as c', 'c.relname', '=', 'col.table_name')
+            ->where('col.table_schema', 'public')
+            ->where('col.column_name', 'firm_id')
+            ->whereRaw("c.relnamespace = 'public'::regnamespace")
+            ->whereRaw('not (c.relrowsecurity and c.relforcerowsecurity)')
+            ->pluck('col.table_name')
+            ->all();
+
+        $this->assertSame([], $unprotected, 'Call RowLevelSecurity::enable() in the migration for: '.implode(', ', $unprotected));
+    }
+
     public function test_a_restricted_connection_only_sees_its_own_firm(): void
     {
         app(DatabaseTenancy::class)->restrictTo($this->firmA->id);
