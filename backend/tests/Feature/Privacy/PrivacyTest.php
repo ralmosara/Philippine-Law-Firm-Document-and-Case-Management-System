@@ -140,8 +140,8 @@ class PrivacyTest extends TestCase
         $this->assertTrue($matter->fresh()->exists); // the case record is kept
 
         // The audit trail no longer holds the old details.
-        $this->assertDatabaseMissing('audit_logs', ['subject_type' => 'client', 'subject_id' => $this->client->id, 'changes' => json_encode(['email' => 'juan@example.com'])]);
-        $this->assertSame(0, AuditLog::where('subject_type', 'client')->where('subject_id', $this->client->id)->where('changes', 'like', '%juan@example.com%')->count());
+        $this->assertFalse(AuditLog::where('subject_type', 'client')->where('subject_id', $this->client->id)->get()
+            ->contains(fn (AuditLog $log) => str_contains((string) json_encode($log->changes), 'juan@example.com')));
         $this->assertDatabaseHas('audit_logs', ['subject_type' => 'client', 'subject_id' => $this->client->id, 'action' => 'anonymized']);
     }
 

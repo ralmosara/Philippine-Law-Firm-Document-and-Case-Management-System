@@ -70,7 +70,7 @@ class DocumentRequests
     public function upload(DocumentRequestItem $item, UploadedFile $file, Client $client): DocumentRequestItem
     {
         $request = DocumentRequest::findOrFail($item->document_request_id);
-        if ($request->client_id !== $client->id) {
+        if ((int) $request->client_id !== (int) $client->id) {
             abort(404);
         }
         if ($request->status !== DocumentRequest::OPEN || ! $item->awaitingClient()) {

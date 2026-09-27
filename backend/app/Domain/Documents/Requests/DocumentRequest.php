@@ -32,6 +32,8 @@ class DocumentRequest extends Model
     protected function casts(): array
     {
         return [
+            'matter_id' => 'integer',
+            'client_id' => 'integer',
             'due_on' => DateOnly::class,
             'completed_at' => 'datetime',
         ];

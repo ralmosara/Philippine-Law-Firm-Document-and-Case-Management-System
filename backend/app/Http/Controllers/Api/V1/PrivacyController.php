@@ -151,7 +151,7 @@ class PrivacyController extends Controller
                 'title' => $m->title,
                 'client' => $m->client?->name,
                 'closed_at' => $m->closed_at?->toDateString(),
-                'files' => $m->files_count,
+                'files' => (int) $m->files_count,
             ]),
         ]);
     }

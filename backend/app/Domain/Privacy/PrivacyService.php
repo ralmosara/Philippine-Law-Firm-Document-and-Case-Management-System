@@ -111,7 +111,7 @@ class PrivacyService
                 'subject' => $t->subject,
                 'messages' => $t->messages->map(fn ($m) => ['from' => $m->sender_type === 'client' ? 'you' : 'firm', 'sent_at' => $m->created_at?->toIso8601String(), 'text' => $m->body])->values(),
             ])->all(),
-            'signatures' => SignatureRequest::where('client_id', $client->id)->get(['status', 'signed_at', 'created_at'])->toArray(),
+            'signatures' => SignatureRequest::where('client_id', $client->id)->get(['status', 'signer_name', 'responded_at', 'created_at'])->toArray(),
             'consultation_requests' => $client->email
                 ? IntakeRequest::where('email', $client->email)->get(['case_type', 'description', 'consent_at', 'created_at'])->toArray()
                 : [],

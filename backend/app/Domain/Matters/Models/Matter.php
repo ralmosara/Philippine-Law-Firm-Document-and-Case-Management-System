@@ -69,6 +69,8 @@ class Matter extends Model
             'opened_at' => DateOnly::class,
             'closed_at' => DateOnly::class,
             'fee_arrangement' => FeeArrangement::class,
+            'client_id' => 'integer',
+            'responsible_lawyer_id' => 'integer',
             'fixed_fee_cents' => 'integer',
             'acceptance_fee_cents' => 'integer',
             'appearance_fee_cents' => 'integer',
