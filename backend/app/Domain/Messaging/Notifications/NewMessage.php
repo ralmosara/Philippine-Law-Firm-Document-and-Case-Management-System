@@ -3,6 +3,7 @@
 namespace App\Domain\Messaging\Notifications;
 
 use App\Domain\Messaging\Models\MessageThread;
+use App\Notifications\Concerns\ShowsInApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -14,13 +15,23 @@ use Illuminate\Notifications\Notification;
  */
 class NewMessage extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, ShowsInApp;
 
     public function __construct(public readonly MessageThread $thread, public readonly bool $forClient) {}
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->withInApp($notifiable, ['mail']);
+    }
+
+    protected function inApp(object $notifiable): array
+    {
+        return [
+            'kind' => 'message',
+            'title' => "New message from {$this->thread->client?->name}",
+            'body' => trim(($this->thread->matter?->reference ? $this->thread->matter->reference.' · ' : '').$this->thread->subject),
+            'url' => "/messages/{$this->thread->id}",
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

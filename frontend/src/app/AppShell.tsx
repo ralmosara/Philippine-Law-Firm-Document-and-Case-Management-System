@@ -28,6 +28,7 @@ import { useUnreadMessages } from '@/features/messages/api'
 import { useOpenIntakeCount } from '@/features/intake/api'
 import type { Abilities } from '@/shared/api/types'
 import { IconButton } from '@/shared/ui/Button'
+import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 import { Avatar } from '@/shared/ui/Feedback'
 
 interface NavItem {
@@ -138,6 +139,7 @@ export function AppShell() {
             <Menu className="size-5" />
           </IconButton>
           <div className="flex-1" />
+          <NotificationBell userId={user.id} />
           <UserMenu name={user.name} role={user.role_label} email={user.email} />
         </header>
 

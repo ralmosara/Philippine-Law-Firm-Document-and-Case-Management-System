@@ -11,6 +11,8 @@ use App\Domain\Matters\Models\Matter;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MatterResource;
 use App\Http\Resources\MatterStatusEventResource;
+use App\Models\User;
+use App\Notifications\WorkAssigned;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -77,6 +79,7 @@ class MatterController extends Controller
         unset($validated['parties']);
 
         $matter = $openMatter->execute($validated, $request->user(), $parties);
+        $this->tellResponsibleLawyer($matter, $request->user());
 
         return (new MatterResource($matter->load(['client', 'responsibleLawyer', 'parties'])))
             ->response()
@@ -97,6 +100,9 @@ class MatterController extends Controller
         Gate::authorize('work-matters');
 
         $matter->update($request->validate(array_map(fn (array $rules) => ['sometimes', ...$rules], $this->rules())));
+        if ($matter->wasChanged('responsible_lawyer_id')) {
+            $this->tellResponsibleLawyer($matter, $request->user());
+        }
 
         return new MatterResource($matter->load(['client', 'responsibleLawyer', 'parties']));
     }
@@ -131,6 +137,13 @@ class MatterController extends Controller
     public function timeline(Matter $matter): AnonymousResourceCollection
     {
         return MatterStatusEventResource::collection($matter->statusEvents()->with('changedBy')->get());
+    }
+
+    private function tellResponsibleLawyer(Matter $matter, User $by): void
+    {
+        if ($matter->responsible_lawyer_id && $matter->responsible_lawyer_id !== $by->id) {
+            User::find($matter->responsible_lawyer_id)?->notify(new WorkAssigned($matter, $by));
+        }
     }
 
     private function rules(): array

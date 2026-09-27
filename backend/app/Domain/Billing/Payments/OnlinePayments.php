@@ -5,6 +5,9 @@ namespace App\Domain\Billing\Payments;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Services\InvoicePayments;
+use App\Domain\Matters\Models\Matter;
+use App\Models\User;
+use App\Notifications\OnlinePaymentReceived;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
@@ -128,6 +131,9 @@ class OnlinePayments
                 'reference' => 'PAYMONGO-'.($payment->provider_payment_id ?? $payment->checkout_id),
                 'online_payment_id' => $payment->id,
             ], null);
+
+            $lawyer = User::find(Matter::whereKey($invoice->matter_id)->value('responsible_lawyer_id'));
+            $lawyer?->notify(new OnlinePaymentReceived($invoice->load('client:id,name'), $amount));
         }));
     }
 }

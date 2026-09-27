@@ -7,8 +7,12 @@ use App\Domain\Matters\Models\Firm;
 use App\Domain\Privacy\Models\DataSubjectRequest;
 use App\Domain\Privacy\PrivacyNotice;
 use App\Domain\Privacy\PrivacyService;
+use App\Enums\Role;
+use App\Models\User;
+use App\Notifications\PrivacyRequestReceived;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 /** A client's side of the Data Privacy Act: the notice, consent, and their requests. */
@@ -57,7 +61,8 @@ class PortalPrivacyController extends Controller
         ], ['details.required_if' => 'Tell us what should change, or which use you object to.']);
 
         $client = $this->client($request);
-        $this->privacy->receiveRequest(Firm::findOrFail($client->firm_id), $validated, $client, 'portal');
+        $dsr = $this->privacy->receiveRequest(Firm::findOrFail($client->firm_id), $validated, $client, 'portal');
+        Notification::send(User::where('firm_id', $client->firm_id)->where('is_active', true)->where('role', Role::ManagingPartner->value)->get(), new PrivacyRequestReceived($dsr));
 
         return $this->show($request)->setStatusCode(201);
     }

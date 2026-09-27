@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\V1\MatterPartyController;
 use App\Http\Controllers\Api\V1\McleController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotarialEntryController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SignatureRequestController;
@@ -66,6 +67,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
+        Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id');
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::put('auth/password', [AuthController::class, 'updatePassword']);
         Route::post('auth/two-factor', [TwoFactorController::class, 'enable']);

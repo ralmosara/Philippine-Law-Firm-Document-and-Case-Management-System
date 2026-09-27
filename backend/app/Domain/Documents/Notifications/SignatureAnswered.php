@@ -4,6 +4,7 @@ namespace App\Domain\Documents\Notifications;
 
 use App\Domain\Documents\Enums\SignatureStatus;
 use App\Domain\Documents\Models\SignatureRequest;
+use App\Notifications\Concerns\ShowsInApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -12,13 +13,25 @@ use Illuminate\Notifications\Notification;
 /** Tells the lawyer who asked that the client has signed or declined. */
 class SignatureAnswered extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, ShowsInApp;
 
     public function __construct(public readonly SignatureRequest $request) {}
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->withInApp($notifiable, ['mail']);
+    }
+
+    protected function inApp(object $notifiable): array
+    {
+        $signed = $this->request->status === SignatureStatus::Signed;
+
+        return [
+            'kind' => $signed ? 'signature' : 'signature_declined',
+            'title' => ($signed ? 'Signed: ' : 'Declined: ').$this->request->document->title,
+            'body' => $signed ? "By {$this->request->signer_name}" : ('Reason: '.($this->request->decline_reason ?: 'none given')),
+            'url' => "/documents/{$this->request->document_id}",
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage
