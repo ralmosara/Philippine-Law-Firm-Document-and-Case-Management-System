@@ -15,6 +15,9 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    // Where uploaded matter files are kept. Must be private (never public).
+    'matter_files' => env('MATTER_FILES_DISK', 'local'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

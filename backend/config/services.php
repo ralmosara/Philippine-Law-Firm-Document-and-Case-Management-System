@@ -18,6 +18,54 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    // Philippine SMS gateway for deadline alerts. Leave the key empty to log
+    // messages instead of sending them.
+    // ClamAV (clamd) scans every uploaded file before it is stored.
+    // fail_open=false: if the scanner is down, uploads are refused rather
+    // than stored unscanned.
+    'clamav' => [
+        'enabled' => (bool) env('CLAMAV_ENABLED', false),
+        'host' => env('CLAMAV_HOST', '127.0.0.1'),
+        'port' => (int) env('CLAMAV_PORT', 3310),
+        'timeout' => (int) env('CLAMAV_TIMEOUT', 30),
+        'fail_open' => (bool) env('CLAMAV_FAIL_OPEN', false),
+    ],
+
+    // The matter assistant (Anthropic Claude). Firms must also opt in under
+    // Firm Settings, because matter documents are sent to Anthropic.
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-opus-5-5'),
+        'max_tokens' => (int) env('ANTHROPIC_MAX_TOKENS', 4096),
+        // Roughly 100k tokens of case file per question.
+        'context_chars' => (int) env('ANTHROPIC_CONTEXT_CHARS', 400000),
+    ],
+
+    // OCR for scanned files (Tesseract + Poppler's pdftoppm), run by the
+    // queue worker. "fil" is Tesseract's Filipino language data.
+    'ocr' => [
+        'enabled' => (bool) env('OCR_ENABLED', false),
+        'tesseract' => env('TESSERACT_PATH', 'tesseract'),
+        'pdftoppm' => env('PDFTOPPM_PATH', 'pdftoppm'),
+        'languages' => env('OCR_LANGUAGES', 'eng+fil'),
+        'max_pages' => (int) env('OCR_MAX_PAGES', 30),
+        'timeout' => (int) env('OCR_TIMEOUT', 300),
+    ],
+
+    'semaphore' => [
+        'api_key' => env('SEMAPHORE_API_KEY'),
+        'sender_name' => env('SEMAPHORE_SENDER_NAME', 'SEMAPHORE'),
+    ],
+
+    // PayMongo online payments. Leave the secret key empty to turn online
+    // payment off. The webhook secret comes from the webhook you register
+    // for https://<your-domain>/api/webhooks/paymongo (checkout_session.payment.paid).
+    'paymongo' => [
+        'secret_key' => env('PAYMONGO_SECRET_KEY'),
+        'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
+        'payment_methods' => array_values(array_filter(explode(',', (string) env('PAYMONGO_PAYMENT_METHODS', 'card,gcash,paymaya,qrph')))),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

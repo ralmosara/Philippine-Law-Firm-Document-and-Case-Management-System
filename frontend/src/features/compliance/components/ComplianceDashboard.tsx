@@ -1,19 +1,32 @@
-import React from 'react';
-import { ConflictCheckForm } from './ConflictCheckForm';
-import { MCLETracker } from './MCLETracker';
-import { FirmDashboard } from './FirmDashboard';
+import { useAbilities } from '@/features/auth/session'
+import { useUrlState } from '@/shared/lib/hooks'
+import { PageHeader, Tabs } from '@/shared/ui/Layout'
+import { ConflictCheckForm } from './ConflictCheckForm'
+import { FirmDashboard } from './FirmDashboard'
+import { MCLETracker } from './MCLETracker'
 
-export const ComplianceDashboard = () => {
-    return (
-        <div className="min-h-screen p-8 bg-slate-50">
-            <h1 className="text-3xl font-bold text-slate-900 mb-8">Compliance & Firm Reporting</h1>
-            
-            <FirmDashboard />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <ConflictCheckForm />
-                <MCLETracker />
-            </div>
-        </div>
-    );
-};
+type Tab = 'conflicts' | 'mcle' | 'firm-mcle'
+
+export function ComplianceDashboard() {
+  const abilities = useAbilities()
+  const [tab, setTab] = useUrlState('tab', 'conflicts')
+
+  return (
+    <>
+      <PageHeader title="Compliance" description="Conflict-of-interest checks and Mandatory Continuing Legal Education." />
+      <Tabs<Tab>
+        label="Compliance sections"
+        value={tab as Tab}
+        onChange={setTab}
+        tabs={[
+          { value: 'conflicts', label: 'Conflict checks' },
+          ...(abilities.practice_law ? [{ value: 'mcle' as const, label: 'My MCLE' }] : []),
+          ...(abilities.manage_firm ? [{ value: 'firm-mcle' as const, label: 'Firm MCLE' }] : []),
+        ]}
+      />
+      {tab === 'conflicts' && <ConflictCheckForm />}
+      {tab === 'mcle' && abilities.practice_law && <MCLETracker />}
+      {tab === 'firm-mcle' && abilities.manage_firm && <FirmDashboard />}
+    </>
+  )
+}

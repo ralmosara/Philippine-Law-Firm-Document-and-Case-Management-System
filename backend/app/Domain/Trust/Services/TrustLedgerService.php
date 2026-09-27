@@ -2,96 +2,110 @@
 
 namespace App\Domain\Trust\Services;
 
+use App\Domain\Trust\Enums\TrustTransactionType;
+use App\Domain\Trust\Exceptions\InsufficientTrustFunds;
+use App\Domain\Trust\Models\TrustAccount;
+use App\Domain\Trust\Models\TrustTransaction;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Exception;
+use InvalidArgumentException;
+use LogicException;
 
+/**
+ * The only writer of trust balances.
+ *
+ * Each transaction locks the account row, computes the new balance from the
+ * locked value, appends a ledger row carrying that balance, and updates the
+ * cached balance, all in one database transaction. Concurrent postings to
+ * the same account are therefore serialised, and the ledger is never
+ * observed half-written.
+ */
 class TrustLedgerService
 {
-    /**
-     * Deposit funds into a trust account.
-     *
-     * @param int $trustAccountId
-     * @param int $amountCents
-     * @param string $referenceNumber
-     * @return void
-     * @throws Exception
-     */
-    public function deposit(int $trustAccountId, int $amountCents, string $referenceNumber = null): void
+    public function deposit(TrustAccount $account, int $amountCents, string $description, ?string $reference = null, ?User $by = null): TrustTransaction
     {
-        if ($amountCents <= 0) {
-            throw new Exception("Deposit amount must be strictly positive.");
-        }
-
-        DB::table('trust_transactions')->insert([
-            'trust_account_id' => $trustAccountId,
-            'amount_cents' => $amountCents, // Positive
-            'transaction_type' => 'deposit',
-            'reference_number' => $referenceNumber,
-            'created_at' => now(),
-        ]);
-        
-        // Note: For SQLite testing where the trigger doesn't exist, we must manually update the balance
-        // In a real Postgres environment, the trigger handles this atomically.
-        if (DB::getDriverName() !== 'pgsql') {
-            $this->fallbackUpdateBalance($trustAccountId, $amountCents);
-        }
+        return $this->record($account, TrustTransactionType::Deposit, $amountCents, $description, $reference, $by);
     }
 
-    /**
-     * Withdraw funds from a trust account.
-     *
-     * @param int $trustAccountId
-     * @param int $amountCents
-     * @param string $referenceNumber
-     * @return void
-     * @throws Exception
-     */
-    public function withdraw(int $trustAccountId, int $amountCents, string $referenceNumber = null): void
+    public function disburse(TrustAccount $account, int $amountCents, string $description, ?string $reference = null, ?User $by = null): TrustTransaction
+    {
+        return $this->record($account, TrustTransactionType::Disbursement, $amountCents, $description, $reference, $by);
+    }
+
+    public function record(TrustAccount $account, TrustTransactionType $type, int $amountCents, string $description, ?string $reference = null, ?User $by = null): TrustTransaction
     {
         if ($amountCents <= 0) {
-            throw new Exception("Withdrawal amount must be strictly positive.");
+            throw new InvalidArgumentException('Trust transaction amounts must be positive.');
         }
 
-        DB::transaction(function () use ($trustAccountId, $amountCents, $referenceNumber) {
-            
-            if (DB::getDriverName() !== 'pgsql') {
-                 // Manual check for SQLite fallback
-                 $currentBalance = DB::table('trust_accounts')->where('id', $trustAccountId)->value('current_balance_cents');
-                 if ($currentBalance < $amountCents) {
-                     throw new Exception("Insufficient trust funds. Attempted to withdraw {$amountCents}, but balance is {$currentBalance}");
-                 }
+        return DB::transaction(function () use ($account, $type, $amountCents, $description, $reference, $by) {
+            $locked = TrustAccount::withoutGlobalScopes()->lockForUpdate()->findOrFail($account->id);
+
+            if (! $locked->isOpen()) {
+                throw new LogicException("Trust account {$locked->account_number} is closed.");
             }
 
-            DB::table('trust_transactions')->insert([
-                'trust_account_id' => $trustAccountId,
-                'amount_cents' => -$amountCents, // Negative
-                'transaction_type' => 'withdrawal',
-                'reference_number' => $referenceNumber,
-                'created_at' => now(),
-            ]);
-            
-            if (DB::getDriverName() !== 'pgsql') {
-                $this->fallbackUpdateBalance($trustAccountId, -$amountCents);
+            $newBalance = $locked->balance_cents + $type->signedAmount($amountCents);
+
+            if ($newBalance < 0) {
+                throw new InsufficientTrustFunds($locked, $amountCents);
             }
+
+            $transaction = $locked->transactions()->create([
+                'type' => $type,
+                'amount_cents' => $amountCents,
+                'balance_after_cents' => $newBalance,
+                'reference' => $reference,
+                'description' => $description,
+                'created_by' => $by?->id,
+            ]);
+
+            $locked->forceFill(['balance_cents' => $newBalance])->save();
+            $account->setRawAttributes($locked->getAttributes(), true);
+
+            return $transaction;
         });
     }
-    
-    private function fallbackUpdateBalance(int $trustAccountId, int $amountCents)
+
+    /**
+     * Recompute the balance from the full ledger and check every row's
+     * running balance. Returns a list of problems; empty means reconciled.
+     *
+     * @return list<string>
+     */
+    public function reconcile(TrustAccount $account): array
     {
-        $currentBalance = DB::table('trust_accounts')->where('id', $trustAccountId)->value('current_balance_cents');
-        $newBalance = $currentBalance + $amountCents;
-        
-        // Emulate the trigger's behavior
-        $latestTxId = DB::table('trust_transactions')
-            ->where('trust_account_id', $trustAccountId)
-            ->max('id');
-            
-        DB::table('trust_transactions')
-            ->where('id', $latestTxId)
-            ->update(['balance_after_cents' => $newBalance]);
-            
-        DB::table('trust_accounts')
-            ->where('id', $trustAccountId)
-            ->update(['current_balance_cents' => $newBalance, 'updated_at' => now()]);
+        $problems = [];
+        $running = 0;
+
+        TrustTransaction::query()
+            ->where('trust_account_id', $account->id)
+            ->orderBy('id')
+            ->lazyById(500)
+            ->each(function (TrustTransaction $tx) use (&$running, &$problems) {
+                $running += $tx->type->signedAmount($tx->amount_cents);
+
+                if ($tx->balance_after_cents !== $running) {
+                    $problems[] = "Transaction #{$tx->id}: recorded balance {$tx->balance_after_cents}, expected {$running}.";
+                }
+                if ($running < 0) {
+                    $problems[] = "Transaction #{$tx->id}: balance went negative ({$running}).";
+                }
+            });
+
+        if ($account->balance_cents !== $running) {
+            $problems[] = "Cached balance {$account->balance_cents} does not match ledger total {$running}.";
+        }
+
+        return $problems;
+    }
+
+    public function close(TrustAccount $account): void
+    {
+        if ($account->balance_cents !== 0) {
+            throw new LogicException('Only a trust account with a zero balance can be closed; refund or apply the remaining funds first.');
+        }
+
+        $account->forceFill(['status' => 'closed'])->save();
     }
 }
