@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Intake\Services\IntakeService;
 use App\Domain\Matters\Models\Firm;
+use App\Domain\Privacy\PrivacyNotice;
 use App\Http\Controllers\Api\V1\LookupController;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,7 @@ class PublicIntakeController extends Controller
             'firm' => $firm->only(['name', 'address', 'phone', 'email']),
             'message' => $firm->intake_message,
             'case_types' => LookupController::CASE_TYPES,
+            'privacy_notice' => PrivacyNotice::text($firm),
         ]);
     }
 

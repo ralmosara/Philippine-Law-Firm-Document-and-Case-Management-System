@@ -66,6 +66,7 @@ export const router = createBrowserRouter([
           { path: 'sign/:id', element: page(() => import('./features/client-portal/components/SignDocument'), 'SignDocument') },
           { path: 'messages', element: page(() => import('./features/client-portal/components/PortalMessages'), 'PortalMessages') },
           { path: 'messages/:id', element: page(() => import('./features/client-portal/components/PortalMessages'), 'PortalMessages') },
+          { path: 'privacy', element: page(() => import('./features/client-portal/components/PortalPrivacy'), 'PortalPrivacyPage') },
         ],
       },
       {
@@ -94,6 +95,7 @@ export const router = createBrowserRouter([
           { path: 'trust/:id', element: gated('work_matters', page(() => import('./features/trust/components/TrustAccountDetail'), 'TrustAccountDetail')) },
           { path: 'compliance', element: page(() => import('./features/compliance/components/ComplianceDashboard'), 'ComplianceDashboard') },
           { path: 'reports', element: gated('manage_finances', page(() => import('./features/reports/components/ReportsPage'), 'ReportsPage')) },
+          { path: 'privacy', element: gated('manage_firm', page(() => import('./features/privacy/components/PrivacyPage'), 'PrivacyPage')) },
           { path: 'settings', element: gated('manage_firm', page(() => import('./features/settings/components/SettingsPage'), 'SettingsPage')) },
           { path: 'profile', element: page(() => import('./features/users/components/ProfilePage'), 'ProfilePage') },
           { path: '*', element: <NotFound /> },

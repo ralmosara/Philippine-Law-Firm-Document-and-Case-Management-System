@@ -26,7 +26,7 @@ class IntakeRequest extends Model
 
     protected $fillable = [
         'firm_id', 'name', 'email', 'phone', 'client_type', 'case_type', 'description',
-        'opposing_parties', 'preferred_times', 'consent_at', 'ip_address', 'conflict_check_ids', 'conflict_status',
+        'opposing_parties', 'preferred_times', 'consent_at', 'privacy_notice_version', 'ip_address', 'conflict_check_ids', 'conflict_status',
     ];
 
     protected $attributes = [

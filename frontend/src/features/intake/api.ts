@@ -7,6 +7,7 @@ export interface PublicIntakePage {
   firm: { name: string; address: string | null; phone: string | null; email: string | null }
   message: string | null
   case_types: string[]
+  privacy_notice?: string
 }
 
 export interface IntakeForm {

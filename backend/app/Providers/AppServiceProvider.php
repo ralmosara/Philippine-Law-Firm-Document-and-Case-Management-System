@@ -18,6 +18,8 @@ use App\Domain\Documents\Scanning\NullVirusScanner;
 use App\Domain\Documents\Scanning\VirusScanner;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
+use App\Domain\Privacy\Models\DataSubjectRequest;
+use App\Domain\Privacy\Models\PrivacyIncident;
 use App\Models\User;
 use App\Support\Ops\OpsAlert;
 use App\Support\Tenancy\DatabaseTenancy;
@@ -70,6 +72,8 @@ class AppServiceProvider extends ServiceProvider
             'payment' => Payment::class,
             'expense' => Expense::class,
             'invoice_payment' => InvoicePayment::class,
+            'data_subject_request' => DataSubjectRequest::class,
+            'privacy_incident' => PrivacyIncident::class,
         ]);
 
         $this->configureDatabaseTenancy();

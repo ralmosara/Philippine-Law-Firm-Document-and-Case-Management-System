@@ -42,6 +42,9 @@ class Client extends Authenticatable
 
     protected $attributes = [
         'portal_enabled' => false,
+        'privacy_notice_version' => null,
+        'privacy_accepted_at' => null,
+        'anonymized_at' => null,
     ];
 
     protected function casts(): array

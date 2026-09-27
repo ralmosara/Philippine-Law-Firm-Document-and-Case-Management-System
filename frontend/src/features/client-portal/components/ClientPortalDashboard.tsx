@@ -1,8 +1,9 @@
-import { LogOut, MessagesSquare, Scale } from 'lucide-react'
+import { LogOut, MessagesSquare, Scale, ShieldCheck } from 'lucide-react'
 import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { Button, ButtonLink } from '@/shared/ui/Button'
 import { ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { usePortalLogout, usePortalSession, usePortalThreads } from '../api'
+import { PrivacyConsentGate } from './PortalPrivacy'
 
 /** Shell for the client portal: a separate, read-only surface with its own session. */
 export function ClientPortalDashboard() {
@@ -29,13 +30,18 @@ export function ClientPortalDashboard() {
             <span className="hidden sm:inline" aria-hidden="true">Messages</span>
             {unread > 0 && <span className="rounded-full bg-primary px-2 text-xs font-semibold text-on-primary" aria-hidden="true">{unread}</span>}
           </ButtonLink>
+          <ButtonLink to="/portal/privacy" variant="text" icon={<ShieldCheck className="size-4" />} aria-label="My data">
+            <span className="hidden sm:inline" aria-hidden="true">My data</span>
+          </ButtonLink>
           <Button variant="text" icon={<LogOut className="size-4" />} onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/portal/login', { replace: true }) })}>
             Sign out
           </Button>
         </div>
       </header>
       <main id="main" className="mx-auto max-w-5xl px-4 py-8">
-        <Outlet />
+        <PrivacyConsentGate firmName={client.firm.name}>
+          <Outlet />
+        </PrivacyConsentGate>
       </main>
       <footer className="mx-auto max-w-5xl px-4 pb-8 text-xs text-on-surface-variant">
         Questions? Contact {client.firm.name}{client.firm.phone && ` at ${client.firm.phone}`}{client.firm.email && ` or ${client.firm.email}`}. Information here is confidential and privileged.

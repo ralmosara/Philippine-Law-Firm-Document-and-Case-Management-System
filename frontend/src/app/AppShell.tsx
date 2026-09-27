@@ -18,6 +18,7 @@ import {
   Users,
   UserRound,
   X,
+  FileLock2,
 } from 'lucide-react'
 import { useEffect, useState, type ComponentType } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -52,6 +53,7 @@ const NAV: NavItem[] = [
   { to: '/trust', label: 'Trust Accounts', icon: Landmark, ability: 'work_matters' },
   { to: '/reports', label: 'Reports', icon: ChartNoAxesColumn, ability: 'manage_finances' },
   { to: '/compliance', label: 'Compliance', icon: ShieldCheck },
+  { to: '/privacy', label: 'Data Privacy', icon: FileLock2, ability: 'manage_firm' },
   { to: '/settings', label: 'Firm Settings', icon: Settings, ability: 'manage_firm' },
 ]
 

@@ -19,7 +19,11 @@ abstract class TestCase extends BaseTestCase
             ...$attributes,
         ]);
 
-        $this->actingAs($user);
+        // Both staff guards, explicitly: after a portal request the default is
+        // "client", Sanctum keeps the user it resolved in an earlier request, and
+        // password confirmation checks the session (web) guard.
+        $this->actingAs($user, 'web');
+        $this->actingAs($user, 'sanctum');
 
         return $user;
     }

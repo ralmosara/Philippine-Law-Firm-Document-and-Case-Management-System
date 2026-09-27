@@ -13,11 +13,11 @@ class Firm extends Model
     /** @use HasFactory<FirmFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps'];
+    protected $fillable = ['name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'dpo_name', 'dpo_email', 'privacy_notice', 'retention_years'];
 
     protected function casts(): array
     {
-        return ['default_withholding_bps' => 'integer', 'vat_registered' => 'boolean', 'require_two_factor' => 'boolean', 'intake_enabled' => 'boolean', 'ai_enabled' => 'boolean'];
+        return ['privacy_notice_version' => 'integer', 'retention_years' => 'integer', 'privacy_notice_updated_at' => 'datetime', 'default_withholding_bps' => 'integer', 'vat_registered' => 'boolean', 'require_two_factor' => 'boolean', 'intake_enabled' => 'boolean', 'ai_enabled' => 'boolean'];
     }
 
     public function users(): HasMany
