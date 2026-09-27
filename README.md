@@ -25,7 +25,7 @@ register, IBP/MCLE compliance, 12% VAT billing, and client trust accounting.
 | **Online payments** | Clients pay issued invoices by card, GCash, Maya or QR Ph through PayMongo's hosted checkout (no card data touches the app), or the firm sends a payment link. The invoice is marked paid only by PayMongo's signed webhook, idempotently; money that arrives for an invoice that was meanwhile paid or voided is flagged for refund. |
 | **Notarial register** | Doc./Page/Book/Series numbering per notary (2004 Rules on Notarial Practice), competent evidence of identity, permanent entries. |
 | **Trust accounts** | Client funds ledger: every posting carries its running balance, rows are append-only, disbursements are partner-only, overdrafts are impossible. Nightly reconciliation of every account. Paying an invoice from trust disburses and records it atomically. |
-| **Time & billing** | Global timer that survives reloads; time at the lawyer's standard rate; expenses advanced for the client (docket and sheriff's fees, TSN, courier…) with receipts; hourly, flat, monthly retainer, contingency and pro bono arrangements with acceptance and appearance fees. Invoices combine unbilled time, fee lines and expenses: 12% VAT on professional fees only (or none for non-VAT firms), expenses at cost. Draft → issued → paid / void; voiding releases time and expenses. Billing statements and documents download as PDF on the firm's letterhead (with the e-signature record appended). |
+| **Time & billing** | Global timer that survives reloads; time at the lawyer's standard rate; expenses advanced for the client (docket and sheriff's fees, TSN, courier…) with receipts; hourly, flat, monthly retainer, contingency and pro bono arrangements with acceptance and appearance fees. Invoices combine unbilled time, fee lines and expenses: 12% VAT on professional fees only (or none for non-VAT firms), expenses at cost. Draft → issued → partly paid → paid / void; voiding releases time and expenses. Payments are recorded in installments (cash, check, bank transfer, e-wallet, card, client trust or PayMongo), each with the **creditable withholding tax** the client deducted (on fees only, never VAT or expenses) and its **BIR Form 2307**, tracked until it arrives. A mistaken payment is voided with a reason, never deleted. Billing statements and documents download as PDF on the firm's letterhead (with the e-signature record appended). |
 | **Reports** | Aged receivables (by days past due), collections by responsible lawyer, and matter profitability (time recorded, billed, collected, unbilled, expenses), each downloadable as CSV for Excel. |
 | **Calendar sync** | A private subscription link for Google Calendar, Outlook or a phone: hearings, filing deadlines and tasks, updated about hourly. Titles show only the matter reference unless the lawyer opts in to case details. |
 | **Compliance** | Conflict-of-interest search across current and former clients and all matter parties (order- and case-insensitive), with every search and its resolution kept. MCLE credit tracking per compliance period, and a firm-wide compliance view. |
@@ -70,17 +70,50 @@ Open **http://localhost:5173**. Always use the Vite URL: the SPA and API must sh
 | `paralegal@demofirm.ph` | Paralegal | Tasks, conflict checks, time entries |
 | `client1@corporate.com` | Client (portal) | Sign in at **/portal** |
 
-## Production-like stack (Docker)
+## Running in production (Docker)
 
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env                    # DOMAIN, APP_URL, passwords, BACKUP_PASSPHRASE, OPS_ALERT_EMAIL
+cp backend/.env.example backend/.env    # mail, PayMongo, Anthropic, SMS
 docker compose run --rm app php artisan key:generate --show   # paste into backend/.env as APP_KEY
-DB_PASSWORD=<app-password> DB_ROOT_PASSWORD=<admin-password> docker compose up -d --build
+docker compose up -d --build
 docker compose exec app php artisan migrate --force --seed
 docker compose exec app php artisan db:seed --class=EnterpriseDemoSeeder --force   # optional demo data
 ```
 
-Open **http://localhost:8080**. The stack runs nginx (SPA + API on one origin, with security headers and a CSP), PHP-FPM, a queue worker, the scheduler, PostgreSQL 16 and Redis.
+Point `DOMAIN` at the server and open ports 80 and 443; Caddy then gets and renews the Let's Encrypt certificate itself. To try it on your own computer, see the end of `.env.example`: it runs on `https://localhost` with Caddy's local certificate.
+
+| Service | Role |
+|---|---|
+| `caddy` | The only public entry point: HTTPS, HTTP → HTTPS redirect, HSTS. Replaces any `X-Forwarded-*` a client sends. |
+| `web` | nginx: the SPA and the API on one origin, with security headers and a CSP. |
+| `app` | PHP-FPM (Laravel). Trusts `X-Forwarded-*` only from the private Docker network; cookies are `Secure`. |
+| `queue` | Reminders, email and other quick jobs. |
+| `queue-heavy` | OCR, text extraction and the assistant, on their own queue, so a pile of scanned uploads can never delay a deadline reminder. |
+| `scheduler` | Deadline reminders (hourly), trust reconciliation (nightly), worker heartbeats, the health check and its alerts (every 5 min). |
+| `backup` | Nightly encrypted backup, weekly restore test, optional off-site copy. |
+| `db`, `redis`, `clamav` | PostgreSQL 16 (the app connects as a non-superuser), Redis, virus scanner. |
+
+### Backups and restore
+
+Every night at `BACKUP_TIME` the `backup` service writes a `pg_dump` of the database and an archive of the uploaded files, each encrypted with AES-256 under `BACKUP_PASSPHRASE`, with checksums. It keeps `BACKUP_KEEP_DAYS` days on the server and, with `RCLONE_REMOTE` set, copies each backup off-site (S3, Backblaze B2, Google Drive, SFTP…; configure the remote with `rclone config` and put `rclone.conf` in `backend/docker/backup/config/`). Once a week it **restores the latest backup into a scratch database** and checks it (schema version, row-level security policies, the file archive read end to end). The health check reports a backup that is late, failed, or not restore-tested within 8 days.
+
+```bash
+docker compose exec backup backup.sh           # back up now
+docker compose exec backup verify.sh           # restore test now
+# Disaster recovery: replaces the live database and files with a backup.
+docker compose stop app queue queue-heavy scheduler
+docker compose run --rm -e CONFIRM=yes restore [STAMP]   # newest by default; fetched from off-site if not local
+docker compose start app queue queue-heavy scheduler
+```
+
+**Keep `BACKUP_PASSPHRASE` somewhere other than the server** (a password manager, a sealed envelope in the office safe). Without it the backups cannot be decrypted.
+
+### Monitoring
+
+- `GET /api/health` answers 200 while everything works and 503 when something is failing: database, cache, Redis, the scheduler and both queue workers (by heartbeat), failed jobs, ClamAV, backups and disk space. Point an uptime monitor (UptimeRobot, Better Stack…) at it; that also catches the whole server being down. With `Authorization: Bearer <HEALTH_TOKEN>` it returns each check's detail.
+- `OPS_ALERT_EMAIL` receives an email when a health check fails, a job fails for good (a reminder that will not go out), or a trust account fails reconciliation. Each alert is sent at most once an hour.
+- **Error tracking:** set `SENTRY_LARAVEL_DSN` to send exceptions to Sentry. Request bodies, user details and log lines are never sent; stack traces and exception messages are, so keep client data out of exception messages.
 
 ---
 
@@ -93,12 +126,13 @@ backend/app/
     Deadlines/            DeadlineCalculator (Rule 22), DeadlineScheduler, ReminderDispatcher, jobs, notifications
     Documents/            DocumentMerger, CreateDocumentVersion
     Trust/                TrustLedgerService (row-locked postings, reconciliation)
-    Billing/              InvoiceGenerator (VAT, lifecycle, pay-from-trust)
+    Billing/              InvoiceGenerator (VAT, lifecycle), InvoicePayments (installments, withholding, Form 2307, trust)
     Compliance/           ConflictChecker, MCLETracker
     Analytics/            AnalyticsService
   Http/Controllers/Api/V1 thin controllers: validate → authorize → call the domain → return a Resource
   Http/Resources          the JSON contract (money is always integer centavos)
-  Support/Tenancy         TenantContext
+  Support/Tenancy         TenantContext, DatabaseTenancy (row-level security)
+  Support/Ops             SystemHealth (/api/health), OpsAlert (throttled email alerts)
 frontend/src/
   features/<area>/        api.ts (TanStack Query hooks) + components
   shared/                 API client, types, formatting, design-system primitives
@@ -108,6 +142,7 @@ frontend/src/
 
 - **Tenant isolation is enforced twice.** Every firm-owned model uses a global scope driven by a `TenantContext` that middleware sets from the signed-in user *before* route-model binding; another firm's record is a 404, never a leak, and writing a row into another firm throws. Underneath, PostgreSQL row-level security restricts every firm-owned table to the request's firm (`app.firm_id`, set by the same middleware), so even a raw query that skips the scope cannot read or write another firm's rows. Sign-in, webhooks, the queue worker and the scheduler run in an explicit trusted mode; a connection with neither setting sees nothing. Covered by `TenantScopeTest` and `RowLevelSecurityTest`.
 - **Money is integer centavos** end to end; VAT and time amounts are computed server-side and never accepted from input.
+- **An invoice's paid status follows its payments.** Each payment is recorded under a row lock, and the invoice's settled amount and status (issued, partly paid, paid) are recomputed from the active payments, so they cannot drift. Overpayment, withholding above the fees, and payments on draft or void invoices are refused; voiding a payment taken from trust returns the money to the trust ledger.
 - **Audit-grade records are append-only** at the model layer: matter status history, deadline events, document versions, trust transactions and notarial entries. On PostgreSQL the trust ledger is additionally guarded by a trigger and CHECK constraints that reject UPDATE/DELETE, overdrafts, and any posting whose running balance does not follow from the previous one — even from raw SQL.
 - **Deadline reminders survive failures:** an hourly, idempotent dispatcher claims each reminder stage with a conditional update (no duplicates across overlapping runs), and queued jobs retry with backoff.
 - **Authentication:** Sanctum cookie sessions for staff; a separate `client` session guard for the portal, so neither session can reach the other's API. Login is rate-limited and does not reveal whether an account exists; CSRF is enforced on every mutation.
@@ -126,21 +161,23 @@ vendor/bin/pint --test                            # code style
 cd frontend && npm run lint && npm run build      # oxlint + strict TypeScript + production build
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on SQLite and on PostgreSQL 16, then once more on PostgreSQL as an ordinary (non-superuser) role so row-level security is in force for every test.
+CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on SQLite and on PostgreSQL 16, then once more on PostgreSQL as an ordinary (non-superuser) role so row-level security is in force for every test. A test also fails if any table with a `firm_id` column lacks a row-level security policy.
 
 ## Operations checklist
 
-- **Run the queue worker and scheduler** in production (both are services in `docker-compose.yml`). Without them, no reminders are sent.
+- **Run both queue workers and the scheduler** in production (`queue`, `queue-heavy` and `scheduler` in `docker-compose.yml`). Without them, no reminders are sent; `/api/health` fails within five minutes of one stopping.
+- **Point an uptime monitor at `/api/health` and set `OPS_ALERT_EMAIL`** before real use (see Monitoring).
 - **Keep the holiday calendar current.** Fixed-date holidays and Holy Week are seeded for 2025–2027. Holidays set by annual proclamation (Eid'l Fitr, Eid'l Adha, special days) and court closures must be added under **Firm Settings → Holidays** as they are announced. Deadline computations depend on this.
 - **Have counsel verify the seeded Rules of Court periods** (Firm Settings → Deadline rules) against current rules before relying on them.
 - **Connect as an ordinary database role, never a superuser.** PostgreSQL does not apply row-level security to superusers or `BYPASSRLS` roles, so connecting as one silently turns the second tenancy layer off. `docker-compose.yml` creates the `ph_legal` role for the app (`backend/docker/postgres/10-app-role.sh`) and keeps the superuser for administration. If you use PgBouncer, use session pooling: the tenant is a session setting.
-- **Back up PostgreSQL and uploaded files off-site** (e.g. nightly `pg_dump`, ideally streaming replication, plus the `storage` volume or your `MATTER_FILES_DISK` bucket). The trust ledger and the signature evidence live in the database.
+- **Set `RCLONE_REMOTE` so backups leave the server**, and rehearse a restore once (see Backups and restore). A backup on the same disk does not survive the disk. The trust ledger and the signature evidence live in the database. If uploads go to a bucket (`MATTER_FILES_DISK`), turn on versioning there: the backup covers the local `storage` volume.
 - **Online payments:** set `PAYMONGO_SECRET_KEY`, register a PayMongo webhook for `https://<your-domain>/api/webhooks/paymongo` with the event `checkout_session.payment.paid`, and set `PAYMONGO_WEBHOOK_SECRET` to its secret. Watch the logs for `Online payment received that could not be applied` (logged at `critical`); such payments are also shown on the invoice for refund.
 - **Mail must work in production** (`MAIL_*`): password reset links, portal invitations and e-signature requests are sent by email.
 - **Keep ClamAV running.** `docker-compose.yml` runs `clamav/clamav:stable` (about 1.5 GB of RAM; it downloads and updates its signatures itself). Outside Docker, run clamd and set `CLAMAV_ENABLED=true` and `CLAMAV_HOST`. While the scanner is unreachable, uploads are refused with a "try again" message; set `CLAMAV_FAIL_OPEN=true` only if you accept storing files unscanned in that case. Rejected files are recorded in the audit log as `file_rejected_malware`.
-- **The queue worker extracts text for search**, so it needs the same file storage as the app (the `storage` volume in `docker-compose.yml`). Files uploaded while it is down become searchable once it runs.
+- **The heavy-queue worker extracts text for search**, so it needs the same file storage as the app (the `storage` volume in `docker-compose.yml`). Files uploaded while it is down become searchable once it runs.
 - **Before requiring two-step verification** (Firm Settings → Firm & security), tell staff they will need an authenticator app. If someone loses their phone and recovery codes, a managing partner resets it from Firm Settings → Users.
-- **OCR** runs in the queue worker (the Docker image includes `tesseract-ocr` with Filipino data and `poppler-utils`; `OCR_ENABLED=true`). Long scans take minutes, so keep the queue's `retry_after` above 600 seconds (`REDIS_QUEUE_RETRY_AFTER=900` in `docker-compose.yml`) or they would run twice.
+- **OCR** runs on the heavy queue (the Docker image includes `tesseract-ocr` with Filipino data and `poppler-utils`; `OCR_ENABLED=true`). Long scans take minutes: the `redis-heavy` connection's `retry_after` (900 s) stays above the worker's `--timeout` (660 s), which stays above the job's own limit (600 s), so a scan never runs twice. Outside Docker, set `QUEUE_HEAVY_CONNECTION=redis-heavy` and run a second worker: `php artisan queue:work redis-heavy --queue=heavy --timeout=660`.
+- **Withholding tax:** set the firm's usual rate under **Firm Settings → Firm details** (confirm the rate for your income bracket with your accountant). It is only a suggestion; record what each client actually withheld. **Time & Billing → Form 2307** lists the certificates still to collect, which the firm needs to claim the tax credit.
 - **AI assistant:** set `ANTHROPIC_API_KEY` (model `ANTHROPIC_MODEL`, default `claude-opus-5-5`), then a managing partner turns it on under **Firm Settings → Firm & security** after confirming the data processing agreement and client notices. Questions run on the queue; usage (tokens) is stored per answer.
 - **Online intake:** choose the web address and turn on requests under **Firm Settings → Firm & security**, then link `/consult/<address>` from your website. Requests are rate-limited per IP and protected by a honeypot.
 - **Calendar links** are credentials: if one leaks, the lawyer replaces it under **Profile** (the old link stops working immediately). Deactivating a user also stops their feed.
@@ -148,6 +185,7 @@ CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on
 - **Notarization still needs personal appearance.** The 2004 Rules on Notarial Practice require the signatory to appear before the notary, so an e-signature cannot replace it; the app keeps the notarial register for the in-person act.
 - Watch the logs for `Trust account failed reconciliation` (logged at `critical` by `trust:reconcile`).
 - Set `SEMAPHORE_API_KEY` to send SMS; without it, SMS messages are written to the log.
+- **Use HTTPS only.** `docker-compose.yml` does this with Caddy. Behind another proxy or load balancer, set `TRUSTED_PROXIES` to its address, `SESSION_SECURE_COOKIE=true` and an `https://` `APP_URL`.
 - Use 64-bit PHP in production. 32-bit builds cannot represent peso amounts above about ₱21 million in centavos.
 
 ## Not yet implemented
@@ -157,3 +195,5 @@ CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on
 - Calendar subscriptions for portal clients (their hearings are shown in the portal).
 - Third-party e-signature providers (DocuSign and similar); signing is built in and happens in the client portal.
 - Refunds through PayMongo from inside the app (issue them in the PayMongo dashboard).
+- Official receipts: the billing statement is not a BIR-registered receipt. Issue ORs from your registered system or booklet and record the OR number as the payment reference.
+- Point-in-time recovery: backups are nightly, so up to a day of work can be lost. For less, add PostgreSQL WAL archiving (e.g. pgBackRest) or a managed database.

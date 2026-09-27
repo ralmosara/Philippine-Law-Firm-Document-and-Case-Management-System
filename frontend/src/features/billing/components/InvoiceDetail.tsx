@@ -3,15 +3,15 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAbilities, useCurrentSession } from '@/features/auth/session'
 import { InvoiceStatusBadge } from '@/features/matters/components/StatusBadge'
-import { useTrustAccounts } from '@/features/trust/api'
 import { date, dateTime, duration, money } from '@/shared/lib/format'
 import { Button, DownloadButton } from '@/shared/ui/Button'
 import { ConfirmDialog, Dialog } from '@/shared/ui/Dialog'
 import { Badge, ErrorState, PageLoader } from '@/shared/ui/Feedback'
-import { Field, Input, Select } from '@/shared/ui/Form'
+import { Input } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader, Table, Td, Th } from '@/shared/ui/Layout'
 import { useToast } from '@/shared/ui/Toast'
 import { useInvoice, useInvoiceAction, usePaymentLink } from '../api'
+import { PaymentsCard, RecordPaymentDialog } from './InvoicePayments'
 
 export function InvoiceDetail() {
   const id = Number(useParams().id)
@@ -24,6 +24,7 @@ export function InvoiceDetail() {
   if (invoice.isPending) return <PageLoader />
   if (invoice.isError) return <ErrorState error={invoice.error} onRetry={() => invoice.refetch()} />
   const inv = invoice.data
+  const receivable = inv.status === 'issued' || inv.status === 'partially_paid'
 
   return (
     <>
@@ -36,8 +37,8 @@ export function InvoiceDetail() {
             <Button variant="text" icon={<Printer className="size-4" />} onClick={() => window.print()}>Print</Button>
             {abilities.manage_finances && inv.status === 'draft' && <Button onClick={() => actions.issue.mutate()} loading={actions.issue.isPending}>Issue to client</Button>}
             {abilities.manage_finances && inv.can_pay_online && <Button variant="tonal" icon={<Link2 className="size-4" />} onClick={() => setDialog('link')}>Payment link</Button>}
-            {abilities.manage_finances && inv.status === 'issued' && <Button onClick={() => setDialog('pay')}>Record payment</Button>}
-            {abilities.manage_finances && (inv.status === 'draft' || inv.status === 'issued') && <Button variant="outlined" onClick={() => setDialog('void')}>Void</Button>}
+            {abilities.manage_finances && receivable && <Button onClick={() => setDialog('pay')}>Record payment</Button>}
+            {abilities.manage_finances && (inv.status === 'draft' || (inv.status === 'issued' && inv.settled_cents === 0)) && <Button variant="outlined" onClick={() => setDialog('void')}>Void</Button>}
           </div>
         }
       />
@@ -98,6 +99,13 @@ export function InvoiceDetail() {
           <div className="flex justify-between"><dt className="text-on-surface-variant">VAT (12%)</dt><dd className="tabular-nums">{money(inv.vat_cents)}</dd></div>
           {inv.expenses_cents > 0 && <div className="flex justify-between"><dt className="text-on-surface-variant">Reimbursable expenses</dt><dd className="tabular-nums">{money(inv.expenses_cents)}</dd></div>}
           <div className="flex justify-between border-t border-outline-variant pt-2 text-base font-semibold"><dt>Total due</dt><dd className="tabular-nums">{money(inv.total_cents)}</dd></div>
+          {inv.settled_cents > 0 && inv.status !== 'void' && (
+            <>
+              <div className="flex justify-between"><dt className="text-on-surface-variant">Less: payments received</dt><dd className="tabular-nums">({money(inv.settled_cents - inv.withholding_cents)})</dd></div>
+              {inv.withholding_cents > 0 && <div className="flex justify-between"><dt className="text-on-surface-variant">Less: creditable tax withheld</dt><dd className="tabular-nums">({money(inv.withholding_cents)})</dd></div>}
+              <div className="flex justify-between border-t border-outline-variant pt-2 text-base font-semibold"><dt>Balance due</dt><dd className="tabular-nums">{money(inv.balance_cents)}</dd></div>
+            </>
+          )}
         </dl>
 
         {inv.status === 'paid' && (
@@ -108,9 +116,11 @@ export function InvoiceDetail() {
         {inv.notes && <p className="mt-6 text-sm whitespace-pre-line text-on-surface-variant">{inv.notes}</p>}
       </Card>
 
+      <PaymentsCard invoice={inv} />
+
       {!!inv.payments?.length && (
         <Card className="mx-auto mt-6 max-w-4xl print:hidden">
-          <CardHeader title="Online payments" description="Checkouts opened through PayMongo. Only confirmed payments mark the invoice paid." />
+          <CardHeader title="Online payments" description="Checkouts opened through PayMongo. Only payments PayMongo confirms are recorded against the invoice." />
           <Table caption="Online payments" compact>
             <thead><tr><Th>Started</Th><Th>Status</Th><Th>Method</Th><Th>Reference</Th><Th align="right">Amount</Th></tr></thead>
             <tbody>
@@ -133,7 +143,7 @@ export function InvoiceDetail() {
 
       {dialog === 'link' && <PaymentLinkDialog invoiceId={id} onClose={() => setDialog(null)} />}
 
-      {dialog === 'pay' && inv.client && <PayDialog invoiceId={id} clientId={inv.client.id} totalCents={inv.total_cents} onClose={() => setDialog(null)} />}
+      {dialog === 'pay' && <RecordPaymentDialog invoice={inv} onClose={() => setDialog(null)} />}
       <ConfirmDialog
         open={dialog === 'void'}
         onClose={() => setDialog(null)}
@@ -145,60 +155,6 @@ export function InvoiceDetail() {
         onConfirm={() => actions.void.mutate(undefined, { onSuccess: () => setDialog(null) })}
       />
     </>
-  )
-}
-
-function PayDialog({ invoiceId, clientId, totalCents, onClose }: { invoiceId: number; clientId: number; totalCents: number; onClose: () => void }) {
-  const { pay } = useInvoiceAction(invoiceId)
-  const trust = useTrustAccounts({ client_id: clientId })
-  const [source, setSource] = useState('external')
-  const [reference, setReference] = useState('')
-  const eligible = trust.data?.data.filter((a) => a.status === 'open') ?? []
-
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      title="Record payment"
-      description={`Amount: ${money(totalCents)}`}
-      footer={
-        <>
-          <Button variant="text" onClick={onClose}>Cancel</Button>
-          <Button
-            loading={pay.isPending}
-            onClick={() =>
-              pay.mutate(source === 'external' ? { payment_reference: reference || undefined } : { trust_account_id: Number(source) }, { onSuccess: onClose })
-            }
-          >
-            Record payment
-          </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <Field label="Paid from">
-          {(a) => (
-            <Select {...a} value={source} onChange={(e) => setSource(e.target.value)}>
-              <option value="external">Direct payment (cash, check, bank transfer, e-wallet)</option>
-              {eligible.map((acc) => (
-                <option key={acc.id} value={acc.id} disabled={acc.balance_cents < totalCents}>
-                  Client trust {acc.account_number} — balance {money(acc.balance_cents)}{acc.balance_cents < totalCents ? ' (insufficient)' : ''}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        {source === 'external' ? (
-          <Field label="Reference" hint="OR number, check number or transaction ID">
-            {(a) => <Input {...a} value={reference} onChange={(e) => setReference(e.target.value)} />}
-          </Field>
-        ) : (
-          <p className="rounded-lg bg-warning-container p-3 text-sm text-on-warning-container">
-            {money(totalCents)} will be disbursed from the client’s trust account and recorded in its ledger. Confirm the client has authorised applying trust funds to fees.
-          </p>
-        )}
-      </div>
-    </Dialog>
   )
 }
 

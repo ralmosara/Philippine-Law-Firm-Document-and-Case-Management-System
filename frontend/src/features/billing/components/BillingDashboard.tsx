@@ -11,10 +11,11 @@ import { EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Input, Select } from '@/shared/ui/Form'
 import { Card, PageHeader, Pagination, StatCard, Table, Tabs, Td, Th, Tr } from '@/shared/ui/Layout'
 import { useInvoices, useTimeEntries } from '../api'
+import { Awaiting2307Tab } from './InvoicePayments'
 import { TimeEntriesTable } from './TimeEntriesTable'
 import { TimeTrackingForm } from './TimeTrackingForm'
 
-type Tab = 'time' | 'invoices'
+type Tab = 'time' | 'invoices' | 'form-2307'
 
 export function BillingDashboard() {
   const abilities = useAbilities()
@@ -32,10 +33,11 @@ export function BillingDashboard() {
         label="Billing sections"
         value={tab as Tab}
         onChange={setTab}
-        tabs={[{ value: 'time', label: 'Time entries' }, ...(abilities.practice_law ? [{ value: 'invoices' as const, label: 'Invoices' }] : [])]}
+        tabs={[{ value: 'time', label: 'Time entries' }, ...(abilities.practice_law ? [{ value: 'invoices' as const, label: 'Invoices' }] : []), ...(abilities.manage_finances ? [{ value: 'form-2307' as const, label: 'Form 2307' }] : [])]}
       />
       {tab === 'time' && <TimeTab />}
       {tab === 'invoices' && abilities.practice_law && <InvoicesTab />}
+      {tab === 'form-2307' && abilities.manage_finances && <Awaiting2307Tab />}
       <TimeTrackingForm open={logging} onClose={() => setLogging(false)} />
     </>
   )
@@ -88,6 +90,7 @@ function InvoicesTab() {
           <option value="">All invoices</option>
           <option value="draft">Drafts</option>
           <option value="issued">Issued (unpaid)</option>
+          <option value="partially_paid">Partly paid</option>
           <option value="paid">Paid</option>
           <option value="void">Void</option>
         </Select>
@@ -102,7 +105,7 @@ function InvoicesTab() {
       ) : (
         <Table caption="Invoices">
           <thead>
-            <tr><Th>Number</Th><Th>Client · Matter</Th><Th>Status</Th><Th>Issued</Th><Th>Due</Th><Th align="right">Total</Th></tr>
+            <tr><Th>Number</Th><Th>Client · Matter</Th><Th>Status</Th><Th>Issued</Th><Th>Due</Th><Th align="right">Total</Th><Th align="right">Balance</Th></tr>
           </thead>
           <tbody>
             {query.data.data.map((i) => (
@@ -113,6 +116,7 @@ function InvoicesTab() {
                 <Td className="whitespace-nowrap">{date(i.issued_at)}</Td>
                 <Td className="whitespace-nowrap">{date(i.due_at)}</Td>
                 <Td align="right">{money(i.total_cents)}</Td>
+                <Td align="right">{i.status === 'issued' || i.status === 'partially_paid' ? money(i.balance_cents) : '—'}</Td>
               </Tr>
             ))}
           </tbody>

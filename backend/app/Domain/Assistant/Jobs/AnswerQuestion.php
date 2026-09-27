@@ -4,6 +4,7 @@ namespace App\Domain\Assistant\Jobs;
 
 use App\Domain\Assistant\Assistant;
 use App\Domain\Assistant\Models\AiMessage;
+use App\Jobs\Concerns\RunsOnHeavyQueue;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -17,13 +18,16 @@ use Illuminate\Queue\InteractsWithQueue;
  */
 class AnswerQuestion implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable;
+    use Dispatchable, InteractsWithQueue, Queueable, RunsOnHeavyQueue;
 
     public int $tries = 1;
 
     public int $timeout = 200;
 
-    public function __construct(public readonly int $messageId) {}
+    public function __construct(public readonly int $messageId)
+    {
+        $this->useHeavyQueue();
+    }
 
     public function handle(Assistant $assistant, TenantContext $tenant): void
     {

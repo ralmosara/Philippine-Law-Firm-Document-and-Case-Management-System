@@ -12,6 +12,7 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Validation\ValidationException;
+use Sentry\Laravel\Integration;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -27,6 +28,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Cookie-based session auth for the first-party SPA (Sanctum).
         $middleware->statefulApi();
 
+        // The TLS proxy (Caddy) and nginx in front of PHP. Only these may set
+        // X-Forwarded-For/-Proto, or anyone could spoof their IP (rate limits,
+        // audit log). Docker sets TRUSTED_PROXIES to the private ranges.
+        if (filled(env('TRUSTED_PROXIES'))) {
+            $middleware->trustProxies(at: array_map('trim', explode(',', (string) env('TRUSTED_PROXIES'))));
+        }
+
         $middleware->alias(['tenant' => SetTenantContext::class]);
 
         // The API never redirects guests (there is no server-rendered login
@@ -38,6 +46,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: SetTenantContext::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Error tracking; inert unless SENTRY_LARAVEL_DSN is set.
+        Integration::handles($exceptions);
+
         $exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*') || $request->expectsJson());
 
         // One error envelope for the whole API: {status, message, errors?}.

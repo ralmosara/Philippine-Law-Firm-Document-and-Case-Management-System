@@ -108,24 +108,24 @@ function Collections() {
         <>
           <Field label="From">{(a) => <Input {...a} type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />}</Field>
           <Field label="To">{(a) => <Input {...a} type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />}</Field>
+          <p className="text-sm text-on-surface-variant sm:self-end">By date received, partial payments included. Tax withheld counts as collected.</p>
         </>
       }
     >
       {(data) => (
         <Table caption="Collections by responsible lawyer">
-          <thead><tr><Th>Responsible lawyer</Th><Th align="right">Invoices paid</Th><Th align="right">Fees</Th><Th align="right">VAT</Th><Th align="right">Expenses</Th><Th align="right">Total collected</Th></tr></thead>
+          <thead><tr><Th>Responsible lawyer</Th><Th align="right">Payments</Th><Th align="right">Cash received</Th><Th align="right">Tax withheld (2307)</Th><Th align="right">Total collected</Th></tr></thead>
           <tbody>
             {data.rows.map((r, i) => (
               <tr key={i}>
                 <Td className="font-medium">{r.lawyer}</Td>
-                <Td align="right">{r.invoices}</Td>
-                <Td align="right">{money(Number(r.fees))}</Td>
-                <Td align="right">{money(Number(r.vat))}</Td>
-                <Td align="right">{money(Number(r.expenses))}</Td>
+                <Td align="right">{r.payments}</Td>
+                <Td align="right">{money(Number(r.received))}</Td>
+                <Td align="right">{Number(r.withheld) ? money(Number(r.withheld)) : '—'}</Td>
                 <Td align="right" className="font-semibold">{money(Number(r.total))}</Td>
               </tr>
             ))}
-            <TotalsRow cells={['Total', String(data.totals.invoices), money(data.totals.fees), money(data.totals.vat), money(data.totals.expenses), money(data.totals.total)]} />
+            <TotalsRow cells={['Total', String(data.totals.payments), money(data.totals.received), money(data.totals.withheld), money(data.totals.total)]} />
           </tbody>
         </Table>
       )}

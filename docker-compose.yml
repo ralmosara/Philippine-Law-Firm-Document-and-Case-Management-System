@@ -1,17 +1,38 @@
-# Production-like stack: open http://localhost:8080
+# Production stack. Settings come from a .env file beside this one (see
+# README, "Running in production"); at minimum DOMAIN, APP_URL, the two
+# database passwords and BACKUP_PASSPHRASE.
 #
 #   docker compose up -d --build
 #   docker compose exec app php artisan migrate --force --seed
 #
+# Then open APP_URL. HTTPS is automatic (Let's Encrypt) once DOMAIN points
+# at this server and ports 80 and 443 are reachable.
 services:
+  # TLS and HTTP/2-3 at the edge; the only service with published ports.
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      HSTS_MAX_AGE: ${HSTS_MAX_AGE:-31536000}
+    volumes:
+      - ./backend/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    restart: unless-stopped
+    depends_on:
+      - web
+
   # nginx: serves the built SPA and forwards /api and /sanctum to PHP-FPM,
   # so the browser sees one origin (required for Sanctum cookie auth).
   web:
     build: ./frontend
-    ports:
-      - "8080:80"
     volumes:
       - ./backend/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
     depends_on:
       - app
 
@@ -19,15 +40,19 @@ services:
     build: ./backend
     env_file: ./backend/.env
     volumes:
-      # Uploaded matter files. Back this up together with the database.
+      # Uploaded matter files; backed up with the database by "backup".
       - storage:/var/www/html/storage/app
+      - backupstatus:/var/lexph-status:ro
     environment: &laravel-env
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_URL: http://localhost:8080
-      FRONTEND_URL: http://localhost:8080
-      SANCTUM_STATEFUL_DOMAINS: localhost:8080
-      SESSION_DOMAIN: localhost
+      APP_URL: ${APP_URL:-https://localhost}
+      FRONTEND_URL: ${APP_URL:-https://localhost}
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost}
+      SESSION_DOMAIN: ${DOMAIN:-localhost}
+      SESSION_SECURE_COOKIE: "true"
+      # Caddy and nginx reach PHP over the private Docker network.
+      TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: "5432"
@@ -36,13 +61,21 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-change-me}
       REDIS_HOST: redis
       QUEUE_CONNECTION: redis
+      # OCR and the assistant run on their own queue and worker, so a batch
+      # of scanned uploads can never hold up deadline reminders.
+      QUEUE_HEAVY_CONNECTION: redis-heavy
       CACHE_STORE: redis
       SESSION_DRIVER: redis
       CLAMAV_ENABLED: "true"
       CLAMAV_HOST: clamav
       OCR_ENABLED: "true"
-      # Above the text-extraction job's 600 s limit, so long OCR jobs never run twice.
-      REDIS_QUEUE_RETRY_AFTER: "900"
+      # Monitoring: /api/health, alerts by email, optional Sentry.
+      HEALTH_EXPECT_WORKERS: "true"
+      HEALTH_TOKEN: ${HEALTH_TOKEN:-}
+      OPS_ALERT_EMAIL: ${OPS_ALERT_EMAIL:-}
+      BACKUP_STATUS_FILE: /var/lexph-status/backup.json
+      SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -51,11 +84,24 @@ services:
       clamav:
         condition: service_started
 
-  # Sends reminders and emails, and extracts text from uploads for search
-  # (so it needs the file storage too). Retries survive a crashed worker.
+  # Reminders, email and other quick jobs. Nothing slow runs here.
   queue:
     build: ./backend
-    command: php artisan queue:work --tries=5 --backoff=60 --max-time=3600
+    command: php artisan queue:work redis --queue=default --tries=5 --backoff=60 --max-time=3600
+    env_file: ./backend/.env
+    environment: *laravel-env
+    volumes:
+      - storage:/var/www/html/storage/app
+    restart: unless-stopped
+    depends_on:
+      - app
+
+  # Text extraction and OCR of uploads, and assistant answers: minutes per
+  # job, so they get their own worker. --timeout stays above the jobs' own
+  # limits (600 s) and below redis-heavy's retry_after (900 s).
+  queue-heavy:
+    build: ./backend
+    command: php artisan queue:work redis-heavy --queue=heavy --tries=3 --backoff=120 --timeout=660 --memory=512 --max-time=3600
     env_file: ./backend/.env
     environment: *laravel-env
     volumes:
@@ -73,18 +119,59 @@ services:
       - clamavdata:/var/lib/clamav
     restart: unless-stopped
 
-  # Runs deadlines:dispatch-reminders hourly and trust:reconcile nightly.
+  # Deadline reminders (hourly), trust reconciliation (nightly), worker
+  # heartbeats and the health check with its email alerts (every 5 min).
   scheduler:
     build: ./backend
     command: php artisan schedule:work
     env_file: ./backend/.env
     environment: *laravel-env
+    volumes:
+      - storage:/var/www/html/storage/app
+      - backupstatus:/var/lexph-status:ro
     restart: unless-stopped
     depends_on:
       - app
 
-  # The superuser is for administration only. The app connects as the
-  # ordinary role `ph_legal` (created by 10-app-role.sh), which keeps
+  # Nightly encrypted backup of the database and uploaded files, weekly
+  # restore test, optional off-site copy. See backend/docker/backup.
+  backup:
+    build: ./backend/docker/backup
+    environment: &backup-env
+      TZ: ${TZ:-Asia/Manila}
+      DB_ADMIN_PASSWORD: ${DB_ROOT_PASSWORD:-change-me-root}
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?Set BACKUP_PASSPHRASE in .env and keep a copy off the server; without it backups cannot be restored}
+      BACKUP_TIME: ${BACKUP_TIME:-02:30}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      RCLONE_REMOTE: ${RCLONE_REMOTE:-}
+    volumes:
+      - backups:/backups
+      - backupstatus:/status
+      - storage:/storage:ro
+      # rclone.conf for off-site copies (rclone config, then copy it here).
+      - ./backend/docker/backup/config:/config:ro
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Disaster recovery only; never starts on its own. See restore.sh.
+  restore:
+    build: ./backend/docker/backup
+    entrypoint: ["/usr/local/bin/restore.sh"]
+    profiles: ["restore"]
+    environment: *backup-env
+    volumes:
+      - backups:/backups
+      - backupstatus:/status
+      - storage:/storage
+      - ./backend/docker/backup/config:/config:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # The superuser is for administration and backups only. The app connects
+  # as the ordinary role `ph_legal` (created by 10-app-role.sh), which keeps
   # PostgreSQL row-level security in force.
   db:
     image: postgres:16-alpine
@@ -97,6 +184,7 @@ services:
     volumes:
       - dbdata:/var/lib/postgresql/data
       - ./backend/docker/postgres/10-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ph_legal"]
       interval: 5s
@@ -106,9 +194,14 @@ services:
     image: redis:7-alpine
     volumes:
       - redisdata:/data
+    restart: unless-stopped
 
 volumes:
   dbdata:
   redisdata:
   storage:
   clamavdata:
+  backups:
+  backupstatus:
+  caddydata:
+  caddyconfig:

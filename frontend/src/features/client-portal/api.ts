@@ -35,10 +35,12 @@ export interface PortalMatterDetail extends PortalMatter {
 export interface PortalInvoice {
   id: number
   number: string
-  status: 'issued' | 'paid'
+  status: 'issued' | 'partially_paid' | 'paid'
   is_overdue: boolean
   can_pay_online: boolean
   total_cents: number
+  paid_cents: number
+  balance_cents: number
   issued_at: string | null
   due_at: string | null
   paid_at: string | null

@@ -37,10 +37,11 @@ export function DocumentStatusBadge({ status }: { status: DocumentStatus }) {
 }
 
 export function InvoiceStatusBadge({ status, overdue }: { status: InvoiceStatus; overdue?: boolean }) {
-  if (status === 'issued' && overdue) return <Badge tone="danger">Overdue</Badge>
+  if ((status === 'issued' || status === 'partially_paid') && overdue) return <Badge tone="danger">{status === 'partially_paid' ? 'Partly paid · overdue' : 'Overdue'}</Badge>
   const map: Record<InvoiceStatus, [string, 'neutral' | 'primary' | 'success' | 'warning']> = {
     draft: ['Draft', 'neutral'],
     issued: ['Issued', 'warning'],
+    partially_paid: ['Partly paid', 'primary'],
     paid: ['Paid', 'success'],
     void: ['Void', 'neutral'],
   }

@@ -5,7 +5,7 @@ import { ApiError } from '@/shared/api/axios'
 import { Button } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/Dialog'
 import { Badge, ErrorState, PageLoader } from '@/shared/ui/Feedback'
-import { Checkbox, Field, FormError, Input, Textarea } from '@/shared/ui/Form'
+import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { useToast } from '@/shared/ui/Toast'
 import { Card, CardHeader } from '@/shared/ui/Layout'
 import { useFirmSettings, useSaveFirmSettings, type FirmSettings } from '../api'
@@ -29,7 +29,7 @@ export function FirmPanel() {
 
 function ProfileCard({ firm }: { firm: FirmSettings }) {
   const save = useSaveFirmSettings()
-  const [form, setForm] = useState({ name: firm.name, tin: firm.tin ?? '', address: firm.address ?? '', email: firm.email ?? '', phone: firm.phone ?? '', vat_registered: firm.vat_registered })
+  const [form, setForm] = useState({ name: firm.name, tin: firm.tin ?? '', address: firm.address ?? '', email: firm.email ?? '', phone: firm.phone ?? '', vat_registered: firm.vat_registered, default_withholding_bps: firm.default_withholding_bps })
   const [error, setError] = useState<ApiError | null>(null)
   const set = (key: 'name' | 'tin' | 'address' | 'email' | 'phone') => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
@@ -56,6 +56,16 @@ function ProfileCard({ firm }: { firm: FirmSettings }) {
           <Field label="Phone" error={error?.field('phone')}>{(a) => <Input {...a} type="tel" value={form.phone} onChange={set('phone')} />}</Field>
         </div>
         <Checkbox label="VAT-registered (bills 12% VAT on professional fees)" checked={form.vat_registered} onChange={(e) => setForm((f) => ({ ...f, vat_registered: e.target.checked }))} />
+        <Field label="Usual withholding tax on fees" error={error?.field('default_withholding_bps')} hint="Suggested when recording a payment a client made net of tax. The rate depends on the firm's income bracket; confirm it with your accountant. Always record what the client actually withheld.">
+          {(a) => (
+            <Select {...a} value={form.default_withholding_bps} onChange={(e) => setForm((f) => ({ ...f, default_withholding_bps: Number(e.target.value) }))} className="sm:w-72">
+              <option value={1000}>10%</option>
+              <option value={1500}>15%</option>
+              <option value={500}>5%</option>
+              <option value={0}>None</option>
+            </Select>
+          )}
+        </Field>
         <Button type="submit" loading={save.isPending} className="self-start">Save details</Button>
       </form>
     </Card>

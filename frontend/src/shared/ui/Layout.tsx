@@ -61,7 +61,9 @@ export function DescriptionList({ items }: { items: { label: string; value: Reac
 /** `compact` drops the minimum width, for tables inside narrow cards. */
 export function Table({ children, caption, compact = false }: { children: ReactNode; caption?: string; compact?: boolean }) {
   return (
-    <div className="overflow-x-auto">
+    // relative: absolutely positioned content (sr-only labels) stays inside
+    // the scroll area instead of widening the whole page on phones.
+    <div className="relative overflow-x-auto">
       <table className={clsx('w-full border-collapse text-left text-sm', !compact && 'min-w-[40rem]')}>
         {caption && <caption className="sr-only">{caption}</caption>}
         {children}

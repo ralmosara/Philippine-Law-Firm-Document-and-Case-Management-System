@@ -67,6 +67,8 @@ export interface FirmSettings {
   email: string | null
   phone: string | null
   vat_registered: boolean
+  /** Usual creditable withholding on fees, in basis points (1000 = 10%). */
+  default_withholding_bps: number
   require_two_factor: boolean
   slug: string | null
   intake_enabled: boolean

@@ -5,6 +5,7 @@ namespace App\Domain\Analytics;
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
+use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Matters\Models\Matter;
 use Carbon\CarbonImmutable;
@@ -20,23 +21,23 @@ class Reports
     public const BUCKETS = ['current' => 'Not yet due', 'd1_30' => '1–30 days', 'd31_60' => '31–60 days', 'd61_90' => '61–90 days', 'd90_plus' => 'Over 90 days'];
 
     /**
-     * Unpaid issued invoices by client, aged by days past due.
+     * Open balances of issued invoices by client, aged by days past due.
      *
      * @return array{as_of: string, rows: list<array>, totals: array<string, int>}
      */
     public function agedReceivables(CarbonImmutable $asOf): array
     {
         $invoices = Invoice::query()
-            ->where('status', InvoiceStatus::Issued->value)
+            ->whereIn('status', InvoiceStatus::receivableValues())
             ->whereDate('issued_at', '<=', $asOf->toDateString())
             ->with('client:id,name')
-            ->get(['id', 'client_id', 'number', 'due_at', 'total_cents']);
+            ->get(['id', 'client_id', 'number', 'due_at', 'total_cents', 'settled_cents']);
 
         $rows = $invoices->groupBy('client_id')->map(function (Collection $group) use ($asOf) {
             $row = ['client' => $group->first()->client?->name, 'invoices' => $group->count()] + array_fill_keys(array_keys(self::BUCKETS), 0);
 
             foreach ($group as $invoice) {
-                $row[$this->bucket($invoice->due_at, $asOf)] += $invoice->total_cents;
+                $row[$this->bucket($invoice->due_at, $asOf)] += $invoice->balanceDue();
             }
             $row['total'] = array_sum(array_intersect_key($row, self::BUCKETS));
 
@@ -54,28 +55,29 @@ class Reports
     }
 
     /**
-     * Payments received in a period, credited to each matter's responsible lawyer.
+     * Payments received in a period (full or partial), credited to each
+     * matter's responsible lawyer. Tax withheld by clients counts as
+     * collected: it is a credit against the firm's income tax.
      *
      * @return array{from: string, to: string, rows: list<array>, totals: array<string, int>}
      */
     public function collections(CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $paid = Invoice::query()
-            ->where('status', InvoiceStatus::Paid->value)
-            ->whereBetween('paid_at', [$from->startOfDay(), $to->endOfDay()])
-            ->with('matter:id,responsible_lawyer_id', 'matter.responsibleLawyer:id,name')
-            ->get(['id', 'matter_id', 'subtotal_cents', 'vat_cents', 'expenses_cents', 'total_cents']);
+        $payments = InvoicePayment::query()
+            ->active()
+            ->whereBetween('received_on', [$from->toDateString(), $to->toDateString()])
+            ->with('invoice:id,matter_id', 'invoice.matter:id,responsible_lawyer_id', 'invoice.matter.responsibleLawyer:id,name')
+            ->get(['id', 'invoice_id', 'amount_cents', 'withholding_cents']);
 
-        $rows = $paid->groupBy(fn (Invoice $i) => $i->matter?->responsible_lawyer_id ?? 0)->map(fn (Collection $group) => [
-            'lawyer' => $group->first()->matter?->responsibleLawyer?->name ?? 'Unassigned',
-            'invoices' => $group->count(),
-            'fees' => (int) $group->sum('subtotal_cents'),
-            'vat' => (int) $group->sum('vat_cents'),
-            'expenses' => (int) $group->sum('expenses_cents'),
-            'total' => (int) $group->sum('total_cents'),
+        $rows = $payments->groupBy(fn (InvoicePayment $p) => $p->invoice?->matter?->responsible_lawyer_id ?? 0)->map(fn (Collection $group) => [
+            'lawyer' => $group->first()->invoice?->matter?->responsibleLawyer?->name ?? 'Unassigned',
+            'payments' => $group->count(),
+            'received' => (int) $group->sum('amount_cents'),
+            'withheld' => (int) $group->sum('withholding_cents'),
+            'total' => (int) $group->sum(fn (InvoicePayment $p) => $p->creditedCents()),
         ])->sortByDesc('total')->values()->all();
 
-        $totals = ['invoices' => 0, 'fees' => 0, 'vat' => 0, 'expenses' => 0, 'total' => 0];
+        $totals = ['payments' => 0, 'received' => 0, 'withheld' => 0, 'total' => 0];
         foreach ($rows as $row) {
             foreach ($totals as $key => $_) {
                 $totals[$key] += $row[$key];
@@ -98,8 +100,14 @@ class Reports
         $expenses = Expense::query()->selectRaw('matter_id, SUM(amount_cents) as total')->groupBy('matter_id')->pluck('total', 'matter_id');
         $billed = Invoice::query()->where('status', '!=', InvoiceStatus::Void->value)->where('status', '!=', InvoiceStatus::Draft->value)
             ->selectRaw('matter_id, SUM(subtotal_cents) as total')->groupBy('matter_id')->pluck('total', 'matter_id');
-        $collected = Invoice::query()->where('status', InvoiceStatus::Paid->value)
-            ->selectRaw('matter_id, SUM(subtotal_cents) as total')->groupBy('matter_id')->pluck('total', 'matter_id');
+        // Fees collected: each invoice's fees in proportion to how much of it is settled.
+        $collected = Invoice::query()->whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value])
+            ->where('settled_cents', '>', 0)
+            ->get(['matter_id', 'subtotal_cents', 'total_cents', 'settled_cents'])
+            ->groupBy('matter_id')
+            ->map(fn (Collection $group) => (int) round($group->sum(fn (Invoice $i) => $i->total_cents > 0
+                ? $i->subtotal_cents * min(1, $i->settled_cents / $i->total_cents)
+                : 0)));
 
         $ids = collect([$recorded, $unbilled, $expenses, $billed, $collected])->flatMap(fn ($c) => $c->keys())->unique();
         $matters = Matter::query()->whereIn('id', $ids)->with('client:id,name', 'responsibleLawyer:id,name')->get(['id', 'reference', 'title', 'client_id', 'responsible_lawyer_id', 'status']);

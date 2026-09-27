@@ -1,0 +1,26 @@
+# The only public entry point. Caddy obtains and renews the TLS certificate
+# for DOMAIN automatically (Let's Encrypt), redirects HTTP to HTTPS and
+# forwards everything to nginx (the "web" service), which is not published.
+#
+# DOMAIN=localhost uses a locally trusted development certificate instead;
+# browsers will warn until Caddy's root certificate is trusted.
+{$DOMAIN:localhost} {
+	encode zstd gzip
+
+	header {
+		# Browsers refuse plain HTTP for this domain from now on. Set
+		# HSTS_MAX_AGE=0 while trying the system out on localhost.
+		Strict-Transport-Security "max-age={$HSTS_MAX_AGE:31536000}; includeSubDomains"
+		-Server
+	}
+
+	# Uploads are limited to 25 MB by nginx and PHP; allow a little overhead.
+	request_body {
+		max_size 30MB
+	}
+
+	# Caddy replaces any X-Forwarded-* the client sent with the real values,
+	# so Laravel (which trusts only the private proxy network) sees the true
+	# client IP and scheme.
+	reverse_proxy web:80
+}

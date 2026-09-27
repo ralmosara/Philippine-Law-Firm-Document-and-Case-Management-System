@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "pragmarx/google2fa": "^8.0",
+        "sentry/sentry-laravel": "^4.28",
         "smalot/pdfparser": "^2.12",
         "spatie/laravel-model-states": "^2.14",
         "spatie/laravel-permission": "^8.3"

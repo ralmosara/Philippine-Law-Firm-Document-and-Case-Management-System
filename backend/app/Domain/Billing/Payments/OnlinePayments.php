@@ -2,10 +2,9 @@
 
 namespace App\Domain\Billing\Payments;
 
-use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\Payment;
-use App\Domain\Billing\Services\InvoiceGenerator;
+use App\Domain\Billing\Services\InvoicePayments;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
@@ -14,14 +13,15 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Online payment of issued invoices. The browser is sent to PayMongo's
- * hosted checkout; the invoice is marked paid only when PayMongo's signed
- * webhook confirms the money, never on the browser's return.
+ * hosted checkout for the balance still open; the payment is recorded only
+ * when PayMongo's signed webhook confirms the money, never on the
+ * browser's return.
  */
 class OnlinePayments
 {
     public function __construct(
         private readonly PayMongoGateway $gateway,
-        private readonly InvoiceGenerator $invoices,
+        private readonly InvoicePayments $payments,
         private readonly TenantContext $tenant,
     ) {}
 
@@ -33,8 +33,8 @@ class OnlinePayments
     public function canPay(Invoice $invoice): bool
     {
         return $this->isEnabled()
-            && $invoice->status === InvoiceStatus::Issued
-            && $invoice->total_cents >= PayMongoGateway::MINIMUM_CENTS;
+            && $invoice->status->isReceivable()
+            && $invoice->balanceDue() >= PayMongoGateway::MINIMUM_CENTS;
     }
 
     /** Start a checkout and return the URL to send the payer to. */
@@ -67,7 +67,7 @@ class OnlinePayments
             'provider' => 'paymongo',
             'checkout_id' => $checkout['id'],
             'checkout_url' => $checkout['url'],
-            'amount_cents' => $invoice->total_cents,
+            'amount_cents' => $invoice->balanceDue(),
         ]);
     }
 
@@ -109,18 +109,25 @@ class OnlinePayments
                 'paid_at' => now(),
             ]);
 
-            if ($invoice->status !== InvoiceStatus::Issued || $amount !== $invoice->total_cents) {
+            // Money that no longer fits (the invoice was settled another way
+            // meanwhile, or the amount differs) is held for manual refund.
+            if (! $invoice->status->isReceivable() || $amount !== $payment->amount_cents || $amount > $invoice->balanceDue()) {
                 $payment->forceFill(['status' => Payment::UNAPPLIED])->save();
                 Log::critical('Online payment received that could not be applied to its invoice', [
                     'payment_id' => $payment->id, 'invoice' => $invoice->number,
-                    'invoice_status' => $invoice->status->value, 'amount' => $amount, 'expected' => $invoice->total_cents,
+                    'invoice_status' => $invoice->status->value, 'amount' => $amount, 'expected' => $payment->amount_cents, 'balance' => $invoice->balanceDue(),
                 ]);
 
                 return;
             }
 
             $payment->forceFill(['status' => Payment::PAID])->save();
-            $this->invoices->markPaid($invoice, null, 'PAYMONGO-'.($payment->provider_payment_id ?? $payment->checkout_id));
+            $this->payments->record($invoice, [
+                'method' => 'online',
+                'amount_cents' => $amount,
+                'reference' => 'PAYMONGO-'.($payment->provider_payment_id ?? $payment->checkout_id),
+                'online_payment_id' => $payment->id,
+            ], null);
         }));
     }
 }

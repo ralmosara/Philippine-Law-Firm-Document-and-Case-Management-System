@@ -26,7 +26,7 @@ class PayMongoGateway
     }
 
     /**
-     * Open a hosted checkout session for the invoice's full amount.
+     * Open a hosted checkout session for the invoice's open balance.
      *
      * @return array{id: string, url: string}
      *
@@ -42,7 +42,7 @@ class PayMongoGateway
                     'attributes' => [
                         'line_items' => [[
                             'name' => "Invoice {$invoice->number}",
-                            'amount' => $invoice->total_cents,
+                            'amount' => $invoice->balanceDue(),
                             'currency' => 'PHP',
                             'quantity' => 1,
                         ]],

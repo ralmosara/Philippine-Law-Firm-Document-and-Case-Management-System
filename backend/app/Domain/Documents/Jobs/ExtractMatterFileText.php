@@ -5,6 +5,7 @@ namespace App\Domain\Documents\Jobs;
 use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Documents\Search\FileTextExtractor;
 use App\Domain\Documents\Search\OcrEngine;
+use App\Jobs\Concerns\RunsOnHeavyQueue;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,7 +20,7 @@ use Throwable;
  */
 class ExtractMatterFileText implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable;
+    use Dispatchable, InteractsWithQueue, Queueable, RunsOnHeavyQueue;
 
     public int $tries = 2;
 
@@ -29,7 +30,10 @@ class ExtractMatterFileText implements ShouldQueue
     /** A PDF with fewer readable characters than this is treated as scanned images. */
     private const SCANNED_PDF_THRESHOLD = 50;
 
-    public function __construct(public readonly int $fileId) {}
+    public function __construct(public readonly int $fileId)
+    {
+        $this->useHeavyQueue();
+    }
 
     public function handle(FileTextExtractor $extractor, OcrEngine $ocr): void
     {

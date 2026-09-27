@@ -19,7 +19,7 @@ export type MatterStatus = 'intake' | 'filed' | 'pre_trial' | 'trial' | 'decisio
 export type DeadlineKind = 'filing' | 'hearing' | 'task'
 export type DeadlineStatus = 'pending' | 'completed' | 'missed' | 'cancelled'
 export type DocumentStatus = 'draft' | 'final' | 'pending_signature' | 'signed' | 'notarized'
-export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'void'
+export type InvoiceStatus = 'draft' | 'issued' | 'partially_paid' | 'paid' | 'void'
 export type FeeArrangement = 'hourly' | 'flat' | 'retainer' | 'contingency' | 'pro_bono'
 export type ConflictStatus = 'clear' | 'flagged' | 'waived' | 'declined'
 
@@ -59,6 +59,8 @@ export interface Firm {
   email?: string | null
   phone?: string | null
   require_two_factor: boolean
+  /** Suggested creditable withholding on professional fees, in basis points (1000 = 10%). */
+  default_withholding_bps?: number
 }
 
 export interface Session {
@@ -319,6 +321,12 @@ export interface Invoice {
   vat_cents: number
   expenses_cents: number
   total_cents: number
+  /** Cash received plus tax withheld, across active payments. */
+  settled_cents: number
+  withholding_cents: number
+  balance_cents: number
+  /** Fees (before VAT) on which tax can still be withheld. */
+  withholding_room_cents: number
   issued_at: string | null
   due_at: string | null
   paid_at: string | null
@@ -329,6 +337,31 @@ export interface Invoice {
   lines?: InvoiceLine[]
   can_pay_online: boolean
   payments?: OnlinePayment[]
+  invoice_payments?: InvoicePayment[]
+  created_at: string
+}
+
+export type PaymentMethod = 'cash' | 'check' | 'bank_transfer' | 'e_wallet' | 'card' | 'online' | 'trust' | 'other'
+
+/** Money received against an invoice, plus tax the client withheld (evidenced by BIR Form 2307). */
+export interface InvoicePayment {
+  id: number
+  invoice_id: number
+  received_on: string
+  method: PaymentMethod
+  amount_cents: number
+  withholding_cents: number
+  credited_cents: number
+  reference: string | null
+  notes: string | null
+  form_2307_received_at: string | null
+  form_2307_file_id: number | null
+  is_trust: boolean
+  is_online: boolean
+  recorded_by?: string | null
+  voided_at: string | null
+  void_reason: string | null
+  invoice?: { id: number; number: string; client: string | null; matter_id: number }
   created_at: string
 }
 

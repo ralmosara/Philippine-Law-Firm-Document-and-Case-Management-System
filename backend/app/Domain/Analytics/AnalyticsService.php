@@ -4,6 +4,7 @@ namespace App\Domain\Analytics;
 
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Invoice;
+use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
 use App\Domain\Deadlines\Models\MatterDeadline;
@@ -12,6 +13,7 @@ use App\Domain\Matters\Models\Matter;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Firm performance metrics, computed live from indexed base tables. Every
@@ -28,10 +30,12 @@ class AnalyticsService
         $monthStart = $today->startOfMonth();
         $yearStart = $today->startOfYear();
 
-        $billedYtd = (int) Invoice::whereIn('status', [InvoiceStatus::Issued->value, InvoiceStatus::Paid->value])
+        $billedYtd = (int) Invoice::whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value])
             ->whereDate('issued_at', '>=', $yearStart)->sum('total_cents');
-        $collectedYtd = (int) Invoice::where('status', InvoiceStatus::Paid->value)
-            ->where('paid_at', '>=', $yearStart)->sum('total_cents');
+        // Cash received plus tax withheld (a credit against the firm's income tax).
+        $collectedYtd = (int) InvoicePayment::active()->whereDate('received_on', '>=', $yearStart)
+            ->sum(DB::raw('amount_cents + withholding_cents'));
+        $receivable = Invoice::whereIn('status', InvoiceStatus::receivableValues());
 
         return [
             'as_of' => $today->toDateString(),
@@ -41,9 +45,10 @@ class AnalyticsService
                 'revenue_collected_ytd_cents' => $collectedYtd,
                 'billed_ytd_cents' => $billedYtd,
                 'collection_rate' => $billedYtd > 0 ? round($collectedYtd / $billedYtd * 100, 1) : null,
-                'outstanding_receivables_cents' => (int) Invoice::where('status', InvoiceStatus::Issued->value)->sum('total_cents'),
-                'overdue_receivables_cents' => (int) Invoice::where('status', InvoiceStatus::Issued->value)
-                    ->whereDate('due_at', '<', $today)->sum('total_cents'),
+                'outstanding_receivables_cents' => (int) (clone $receivable)->sum(DB::raw('total_cents - settled_cents')),
+                'overdue_receivables_cents' => (int) (clone $receivable)->whereDate('due_at', '<', $today)
+                    ->sum(DB::raw('total_cents - settled_cents')),
+                'withholding_awaiting_2307_cents' => (int) InvoicePayment::awaiting2307()->sum('withholding_cents'),
                 'unbilled_wip_cents' => (int) TimeEntry::unbilled()->sum('amount_cents'),
                 'trust_funds_held_cents' => (int) TrustAccount::sum('balance_cents'),
                 'deadlines_next_7_days' => MatterDeadline::pending()
@@ -82,11 +87,11 @@ class AnalyticsService
     {
         $start = $today->startOfMonth()->subMonths(5);
 
-        $byMonth = Invoice::where('status', InvoiceStatus::Paid->value)
-            ->where('paid_at', '>=', $start)
-            ->get(['paid_at', 'total_cents'])
-            ->groupBy(fn (Invoice $invoice) => $invoice->paid_at->format('Y-m'))
-            ->map->sum('total_cents');
+        $byMonth = InvoicePayment::active()
+            ->whereDate('received_on', '>=', $start)
+            ->get(['received_on', 'amount_cents', 'withholding_cents'])
+            ->groupBy(fn (InvoicePayment $payment) => $payment->received_on->format('Y-m'))
+            ->map(fn ($group) => $group->sum(fn (InvoicePayment $payment) => $payment->creditedCents()));
 
         return collect(range(0, 5))
             ->map(function (int $offset) use ($start, $byMonth) {
