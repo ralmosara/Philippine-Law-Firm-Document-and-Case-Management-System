@@ -30,6 +30,8 @@ class User extends Authenticatable
         'role',
         'ibp_number',
         'roll_number',
+        'ptr_number',
+        'mcle_compliance_number',
         'mobile_number',
         'hourly_rate_cents',
         'is_active',

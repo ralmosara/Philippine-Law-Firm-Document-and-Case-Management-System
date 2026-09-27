@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\McleController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotarialEntryController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\PleadingController;
 use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SignatureRequestController;
@@ -72,6 +73,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id');
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::put('auth/password', [AuthController::class, 'updatePassword']);
+        Route::put('auth/credentials', [AuthController::class, 'updateCredentials']);
         Route::post('auth/two-factor', [TwoFactorController::class, 'enable']);
         Route::post('auth/two-factor/confirm', [TwoFactorController::class, 'confirm']);
         Route::delete('auth/two-factor', [TwoFactorController::class, 'disable']);
@@ -145,6 +147,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::apiResource('document-templates', DocumentTemplateController::class);
         Route::apiResource('documents', DocumentController::class);
         Route::get('documents/{document}/pdf', [DocumentController::class, 'pdf']);
+        Route::get('documents/{document}/docx', [PleadingController::class, 'docx']);
+        Route::get('pleadings/options', [PleadingController::class, 'options']);
+        Route::post('matters/{matter}/pleadings/preview', [PleadingController::class, 'preview']);
+        Route::post('matters/{matter}/pleadings', [PleadingController::class, 'store']);
         Route::get('documents/{document}/versions', [DocumentController::class, 'versions']);
         Route::post('documents/{document}/versions', [DocumentController::class, 'saveVersion']);
         Route::post('documents/{document}/status', [DocumentController::class, 'transition']);

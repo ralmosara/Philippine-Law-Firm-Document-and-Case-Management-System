@@ -35,6 +35,8 @@ export interface User extends UserRef {
   is_lawyer: boolean
   ibp_number: string | null
   roll_number: string | null
+  ptr_number?: string | null
+  mcle_compliance_number?: string | null
   mobile_number: string | null
   hourly_rate_cents: number
   is_active: boolean
@@ -140,6 +142,8 @@ export interface Matter extends MatterRef {
   acceptance_fee_cents?: number | null
   appearance_fee_cents?: number | null
   contingency_basis_points?: number | null
+  client_role?: string
+  nature_of_action?: string | null
   retainer_auto_bill?: boolean
   retainer_billing_day?: number
   retainer_auto_issue?: boolean

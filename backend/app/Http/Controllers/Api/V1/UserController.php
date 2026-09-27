@@ -93,6 +93,8 @@ class UserController extends Controller
             'role' => ['required', new Enum(Role::class)],
             'ibp_number' => ['nullable', 'string', 'max:32'],
             'roll_number' => ['nullable', 'string', 'max:32'],
+            'ptr_number' => ['nullable', 'string', 'max:100'],
+            'mcle_compliance_number' => ['nullable', 'string', 'max:100'],
             'mobile_number' => ['nullable', 'regex:/^(\+63|0)9\d{9}$/'],
             'hourly_rate_cents' => ['nullable', 'integer', 'min:0', 'max:10000000'],
             'is_active' => ['boolean'],

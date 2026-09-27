@@ -20,6 +20,8 @@ class UserResource extends JsonResource
             'is_lawyer' => $this->role->isLawyer(),
             'ibp_number' => $this->ibp_number,
             'roll_number' => $this->roll_number,
+            'ptr_number' => $this->ptr_number,
+            'mcle_compliance_number' => $this->mcle_compliance_number,
             'mobile_number' => $this->mobile_number,
             'hourly_rate_cents' => $this->hourly_rate_cents,
             'is_active' => $this->is_active,

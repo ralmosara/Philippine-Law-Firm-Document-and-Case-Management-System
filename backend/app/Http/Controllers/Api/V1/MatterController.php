@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Documents\Pleadings\PleadingAssembler;
 use App\Domain\Matters\Actions\OpenMatter;
 use App\Domain\Matters\Actions\TransitionMatterStatus;
 use App\Domain\Matters\Enums\FeeArrangement;
@@ -167,6 +168,8 @@ class MatterController extends Controller
             'retainer_auto_bill' => ['boolean'],
             'retainer_billing_day' => ['integer', 'min:1', 'max:28'],
             'retainer_auto_issue' => ['boolean'],
+            'client_role' => [Rule::in(PleadingAssembler::CLIENT_ROLES)],
+            'nature_of_action' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

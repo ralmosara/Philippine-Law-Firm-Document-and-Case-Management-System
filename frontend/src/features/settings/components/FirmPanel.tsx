@@ -29,7 +29,7 @@ export function FirmPanel() {
 
 function ProfileCard({ firm }: { firm: FirmSettings }) {
   const save = useSaveFirmSettings()
-  const [form, setForm] = useState({ name: firm.name, tin: firm.tin ?? '', address: firm.address ?? '', email: firm.email ?? '', phone: firm.phone ?? '', vat_registered: firm.vat_registered, default_withholding_bps: firm.default_withholding_bps })
+  const [form, setForm] = useState({ name: firm.name, tin: firm.tin ?? '', address: firm.address ?? '', email: firm.email ?? '', phone: firm.phone ?? '', vat_registered: firm.vat_registered, default_withholding_bps: firm.default_withholding_bps, pleading_paper: firm.pleading_paper, pleading_font: firm.pleading_font, pleading_font_size: firm.pleading_font_size })
   const [error, setError] = useState<ApiError | null>(null)
   const set = (key: 'name' | 'tin' | 'address' | 'email' | 'phone') => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
@@ -66,6 +66,28 @@ function ProfileCard({ firm }: { firm: FirmSettings }) {
             </Select>
           )}
         </Field>
+        <fieldset className="grid grid-cols-1 gap-4 border-t border-outline-variant pt-4 sm:grid-cols-3">
+          <legend className="mb-2 text-sm font-medium">Pleadings downloaded as Word</legend>
+          <Field label="Paper" error={error?.field('pleading_paper')} hint="The Efficient Use of Paper Rule uses 8.5 x 13 in.">
+            {(a) => (
+              <Select {...a} value={form.pleading_paper} onChange={(e) => setForm((f) => ({ ...f, pleading_paper: e.target.value as typeof f.pleading_paper }))}>
+                <option value="folio">8.5 x 13 in (long bond)</option>
+                <option value="a4">A4</option>
+                <option value="letter">Letter (8.5 x 11 in)</option>
+              </Select>
+            )}
+          </Field>
+          <Field label="Font" error={error?.field('pleading_font')}>
+            {(a) => (
+              <Select {...a} value={form.pleading_font} onChange={(e) => setForm((f) => ({ ...f, pleading_font: e.target.value }))}>
+                {['Times New Roman', 'Book Antiqua', 'Bookman Old Style', 'Century Gothic', 'Arial', 'Tahoma'].map((font) => <option key={font}>{font}</option>)}
+              </Select>
+            )}
+          </Field>
+          <Field label="Size (pt)" error={error?.field('pleading_font_size')} hint="14 under the same rule.">
+            {(a) => <Input {...a} type="number" min={10} max={16} value={form.pleading_font_size} onChange={(e) => setForm((f) => ({ ...f, pleading_font_size: Number(e.target.value) }))} />}
+          </Field>
+        </fieldset>
         <Button type="submit" loading={save.isPending} className="self-start">Save details</Button>
       </form>
     </Card>

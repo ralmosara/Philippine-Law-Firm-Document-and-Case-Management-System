@@ -54,6 +54,8 @@ class Matter extends Model
         'retainer_auto_bill',
         'retainer_billing_day',
         'retainer_auto_issue',
+        'client_role',
+        'nature_of_action',
     ];
 
     protected $attributes = [

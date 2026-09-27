@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarPlus, Clock, FilePlus2, KanbanSquare, MessageSquarePlus, Pencil } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Clock, FilePlus2, KanbanSquare, MessageSquarePlus, Pencil, Gavel } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAbilities } from '@/features/auth/session'
@@ -13,6 +13,7 @@ import { DocumentsTable } from '@/features/documents/components/DocumentsTable'
 import { MatterFilesPanel } from '@/features/documents/components/MatterFilesPanel'
 import { NewThreadDialog, ThreadList } from '@/features/messages/components/MessagesInbox'
 import { MatterAssistant } from '@/features/assistant/components/MatterAssistant'
+import { PleadingBuilder } from '@/features/documents/components/PleadingBuilder'
 import { TemplatePicker } from '@/features/documents/components/TemplatePicker'
 import { money } from '@/shared/lib/format'
 import { useUrlState } from '@/shared/lib/hooks'
@@ -33,7 +34,7 @@ export function MatterDetail() {
   const matter = useMatter(id)
   const deadlines = useMatterDeadlines(id)
   const [tab, setTab] = useUrlState('tab', 'overview')
-  const [dialog, setDialog] = useState<'edit' | 'deadline' | 'document' | 'time' | null>(null)
+  const [dialog, setDialog] = useState<'edit' | 'deadline' | 'document' | 'pleading' | 'time' | null>(null)
 
   if (matter.isPending) return <PageLoader />
   if (matter.isError) return <ErrorState error={matter.error} onRetry={() => matter.refetch()} />
@@ -99,7 +100,7 @@ export function MatterDetail() {
         </Card>
       )}
 
-      {tab === 'documents' && <MatterDocuments matterId={id} onNew={() => setDialog('document')} canCreate={abilities.work_matters} />}
+      {tab === 'documents' && <MatterDocuments matterId={id} onNew={() => setDialog('document')} onPleading={() => setDialog('pleading')} canCreate={abilities.work_matters} />}
       {tab === 'files' && <MatterFilesPanel matterId={id} canEdit={abilities.work_matters} />}
       {tab === 'assistant' && abilities.work_matters && <MatterAssistant matterId={id} />}
       {tab === 'messages' && <MatterMessages matterId={id} canWrite={abilities.work_matters && !!m.client?.portal_enabled} />}
@@ -115,16 +116,25 @@ export function MatterDetail() {
       <MatterForm open={dialog === 'edit'} onClose={() => setDialog(null)} matter={m} />
       <DeadlineForm open={dialog === 'deadline'} onClose={() => setDialog(null)} matterId={id} />
       <TemplatePicker open={dialog === 'document'} onClose={() => setDialog(null)} matterId={id} />
+      <PleadingBuilder open={dialog === 'pleading'} onClose={() => setDialog(null)} matterId={id} />
       <TimeTrackingForm open={dialog === 'time'} onClose={() => setDialog(null)} matterId={id} />
     </>
   )
 }
 
-function MatterDocuments({ matterId, onNew, canCreate }: { matterId: number; onNew: () => void; canCreate: boolean }) {
+function MatterDocuments({ matterId, onNew, onPleading, canCreate }: { matterId: number; onNew: () => void; onPleading: () => void; canCreate: boolean }) {
   const documents = useDocuments({ matter_id: matterId })
   return (
     <Card>
-      <CardHeader title="Documents" actions={canCreate && <Button variant="tonal" size="sm" icon={<FilePlus2 className="size-4" />} onClick={onNew}>New document</Button>} />
+      <CardHeader
+        title="Documents"
+        actions={canCreate && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="tonal" size="sm" icon={<Gavel className="size-4" />} onClick={onPleading}>Draft a pleading</Button>
+            <Button variant="tonal" size="sm" icon={<FilePlus2 className="size-4" />} onClick={onNew}>New document</Button>
+          </div>
+        )}
+      />
       {documents.isPending ? <PageLoader /> : documents.isError ? <ErrorState error={documents.error} /> : <DocumentsTable documents={documents.data.data} showMatter={false} />}
     </Card>
   )

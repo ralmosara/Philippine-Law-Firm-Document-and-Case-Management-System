@@ -152,6 +152,22 @@ class AuthController extends Controller
     }
 
     /**
+     * A lawyer keeps their own credentials current: PTR and IBP numbers are
+     * renewed every year, and pleadings print them under the signature.
+     */
+    public function updateCredentials(Request $request): JsonResponse
+    {
+        $request->user()->update($request->validate([
+            'roll_number' => ['nullable', 'string', 'max:32'],
+            'ibp_number' => ['nullable', 'string', 'max:32'],
+            'ptr_number' => ['nullable', 'string', 'max:100'],
+            'mcle_compliance_number' => ['nullable', 'string', 'max:100'],
+        ]));
+
+        return response()->json(['user' => new UserResource($request->user()->fresh())]);
+    }
+
+    /**
      * Email a password reset link. The response is the same whether or not
      * the account exists, so the endpoint cannot be used to find accounts.
      */

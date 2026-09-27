@@ -33,6 +33,8 @@ const schema = z.object({
   acceptance_fee: pesos,
   appearance_fee: pesos,
   contingency_percent: z.string().trim().refine((v) => v === '' || (Number(v) > 0 && Number(v) <= 100), 'Enter a percentage from 0 to 100.'),
+  client_role: z.enum(['plaintiff', 'defendant', 'petitioner', 'respondent', 'complainant', 'accused', 'appellant', 'appellee']),
+  nature_of_action: optional,
   retainer_auto_bill: z.boolean(),
   retainer_billing_day: z.coerce.number<string>().int().min(1).max(28),
   retainer_auto_issue: z.boolean(),
@@ -77,6 +79,8 @@ export function MatterForm({ open, onClose, matter, defaultClientId }: Props) {
       acceptance_fee: pesoText(matter?.acceptance_fee_cents),
       appearance_fee: pesoText(matter?.appearance_fee_cents),
       contingency_percent: matter?.contingency_basis_points ? String(matter.contingency_basis_points / 100) : '',
+      client_role: (matter?.client_role ?? 'plaintiff') as Values['client_role'],
+      nature_of_action: matter?.nature_of_action ?? '',
       retainer_auto_bill: matter?.retainer_auto_bill ?? false,
       retainer_billing_day: String(matter?.retainer_billing_day ?? 1),
       retainer_auto_issue: matter?.retainer_auto_issue ?? false,
@@ -172,6 +176,16 @@ export function MatterForm({ open, onClose, matter, defaultClientId }: Props) {
         </Field>
         <Field label="Presiding judge" error={formState.errors.judge?.message}>
           {(a) => <Input {...a} {...register('judge')} />}
+        </Field>
+        <Field label="Our client is the" hint="Sets the caption of pleadings.">
+          {(a) => (
+            <Select {...a} {...register('client_role')}>
+              {['plaintiff', 'defendant', 'petitioner', 'respondent', 'complainant', 'accused', 'appellant', 'appellee'].map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+            </Select>
+          )}
+        </Field>
+        <Field label="Nature of the action" hint='Shown as "For: …" in the caption.' error={formState.errors.nature_of_action?.message}>
+          {(a) => <Input {...a} placeholder="Sum of Money and Damages" {...register('nature_of_action')} />}
         </Field>
 
         <Field label="Description" error={formState.errors.description?.message} className="sm:col-span-2">
