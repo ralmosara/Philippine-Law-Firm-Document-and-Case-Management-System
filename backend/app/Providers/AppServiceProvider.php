@@ -8,6 +8,8 @@ use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Compliance\Models\McleCredit;
+use App\Domain\Corporate\Models\CorporateObligation;
+use App\Domain\Corporate\Models\CorporateProfile;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Services\DeadlineCalculator;
 use App\Domain\Documents\Models\Document;
@@ -78,6 +80,8 @@ class AppServiceProvider extends ServiceProvider
             'privacy_incident' => PrivacyIncident::class,
             'document_request' => DocumentRequest::class,
             'tax_filing' => TaxFiling::class,
+            'corporate_profile' => CorporateProfile::class,
+            'corporate_obligation' => CorporateObligation::class,
         ]);
 
         $this->configureDatabaseTenancy();

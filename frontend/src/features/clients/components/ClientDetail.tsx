@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAbilities } from '@/features/auth/session'
 import { MatterForm } from '@/features/matters/components/MatterForm'
 import { MatterStatusBadge } from '@/features/matters/components/StatusBadge'
+import { CorporateCard } from '@/features/corporate/components/CorporateCard'
 import { useTrustAccounts } from '@/features/trust/api'
 import { ApiError } from '@/shared/api/axios'
 import type { Client } from '@/shared/api/types'
@@ -97,6 +98,7 @@ export function ClientDetail() {
               <p className="text-sm text-on-surface-variant">{trust.data?.data.length ?? 0} account(s)</p>
             </div>
           </Card>
+          {c.type === 'corporate' && <CorporateCard clientId={c.id} clientName={c.name} />}
         </div>
       </div>
 

@@ -32,6 +32,7 @@ const AFFECTS: Record<string, string[][]> = {
   signature_declined: [['documents']],
   privacy: [['privacy']],
   tax: [['tax']],
+  corporate: [['corporate']],
   document_uploaded: [['document-requests'], ['files']],
 }
 

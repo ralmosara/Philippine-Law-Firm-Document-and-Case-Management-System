@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\ClientAuthController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\ConflictCheckController;
+use App\Http\Controllers\Api\V1\CorporateController;
 use App\Http\Controllers\Api\V1\CourtDayController;
 use App\Http\Controllers\Api\V1\DeadlineRuleController;
 use App\Http\Controllers\Api\V1\DocumentController;
@@ -208,6 +209,14 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('imports/{import}', [ImportController::class, 'show']);
         Route::post('imports/{import}/commit', [ImportController::class, 'commit']);
         Route::post('imports/{import}/undo', [ImportController::class, 'undo']);
+
+        Route::get('corporate', [CorporateController::class, 'index']);
+        Route::post('corporate/templates', [CorporateController::class, 'installTemplates']);
+        Route::get('clients/{client}/corporate', [CorporateController::class, 'show']);
+        Route::put('clients/{client}/corporate', [CorporateController::class, 'saveProfile']);
+        Route::post('clients/{client}/corporate/obligations', [CorporateController::class, 'storeObligation']);
+        Route::patch('corporate-obligations/{corporateObligation}', [CorporateController::class, 'updateObligation']);
+        Route::delete('corporate-obligations/{corporateObligation}', [CorporateController::class, 'destroyObligation']);
 
         Route::get('tax/quarter', [TaxController::class, 'quarter']);
         Route::get('tax/sawt.csv', [TaxController::class, 'sawtCsv']);
