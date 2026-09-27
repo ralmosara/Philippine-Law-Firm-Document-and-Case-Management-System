@@ -19,6 +19,7 @@ import {
   UserRound,
   X,
   FileLock2,
+  Gavel,
 } from 'lucide-react'
 import { useEffect, useState, type ComponentType } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -46,6 +47,7 @@ const NAV: NavItem[] = [
   { to: '/matters', label: 'Matters', icon: Briefcase },
   { to: '/clients', label: 'Clients', icon: UserRound },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
+  { to: '/court-day', label: 'Court day', icon: Gavel, ability: 'work_matters' },
   { to: '/tasks', label: 'Tasks', icon: KanbanSquare },
   { to: '/messages', label: 'Messages', icon: MessagesSquare, badge: 'messages' },
   { to: '/intake', label: 'Intake', icon: Inbox, ability: 'work_matters', badge: 'intake' },

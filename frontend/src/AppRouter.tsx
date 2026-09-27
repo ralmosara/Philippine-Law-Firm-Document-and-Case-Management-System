@@ -82,6 +82,7 @@ export const router = createBrowserRouter([
           { path: 'clients', element: page(() => import('./features/clients/components/ClientsList'), 'ClientsList') },
           { path: 'clients/:id', element: page(() => import('./features/clients/components/ClientDetail'), 'ClientDetail') },
           { path: 'calendar', element: page(() => import('./features/deadlines/components/DeadlineCalendar'), 'DeadlineCalendar') },
+          { path: 'court-day', element: gated('work_matters', page(() => import('./features/deadlines/components/CourtDay'), 'CourtDay')) },
           { path: 'tasks', element: page(() => import('./features/deadlines/components/TaskBoard'), 'TaskBoard') },
           { path: 'intake', element: gated('work_matters', page(() => import('./features/intake/components/IntakeInbox'), 'IntakeInbox')) },
           { path: 'intake/:id', element: gated('work_matters', page(() => import('./features/intake/components/IntakeInbox'), 'IntakeReview')) },

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\ClientAuthController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\ConflictCheckController;
+use App\Http\Controllers\Api\V1\CourtDayController;
 use App\Http\Controllers\Api\V1\DeadlineRuleController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
@@ -132,6 +133,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('tasks', [TaskController::class, 'index']);
         Route::post('tasks/{deadline}/move', [TaskController::class, 'move']);
 
+        Route::get('court-day', [CourtDayController::class, 'index']);
+        Route::post('deadlines/{deadline}/hearing-outcome', [CourtDayController::class, 'outcome']);
         Route::get('deadlines', [MatterDeadlineController::class, 'index']);
         Route::post('deadlines/compute', [MatterDeadlineController::class, 'compute']);
         Route::get('deadlines/{deadline}', [MatterDeadlineController::class, 'show']);
