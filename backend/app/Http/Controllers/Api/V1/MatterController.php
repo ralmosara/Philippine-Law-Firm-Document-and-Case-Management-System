@@ -151,6 +151,9 @@ class MatterController extends Controller
             'acceptance_fee_cents' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
             'appearance_fee_cents' => ['nullable', 'integer', 'min:0', 'max:2000000000'],
             'contingency_basis_points' => ['nullable', 'integer', 'min:0', 'max:10000'],
+            'retainer_auto_bill' => ['boolean'],
+            'retainer_billing_day' => ['integer', 'min:1', 'max:28'],
+            'retainer_auto_issue' => ['boolean'],
         ];
     }
 }

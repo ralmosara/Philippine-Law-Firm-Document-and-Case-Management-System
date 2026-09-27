@@ -69,6 +69,7 @@ export interface FirmSettings {
   vat_registered: boolean
   /** Usual creditable withholding on fees, in basis points (1000 = 10%). */
   default_withholding_bps: number
+  payment_reminders_enabled: boolean
   require_two_factor: boolean
   slug: string | null
   intake_enabled: boolean

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Domain\Billing\Collections\InvoiceReminder;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Payments\OnlinePayments;
 use Illuminate\Http\Request;
@@ -57,6 +58,14 @@ class InvoiceResource extends JsonResource
                 'created_at' => $payment->created_at?->toIso8601String(),
             ])),
             'invoice_payments' => InvoicePaymentResource::collection($this->whenLoaded('invoicePayments')),
+            'reminders_paused_at' => $this->reminders_paused_at?->toIso8601String(),
+            'reminders' => $this->whenLoaded('reminders', fn () => $this->reminders->map(fn ($r) => [
+                'stage' => $r->stage,
+                'label' => InvoiceReminder::LABELS[$r->stage] ?? $r->stage,
+                'balance_cents' => $r->balance_cents,
+                'sent_by' => $r->sender?->name,
+                'sent_at' => $r->sent_at->toIso8601String(),
+            ])),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

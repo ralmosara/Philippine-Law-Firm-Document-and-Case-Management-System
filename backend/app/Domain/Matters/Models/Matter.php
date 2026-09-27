@@ -51,6 +51,9 @@ class Matter extends Model
         'acceptance_fee_cents',
         'appearance_fee_cents',
         'contingency_basis_points',
+        'retainer_auto_bill',
+        'retainer_billing_day',
+        'retainer_auto_issue',
     ];
 
     protected $attributes = [
@@ -68,6 +71,10 @@ class Matter extends Model
             'acceptance_fee_cents' => 'integer',
             'appearance_fee_cents' => 'integer',
             'contingency_basis_points' => 'integer',
+            'retainer_auto_bill' => 'boolean',
+            'retainer_billing_day' => 'integer',
+            'retainer_auto_issue' => 'boolean',
+            'retainer_billed_through' => DateOnly::class,
         ];
     }
 

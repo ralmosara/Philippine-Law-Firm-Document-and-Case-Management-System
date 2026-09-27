@@ -39,6 +39,10 @@ class MatterResource extends JsonResource
             'acceptance_fee_cents' => $this->whenHas('acceptance_fee_cents'),
             'appearance_fee_cents' => $this->whenHas('appearance_fee_cents'),
             'contingency_basis_points' => $this->whenHas('contingency_basis_points'),
+            'retainer_auto_bill' => $this->whenHas('retainer_auto_bill'),
+            'retainer_billing_day' => $this->whenHas('retainer_billing_day'),
+            'retainer_auto_issue' => $this->whenHas('retainer_auto_issue'),
+            'retainer_billed_through' => $this->whenHas('retainer_billed_through', fn () => $this->retainer_billed_through?->toDateString()),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

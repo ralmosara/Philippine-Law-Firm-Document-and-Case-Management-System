@@ -11,11 +11,12 @@ import { EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Input, Select } from '@/shared/ui/Form'
 import { Card, PageHeader, Pagination, StatCard, Table, Tabs, Td, Th, Tr } from '@/shared/ui/Layout'
 import { useInvoices, useTimeEntries } from '../api'
+import { CollectionsTab } from './CollectionsTab'
 import { Awaiting2307Tab } from './InvoicePayments'
 import { TimeEntriesTable } from './TimeEntriesTable'
 import { TimeTrackingForm } from './TimeTrackingForm'
 
-type Tab = 'time' | 'invoices' | 'form-2307'
+type Tab = 'time' | 'invoices' | 'collections' | 'form-2307'
 
 export function BillingDashboard() {
   const abilities = useAbilities()
@@ -33,10 +34,11 @@ export function BillingDashboard() {
         label="Billing sections"
         value={tab as Tab}
         onChange={setTab}
-        tabs={[{ value: 'time', label: 'Time entries' }, ...(abilities.practice_law ? [{ value: 'invoices' as const, label: 'Invoices' }] : []), ...(abilities.manage_finances ? [{ value: 'form-2307' as const, label: 'Form 2307' }] : [])]}
+        tabs={[{ value: 'time', label: 'Time entries' }, ...(abilities.practice_law ? [{ value: 'invoices' as const, label: 'Invoices' }] : []), ...(abilities.manage_finances ? [{ value: 'collections' as const, label: 'Collections' }, { value: 'form-2307' as const, label: 'Form 2307' }] : [])]}
       />
       {tab === 'time' && <TimeTab />}
       {tab === 'invoices' && abilities.practice_law && <InvoicesTab />}
+      {tab === 'collections' && abilities.manage_finances && <CollectionsTab />}
       {tab === 'form-2307' && abilities.manage_finances && <Awaiting2307Tab />}
       <TimeTrackingForm open={logging} onClose={() => setLogging(false)} />
     </>

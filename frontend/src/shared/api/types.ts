@@ -140,6 +140,10 @@ export interface Matter extends MatterRef {
   acceptance_fee_cents?: number | null
   appearance_fee_cents?: number | null
   contingency_basis_points?: number | null
+  retainer_auto_bill?: boolean
+  retainer_billing_day?: number
+  retainer_auto_issue?: boolean
+  retainer_billed_through?: string | null
   created_at: string
 }
 
@@ -269,6 +273,9 @@ export interface TrustAccount {
   id: number
   account_number: string
   balance_cents: number
+  minimum_balance_cents?: number | null
+  below_minimum?: boolean
+  replenishment_requested_at?: string | null
   status: 'open' | 'closed'
   client?: { id: number; name: string }
   matter?: MatterRef | null
@@ -338,6 +345,8 @@ export interface Invoice {
   can_pay_online: boolean
   payments?: OnlinePayment[]
   invoice_payments?: InvoicePayment[]
+  reminders_paused_at?: string | null
+  reminders?: { stage: string; label: string; balance_cents: number; sent_by: string | null; sent_at: string }[]
   created_at: string
 }
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CalendarFeedController;
 use App\Http\Controllers\Api\V1\ClientAuthController;
 use App\Http\Controllers\Api\V1\ClientController;
+use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\ConflictCheckController;
 use App\Http\Controllers\Api\V1\DeadlineRuleController;
 use App\Http\Controllers\Api\V1\DocumentController;
@@ -187,6 +188,12 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('imports/{import}', [ImportController::class, 'show']);
         Route::post('imports/{import}/commit', [ImportController::class, 'commit']);
         Route::post('imports/{import}/undo', [ImportController::class, 'undo']);
+
+        Route::get('collections', [CollectionsController::class, 'index']);
+        Route::post('invoices/{invoice}/remind', [CollectionsController::class, 'remind']);
+        Route::post('invoices/{invoice}/reminders-paused', [CollectionsController::class, 'pauseReminders']);
+        Route::put('trust-accounts/{trustAccount}/minimum-balance', [CollectionsController::class, 'setMinimum']);
+        Route::post('trust-accounts/{trustAccount}/replenishment-request', [CollectionsController::class, 'requestReplenishment']);
 
         Route::get('invoices/{invoice}/payments', [InvoicePaymentController::class, 'index']);
         Route::post('invoices/{invoice}/payments', [InvoicePaymentController::class, 'store']);

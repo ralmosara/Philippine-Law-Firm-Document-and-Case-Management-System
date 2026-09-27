@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Billing\Collections\Collections;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Domain\Trust\Services\TrustLedgerService;
@@ -52,6 +53,13 @@ Schedule::call(fn () => Cache::put(SystemHealth::SCHEDULER_KEY, now()->toIso8601
     ->name('ops:scheduler-heartbeat')->everyMinute()->onOneServer();
 Schedule::job(new QueueHeartbeat('default'))->name('ops:queue-heartbeat')->everyMinute()->onOneServer();
 Schedule::job(new QueueHeartbeat('heavy'))->name('ops:heavy-queue-heartbeat')->everyMinute()->onOneServer();
+
+// Retainer invoices, payment reminders and trust top-up requests, each at most once.
+Artisan::command('billing:collections', function (Collections $collections) {
+    $result = $collections->run();
+    $this->info("Billed {$result['retainers']} retainer(s); sent {$result['reminders']} payment reminder(s) and {$result['replenishments']} trust top-up request(s).");
+})->purpose('Bill monthly retainers, remind clients of unpaid invoices, ask for trust top-ups');
+Schedule::command('billing:collections')->dailyAt('09:00')->withoutOverlapping()->onOneServer();
 
 Artisan::command('ops:health-check', function (SystemHealth $health) {
     $checks = $health->run();

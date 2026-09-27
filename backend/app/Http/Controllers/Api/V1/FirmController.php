@@ -38,6 +38,7 @@ class FirmController extends Controller
             'ai_enabled' => ['sometimes', 'boolean'],
             // Creditable withholding on professional fees: 5% (0500), 10% (1000) or 15% (1500) are usual.
             'default_withholding_bps' => ['sometimes', 'integer', 'min:0', 'max:3000'],
+            'payment_reminders_enabled' => ['sometimes', 'boolean'],
         ], ['slug.regex' => 'Use lowercase letters, numbers and single hyphens, e.g. santos-reyes-law.']);
 
         $firm = $this->firm($request);
@@ -79,7 +80,7 @@ class FirmController extends Controller
     private function payload(Firm $firm): array
     {
         return [
-            ...$firm->only(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps']),
+            ...$firm->only(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'payment_reminders_enabled']),
             'ai_configured' => filled(config('services.anthropic.api_key')),
             'users_without_two_factor' => User::where('firm_id', $firm->id)
                 ->where('is_active', true)

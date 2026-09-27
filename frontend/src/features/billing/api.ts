@@ -126,6 +126,42 @@ export function useAwaiting2307(enabled = true) {
   return useQuery({ queryKey: ['invoice-payments', 'awaiting-2307'], queryFn: () => get<InvoicePayment[]>('/v1/invoice-payments/awaiting-2307'), enabled })
 }
 
+export interface CollectionsOverview {
+  reminders_enabled: boolean
+  invoices: { id: number; number: string; client: string | null; client_has_email: boolean; matter: string | null; due_at: string; days_overdue: number; balance_cents: number; reminders_paused: boolean; last_reminder: { label: string; sent_at: string } | null; next_reminder: string | null }[]
+  trust_below_minimum: { id: number; account_number: string; client: string | null; client_has_email: boolean; balance_cents: number; minimum_balance_cents: number; replenishment_requested_at: string | null }[]
+  retainers: { id: number; reference: string; title: string; client: string | null; amount_cents: number; auto_bill: boolean; auto_issue: boolean; billing_day: number; billed_through: string | null; next_billing: string | null }[]
+}
+
+export function useCollections() {
+  return useQuery({ queryKey: ['collections'], queryFn: () => get<CollectionsOverview>('/v1/collections') })
+}
+
+const collectionsInvalidate = [['collections'], ['invoices'], ['trust']]
+
+export function useSendReminder() {
+  return useApiMutation((invoiceId: number) => post(`/v1/invoices/${invoiceId}/remind`), { invalidate: collectionsInvalidate, success: 'Reminder e-mailed to the client' })
+}
+
+export function usePauseReminders() {
+  return useApiMutation(({ invoiceId, paused }: { invoiceId: number; paused: boolean }) => post(`/v1/invoices/${invoiceId}/reminders-paused`, { paused }), {
+    invalidate: collectionsInvalidate,
+    success: (_d) => 'Reminder setting saved',
+  })
+}
+
+export function useRequestReplenishment() {
+  return useApiMutation((accountId: number) => post(`/v1/trust-accounts/${accountId}/replenishment-request`), { invalidate: collectionsInvalidate, success: 'Top-up request e-mailed to the client' })
+}
+
+export function useSetMinimumBalance(accountId: number) {
+  return useApiMutation((minimum_balance_cents: number | null) => put(`/v1/trust-accounts/${accountId}/minimum-balance`, { minimum_balance_cents }), {
+    invalidate: collectionsInvalidate,
+    success: 'Minimum balance saved',
+    toastErrors: false,
+  })
+}
+
 /** A PayMongo checkout link to send to the client; the invoice updates itself when paid. */
 export function usePaymentLink(invoiceId: number) {
   return useApiMutation(() => post<{ checkout_url: string }>(`/v1/invoices/${invoiceId}/payment-link`), {

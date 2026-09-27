@@ -21,7 +21,7 @@ class TrustAccount extends Model
     /** @use HasFactory<TrustAccountFactory> */
     use HasFactory, HasTenantScope;
 
-    protected $fillable = ['firm_id', 'client_id', 'matter_id', 'account_number'];
+    protected $fillable = ['firm_id', 'client_id', 'matter_id', 'account_number', 'minimum_balance_cents'];
 
     protected $attributes = [
         'balance_cents' => 0,
@@ -30,7 +30,7 @@ class TrustAccount extends Model
 
     protected function casts(): array
     {
-        return ['balance_cents' => 'integer'];
+        return ['balance_cents' => 'integer', 'minimum_balance_cents' => 'integer', 'replenishment_requested_at' => 'datetime'];
     }
 
     protected static function booted(): void
