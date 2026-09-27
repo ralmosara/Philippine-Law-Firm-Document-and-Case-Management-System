@@ -55,6 +55,9 @@ class Client extends Authenticatable
             'portal_enabled' => 'boolean',
             'password' => 'hashed',
             'last_portal_login_at' => 'datetime',
+            'privacy_notice_version' => 'integer',
+            'privacy_accepted_at' => 'datetime',
+            'anonymized_at' => 'datetime',
         ];
     }
 

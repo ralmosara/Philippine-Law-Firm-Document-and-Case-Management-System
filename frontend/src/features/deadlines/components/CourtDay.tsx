@@ -62,9 +62,12 @@ export function CourtDay() {
     <>
       <PageHeader title="Court day" description="Hearings for the day, with everything you need at the courtroom door." />
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <IconButton label="Previous day" onClick={() => setDate(shift(date, -1))}><ChevronLeft className="size-5" /></IconButton>
-        <Input type="date" aria-label="Date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="w-44" />
-        <IconButton label="Next day" onClick={() => setDate(shift(date, 1))}><ChevronRight className="size-5" /></IconButton>
+        {/* One row even on a phone: previous, date, next. */}
+        <div className="flex min-w-0 flex-1 items-center gap-1 sm:flex-none">
+          <IconButton label="Previous day" onClick={() => setDate(shift(date, -1))}><ChevronLeft className="size-5" /></IconButton>
+          <Input type="date" aria-label="Date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="min-w-0 flex-1 sm:w-44 sm:flex-none" />
+          <IconButton label="Next day" onClick={() => setDate(shift(date, 1))}><ChevronRight className="size-5" /></IconButton>
+        </div>
         {date !== today() && <Button variant="text" size="sm" onClick={() => setDate(today())}>Today</Button>}
         <Checkbox label="Only mine" checked={mine} onChange={(e) => setWho(e.target.checked ? 'mine' : 'all')} className="ml-auto" />
       </div>

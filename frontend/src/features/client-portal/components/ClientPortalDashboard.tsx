@@ -33,8 +33,8 @@ export function ClientPortalDashboard() {
           <ButtonLink to="/portal/privacy" variant="text" icon={<ShieldCheck className="size-4" />} aria-label="My data">
             <span className="hidden sm:inline" aria-hidden="true">My data</span>
           </ButtonLink>
-          <Button variant="text" icon={<LogOut className="size-4" />} onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/portal/login', { replace: true }) })}>
-            Sign out
+          <Button variant="text" icon={<LogOut className="size-4" />} aria-label="Sign out" onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/portal/login', { replace: true }) })}>
+            <span className="hidden sm:inline" aria-hidden="true">Sign out</span>
           </Button>
         </div>
       </header>

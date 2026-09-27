@@ -10,6 +10,7 @@ use App\Domain\Privacy\Models\PrivacyIncident;
 use App\Domain\Privacy\PrivacyNotice;
 use App\Domain\Privacy\PrivacyService;
 use App\Http\Controllers\Controller;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -175,7 +176,7 @@ class PrivacyController extends Controller
     {
         Gate::authorize('manage-firm');
         $incident = PrivacyIncident::create([
-            ...$request->validate($this->incidentRules()),
+            ...$this->inAppTimezone($request->validate($this->incidentRules())),
             'firm_id' => $request->user()->firm_id,
             'reported_by' => $request->user()->id,
         ]);
@@ -186,15 +187,30 @@ class PrivacyController extends Controller
     public function updateIncident(Request $request, PrivacyIncident $privacyIncident): JsonResponse
     {
         Gate::authorize('manage-firm');
-        $privacyIncident->update($request->validate([
+        $privacyIncident->update($this->inAppTimezone($request->validate([
             ...array_map(fn ($rules) => ['sometimes', ...$rules], $this->incidentRules()),
             'npc_notified_at' => ['sometimes', 'nullable', 'date', 'before_or_equal:now'],
             'subjects_notified_at' => ['sometimes', 'nullable', 'date', 'before_or_equal:now'],
             'actions_taken' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'status' => ['sometimes', Rule::in(PrivacyIncident::STATUSES)],
-        ]));
+        ])));
 
         return response()->json($this->incidentPayload($privacyIncident->load('reporter:id,name')));
+    }
+
+    /**
+     * Browsers send times in UTC ("...Z"); stored as-is they would read back
+     * 8 hours off in Philippine time, and the 72-hour NPC deadline with them.
+     */
+    private function inAppTimezone(array $validated): array
+    {
+        foreach (['discovered_at', 'occurred_at', 'npc_notified_at', 'subjects_notified_at'] as $key) {
+            if (! empty($validated[$key])) {
+                $validated[$key] = CarbonImmutable::parse($validated[$key])->setTimezone(config('app.timezone'));
+            }
+        }
+
+        return $validated;
     }
 
     private function incidentRules(): array

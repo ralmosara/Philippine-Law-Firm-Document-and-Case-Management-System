@@ -92,7 +92,7 @@ class ClientImporter extends Importer
             || Values::nameKey($c->name) === Values::nameKey($values['name']));
 
         if ($existing) {
-            return "Already a client: {$existing->name}.";
+            return 'Already a client: '.rtrim($existing->name, '.').'.';
         }
 
         $keys = array_filter(['n:'.Values::nameKey($values['name']), $values['email'] ? 'e:'.$values['email'] : null, $values['tin'] ? 't:'.Values::tinKey($values['tin']) : null]);

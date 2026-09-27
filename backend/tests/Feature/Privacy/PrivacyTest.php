@@ -48,6 +48,10 @@ class PrivacyTest extends TestCase
 
         $this->postJson('/api/portal/privacy/accept')->assertOk()->assertJsonPath('needs_acceptance', false)->assertJsonPath('accepted_version', 1);
 
+        // As loaded from the database on the next request (dates cast, not strings).
+        $this->actingAs($this->client->fresh(), 'client');
+        $this->getJson('/api/portal/privacy')->assertOk()->assertJsonPath('accepted_at', fn ($at) => is_string($at) && str_contains($at, 'T'));
+
         // The firm names its DPO: the built-in notice changes, so it is a new version.
         $this->actingAs($this->partner);
         $this->putJson('/api/v1/privacy/settings', ['dpo_name' => 'Atty. Ana Reyes', 'dpo_email' => 'dpo@santosreyes.ph', 'retention_years' => 10])
@@ -178,7 +182,8 @@ class PrivacyTest extends TestCase
         $id = $this->postJson('/api/v1/privacy/incidents', [
             'title' => 'Laptop stolen from a car',
             'description' => 'An associate\'s laptop with client files was stolen in Makati.',
-            'discovered_at' => $discovered->toIso8601String(),
+            // As a browser sends it: UTC with a Z.
+            'discovered_at' => $discovered->copy()->utc()->format('Y-m-d\TH:i:s.v\Z'),
             'affected_count' => 40,
             'data_involved' => 'Names, case details, IDs',
             'sensitive' => true,
