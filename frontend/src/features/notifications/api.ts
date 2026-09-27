@@ -31,6 +31,7 @@ const AFFECTS: Record<string, string[][]> = {
   signature: [['documents']],
   signature_declined: [['documents']],
   privacy: [['privacy']],
+  document_uploaded: [['document-requests'], ['files']],
 }
 
 export function useNotifications() {

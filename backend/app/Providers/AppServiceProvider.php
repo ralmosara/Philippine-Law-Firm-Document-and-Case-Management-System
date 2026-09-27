@@ -13,6 +13,7 @@ use App\Domain\Deadlines\Services\DeadlineCalculator;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Documents\Models\SignatureRequest;
+use App\Domain\Documents\Requests\DocumentRequest;
 use App\Domain\Documents\Scanning\ClamAvScanner;
 use App\Domain\Documents\Scanning\NullVirusScanner;
 use App\Domain\Documents\Scanning\VirusScanner;
@@ -74,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
             'invoice_payment' => InvoicePayment::class,
             'data_subject_request' => DataSubjectRequest::class,
             'privacy_incident' => PrivacyIncident::class,
+            'document_request' => DocumentRequest::class,
         ]);
 
         $this->configureDatabaseTenancy();

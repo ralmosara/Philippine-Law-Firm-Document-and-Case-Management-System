@@ -67,6 +67,7 @@ export const router = createBrowserRouter([
           { path: 'messages', element: page(() => import('./features/client-portal/components/PortalMessages'), 'PortalMessages') },
           { path: 'messages/:id', element: page(() => import('./features/client-portal/components/PortalMessages'), 'PortalMessages') },
           { path: 'privacy', element: page(() => import('./features/client-portal/components/PortalPrivacy'), 'PortalPrivacyPage') },
+          { path: 'requests/:id', element: page(() => import('./features/client-portal/components/PortalDocumentRequests'), 'PortalDocumentRequest') },
         ],
       },
       {

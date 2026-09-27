@@ -2,6 +2,7 @@
 
 use App\Domain\Billing\Collections\Collections;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
+use App\Domain\Documents\Requests\DocumentRequests;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Domain\Trust\Services\TrustLedgerService;
 use App\Jobs\QueueHeartbeat;
@@ -60,6 +61,11 @@ Artisan::command('billing:collections', function (Collections $collections) {
     $this->info("Billed {$result['retainers']} retainer(s); sent {$result['reminders']} payment reminder(s) and {$result['replenishments']} trust top-up request(s).");
 })->purpose('Bill monthly retainers, remind clients of unpaid invoices, ask for trust top-ups');
 Schedule::command('billing:collections')->dailyAt('09:00')->withoutOverlapping()->onOneServer();
+
+Artisan::command('document-requests:remind', function (DocumentRequests $requests) {
+    $this->info("Sent {$requests->sendReminders()} document request reminder(s).");
+})->purpose('Remind clients of documents still missing, before and after the due date');
+Schedule::command('document-requests:remind')->dailyAt('09:05')->withoutOverlapping()->onOneServer();
 
 Artisan::command('ops:health-check', function (SystemHealth $health) {
     $checks = $health->run();

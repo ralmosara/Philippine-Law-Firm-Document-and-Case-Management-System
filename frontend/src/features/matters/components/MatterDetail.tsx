@@ -13,6 +13,7 @@ import { DocumentsTable } from '@/features/documents/components/DocumentsTable'
 import { MatterFilesPanel } from '@/features/documents/components/MatterFilesPanel'
 import { NewThreadDialog, ThreadList } from '@/features/messages/components/MessagesInbox'
 import { MatterAssistant } from '@/features/assistant/components/MatterAssistant'
+import { DocumentRequestsCard } from '@/features/documents/components/DocumentRequestsCard'
 import { PleadingBuilder } from '@/features/documents/components/PleadingBuilder'
 import { TemplatePicker } from '@/features/documents/components/TemplatePicker'
 import { money } from '@/shared/lib/format'
@@ -101,7 +102,12 @@ export function MatterDetail() {
       )}
 
       {tab === 'documents' && <MatterDocuments matterId={id} onNew={() => setDialog('document')} onPleading={() => setDialog('pleading')} canCreate={abilities.work_matters} />}
-      {tab === 'files' && <MatterFilesPanel matterId={id} canEdit={abilities.work_matters} />}
+      {tab === 'files' && (
+        <div className="flex flex-col gap-6">
+          {m.client?.portal_enabled && <DocumentRequestsCard matterId={id} canEdit={abilities.work_matters} />}
+          <MatterFilesPanel matterId={id} canEdit={abilities.work_matters} />
+        </div>
+      )}
       {tab === 'assistant' && abilities.work_matters && <MatterAssistant matterId={id} />}
       {tab === 'messages' && <MatterMessages matterId={id} canWrite={abilities.work_matters && !!m.client?.portal_enabled} />}
       {tab === 'time' && (

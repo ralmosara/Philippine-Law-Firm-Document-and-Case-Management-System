@@ -8,6 +8,7 @@ import { Badge, EmptyState, ErrorState, PageLoader, ProgressBar } from '@/shared
 import { FormError } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader, StatCard, Table, Td, Th } from '@/shared/ui/Layout'
 import { usePayInvoice, usePortalInvoices, usePortalMatters, usePortalSession, usePortalSignatureRequests, usePortalTrust } from '../api'
+import { DocumentRequestsBanner } from './PortalDocumentRequests'
 
 export function ClientDashboard() {
   const session = usePortalSession()
@@ -23,6 +24,7 @@ export function ClientDashboard() {
 
       <PaymentReturnBanner />
       <SignatureRequests />
+      <DocumentRequestsBanner />
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Amount due" value={money(invoices.data?.outstanding_cents)} tone={invoices.data?.data.some((i) => i.is_overdue) ? 'danger' : undefined} detail={invoices.data?.data.some((i) => i.is_overdue) ? 'An invoice is past due' : undefined} />
         <StatCard label="Held for you in trust" value={money(trustTotal)} detail="Deposits for fees and costs, held separately from the firm’s funds" />

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\ConflictCheckController;
 use App\Http\Controllers\Api\V1\CourtDayController;
 use App\Http\Controllers\Api\V1\DeadlineRuleController;
 use App\Http\Controllers\Api\V1\DocumentController;
+use App\Http\Controllers\Api\V1\DocumentRequestController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
 use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\FirmController;
@@ -42,6 +43,7 @@ use App\Http\Controllers\Api\V1\WorkflowTemplateController;
 use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PayMongoWebhookController;
+use App\Http\Controllers\PortalDocumentRequestController;
 use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
 use App\Http\Controllers\PublicIntakeController;
@@ -133,6 +135,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('tasks', [TaskController::class, 'index']);
         Route::post('tasks/{deadline}/move', [TaskController::class, 'move']);
 
+        Route::get('matters/{matter}/document-requests', [DocumentRequestController::class, 'index']);
+        Route::post('matters/{matter}/document-requests', [DocumentRequestController::class, 'store']);
+        Route::post('document-request-items/{item}/review', [DocumentRequestController::class, 'review']);
+        Route::post('document-requests/{documentRequest}/cancel', [DocumentRequestController::class, 'cancel']);
         Route::get('court-day', [CourtDayController::class, 'index']);
         Route::post('deadlines/{deadline}/hearing-outcome', [CourtDayController::class, 'outcome']);
         Route::get('deadlines', [MatterDeadlineController::class, 'index']);
@@ -257,6 +263,9 @@ Route::prefix('portal')->middleware('throttle:api')->group(function () {
         Route::post('message-threads', [PortalMessageController::class, 'store']);
         Route::get('message-threads/{thread}', [PortalMessageController::class, 'show'])->whereNumber('thread');
         Route::post('message-threads/{thread}/messages', [PortalMessageController::class, 'reply'])->whereNumber('thread');
+        Route::get('document-requests', [PortalDocumentRequestController::class, 'index']);
+        Route::get('document-requests/{documentRequest}', [PortalDocumentRequestController::class, 'show'])->whereNumber('documentRequest');
+        Route::post('document-request-items/{item}/upload', [PortalDocumentRequestController::class, 'upload'])->whereNumber('item');
         Route::get('privacy', [PortalPrivacyController::class, 'show']);
         Route::post('privacy/accept', [PortalPrivacyController::class, 'accept']);
         Route::post('privacy/requests', [PortalPrivacyController::class, 'storeRequest']);
