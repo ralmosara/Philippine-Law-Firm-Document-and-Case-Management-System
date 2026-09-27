@@ -35,6 +35,8 @@ export interface User extends UserRef {
   is_lawyer: boolean
   ibp_number: string | null
   roll_number: string | null
+  ptr_number?: string | null
+  mcle_compliance_number?: string | null
   mobile_number: string | null
   hourly_rate_cents: number
   is_active: boolean
@@ -89,6 +91,7 @@ export interface Client {
   phone: string | null
   address: string | null
   notes: string | null
+  aliases?: string | null
   portal_enabled: boolean
   portal_password_set: boolean
   last_portal_login_at: string | null
@@ -140,6 +143,12 @@ export interface Matter extends MatterRef {
   acceptance_fee_cents?: number | null
   appearance_fee_cents?: number | null
   contingency_basis_points?: number | null
+  client_role?: string
+  nature_of_action?: string | null
+  retainer_auto_bill?: boolean
+  retainer_billing_day?: number
+  retainer_auto_issue?: boolean
+  retainer_billed_through?: string | null
   created_at: string
 }
 
@@ -269,6 +278,9 @@ export interface TrustAccount {
   id: number
   account_number: string
   balance_cents: number
+  minimum_balance_cents?: number | null
+  below_minimum?: boolean
+  replenishment_requested_at?: string | null
   status: 'open' | 'closed'
   client?: { id: number; name: string }
   matter?: MatterRef | null
@@ -338,6 +350,8 @@ export interface Invoice {
   can_pay_online: boolean
   payments?: OnlinePayment[]
   invoice_payments?: InvoicePayment[]
+  reminders_paused_at?: string | null
+  reminders?: { stage: string; label: string; balance_cents: number; sent_by: string | null; sent_at: string }[]
   created_at: string
 }
 
@@ -425,6 +439,9 @@ export interface ConflictMatch {
   matter_id: number | null
   matter_reference: string | null
   matter_title: string | null
+  /** How close the names are (60-100) and why they matched; absent on older checks. */
+  score?: number
+  reason?: string
 }
 
 export interface ConflictCheck {

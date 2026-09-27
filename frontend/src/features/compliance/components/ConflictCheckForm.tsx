@@ -1,11 +1,11 @@
-import { AlertTriangle, CheckCircle2, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ShieldCheck, FileDown } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAbilities } from '@/features/auth/session'
 import type { ConflictCheck, ConflictStatus } from '@/shared/api/types'
 import { dateTime } from '@/shared/lib/format'
 import { useUrlPage } from '@/shared/lib/hooks'
-import { Button } from '@/shared/ui/Button'
+import { Button, DownloadButton } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Input } from '@/shared/ui/Form'
@@ -88,7 +88,8 @@ function ConflictResult({ check }: { check: ConflictCheck }) {
     return (
       <div role="status" className="mx-5 mb-5 flex items-center gap-3 rounded-xl bg-success-container p-4 text-on-success-container">
         <CheckCircle2 className="size-5 shrink-0" aria-hidden="true" />
-        <p className="text-sm">No matches for <strong>{check.search_term}</strong>. This clear result has been recorded.</p>
+        <p className="flex-1 text-sm">No matches for <strong>{check.search_term}</strong>. This clear result has been recorded.</p>
+        <DownloadButton href={`/api/v1/conflict-checks/${check.id}/pdf`} size="sm" icon={<FileDown className="size-4" />}>Report</DownloadButton>
       </div>
     )
   }
@@ -106,17 +107,21 @@ function ConflictResult({ check }: { check: ConflictCheck }) {
         )}
       </div>
       <Table caption="Matches">
-        <thead><tr><Th>Name</Th><Th>Relationship</Th><Th>Matter</Th></tr></thead>
+        <thead><tr><Th>Name</Th><Th>Relationship</Th><Th>Matter</Th><Th>Why it matched</Th></tr></thead>
         <tbody>
           {check.matches.map((m) => (
             <tr key={`${m.source}-${m.id}`}>
               <Td className="font-medium">{m.name}</Td>
               <Td><Badge tone={m.is_adverse ? 'danger' : 'primary'}>{m.relationship}</Badge></Td>
               <Td>{m.matter_id ? <Link to={`/matters/${m.matter_id}`} className="text-primary hover:underline">{m.matter_reference} · {m.matter_title}</Link> : <span className="text-on-surface-variant">{m.matter_title}</span>}</Td>
+              <Td className="text-sm text-on-surface-variant">{m.reason ?? 'Name match'}{m.score !== undefined && m.score < 100 && <span className="ml-1 tabular-nums">({m.score}%)</span>}</Td>
             </tr>
           ))}
         </tbody>
       </Table>
+      <div className="flex justify-end px-5 py-3">
+        <DownloadButton href={`/api/v1/conflict-checks/${check.id}/pdf`} size="sm" icon={<FileDown className="size-4" />}>Download report for the file</DownloadButton>
+      </div>
       <ConfirmDialog
         open={deciding !== null}
         onClose={() => setDeciding(null)}

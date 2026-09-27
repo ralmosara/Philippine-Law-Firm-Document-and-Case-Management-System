@@ -27,7 +27,7 @@ export function PublicIntakePage() {
   if (page.isError) {
     return <main className="mx-auto max-w-lg px-4 py-24"><EmptyState title="This page isn’t available" description="The firm may not be accepting online requests. Please contact them directly." /></main>
   }
-  const { firm, message, case_types } = page.data
+  const { firm, message, case_types, privacy_notice } = page.data
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -139,6 +139,12 @@ export function PublicIntakePage() {
                     onChange={(e) => set('consent', e.target.checked)}
                   />
                   {error?.field('consent') && <p className="mt-1 text-xs text-danger">{error.field('consent')}</p>}
+                  {privacy_notice && (
+                    <details className="mt-2 text-sm">
+                      <summary className="cursor-pointer text-primary">Read our privacy notice</summary>
+                      <div className="mt-2 max-h-72 overflow-y-auto rounded-lg bg-surface-container p-3 whitespace-pre-line text-on-surface-variant">{privacy_notice}</div>
+                    </details>
+                  )}
                 </div>
 
                 <Button type="submit" loading={submit.isPending} className="sm:col-span-2">Send request</Button>

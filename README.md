@@ -13,8 +13,11 @@ register, IBP/MCLE compliance, 12% VAT billing, and client trust accounting.
 | Area | Capabilities |
 |---|---|
 | **Matters & clients** | Matters with an enforced status lifecycle (intake → filed → pre-trial → trial → decision → appeal → closed) and an append-only status history; parties and adverse counsel; per-case-type workflow checklists created automatically when a matter opens. |
+| **Court day** | A phone-first page of the day's hearings: courtroom, branch, judge, parties, opposing counsel, a tap-to-call client number and what to bring. "Hearing done" records the outcome (held, reset with the new date, cancelled), the deadlines the court gave (counted under Rule 22) and the appearance time, in one step. |
 | **Deadlines** | Reglementary periods computed under Rule 22, Sec. 1 (exclude the first day, include the last, roll past weekends and holidays), with a live preview that explains every adjustment. Seeded with common Rules of Court periods; firms add their own. Hearing calendar. Escalating reminders (7 days / 3 days / 1 day / day-of) by email, plus SMS through Semaphore for the last two stages; overdue deadlines are flagged as missed and escalated. |
-| **Documents** | Templates with `{{ merge_fields }}` filled from the matter, client, court and lawyer; immutable versions with side-by-side redlines; draft → final → signed → notarized lifecycle; selective sharing to the client portal. |
+| **Documents** | Templates with `{{ merge_fields }}` filled from the matter, client, court and lawyer; immutable versions with side-by-side redlines; draft → final → signed → notarized lifecycle; selective sharing to the client portal. Download as PDF or Word (.docx). |
+| **Pleadings** | Assembled from the matter with a live preview: court heading, caption with the parties on the proper sides (People of the Philippines in criminal cases), docket label by case type and "For:" nature of the action, title, body or outline, prayer, and the Rule 7, Sec. 3 signature block (roll, IBP, PTR, MCLE, e-mail). Verification and certification against forum shopping for initiatory pleadings; explanation of service and copy furnished to opposing counsel. Word export keeps the layout (caption as a two-column table) on the firm's paper and font: 8.5 x 13 in, 14 pt and the Efficient Use of Paper Rule margins by default. |
+| **Document requests** | Send the client a checklist (ID, contracts, SPA…) with a due date; they upload each item in the portal (virus-scanned, filed with the matter); accept it or send it back with a reason. Reminders before the due date and once overdue. |
 | **Files** | Upload pleadings, evidence, scans, email and audio to a matter (up to 20 MB each, type checked against the content). Stored privately under unguessable names with a SHA-256 checksum; always downloaded as attachments; removal hides the file but keeps it for retention; share individual files to the portal. Every upload is scanned by ClamAV before it is stored; malware is refused and logged, and if the scanner is down uploads are refused rather than stored unscanned. |
 | **File search & OCR** | Search inside uploaded PDF, Word, Excel, PowerPoint, OpenDocument, RTF, text, CSV and email files, firm-wide or within a matter, with the matching passage highlighted. Scanned images and image-only PDFs are read with OCR (Tesseract, English and Filipino). Text is extracted in the background; PostgreSQL full-text search with prefix matching ("affid" finds "affidavit"). |
 | **Tasks** | A board per firm or matter (to do → in progress → for review → done) with drag-and-drop and a keyboard-accessible "move to" menu, priorities and assignees; every move is logged. Built on the matter's task deadlines, so workflow checklists land on the board automatically. |
@@ -26,11 +29,15 @@ register, IBP/MCLE compliance, 12% VAT billing, and client trust accounting.
 | **Notarial register** | Doc./Page/Book/Series numbering per notary (2004 Rules on Notarial Practice), competent evidence of identity, permanent entries. |
 | **Trust accounts** | Client funds ledger: every posting carries its running balance, rows are append-only, disbursements are partner-only, overdrafts are impossible. Nightly reconciliation of every account. Paying an invoice from trust disburses and records it atomically. |
 | **Time & billing** | Global timer that survives reloads; time at the lawyer's standard rate; expenses advanced for the client (docket and sheriff's fees, TSN, courier…) with receipts; hourly, flat, monthly retainer, contingency and pro bono arrangements with acceptance and appearance fees. Invoices combine unbilled time, fee lines and expenses: 12% VAT on professional fees only (or none for non-VAT firms), expenses at cost. Draft → issued → partly paid → paid / void; voiding releases time and expenses. Payments are recorded in installments (cash, check, bank transfer, e-wallet, card, client trust or PayMongo), each with the **creditable withholding tax** the client deducted (on fees only, never VAT or expenses) and its **BIR Form 2307**, tracked until it arrives. A mistaken payment is voided with a reason, never deleted. Billing statements and documents download as PDF on the firm's letterhead (with the e-signature record appended). |
+| **Collections** | Monthly retainers billed automatically on the matter's billing day (as a draft, or issued and e-mailed). Payment reminders the firm can turn on: 3 days before the due date, then 1 week and 1 month overdue, with the statement attached, pausable per invoice. Trust accounts with an agreed minimum: below it the client is asked to top up, at most weekly. |
 | **Reports** | Aged receivables (by days past due), collections by responsible lawyer, and matter profitability (time recorded, billed, collected, unbilled, expenses), each downloadable as CSV for Excel. |
 | **Calendar sync** | A private subscription link for Google Calendar, Outlook or a phone: hearings, filing deadlines and tasks, updated about hourly. Titles show only the matter reference unless the lawyer opts in to case details. |
-| **Compliance** | Conflict-of-interest search across current and former clients and all matter parties (order- and case-insensitive), with every search and its resolution kept. MCLE credit tracking per compliance period, and a firm-wide compliance view. |
+| **Compliance** | Conflict-of-interest search across current and former clients (and the other names they are known by) and all matter parties, tuned for Philippine names: any word order, "de la" = "dela", "Ma." = Maria, titles, Jr./III and company forms ignored, small misspellings caught; each match is ranked with its reason, and the check with its resolution downloads as a PDF for the file. MCLE credit tracking per compliance period, and a firm-wide compliance view. |
 | **Analytics** | Collections, receivables, unbilled WIP, trust funds held, matters by stage and lawyer utilization — computed live. |
 | **Client portal** | Separate login where clients see matter progress, upcoming hearings, shared documents, invoices and trust activity — never internal notes or deadlines. |
+| **Data privacy** | For the firm's obligations under the Data Privacy Act (RA 10173): a versioned privacy notice naming the DPO, shown on the intake form and accepted by portal clients (again when it changes); requests from data subjects to see, correct, delete or object, from the portal or recorded by staff, with a 15-day target; a one-click export of everything held about a client; anonymization once no business is open; a retention period with secure disposal of closed matters; and a breach log with the 72-hour NPC notification countdown. |
+| **Notifications** | A bell with everything that needs you: reminders, missed deadlines, client messages and uploads, intake requests, signatures, assignments, online payments and privacy requests. Live over WebSockets (Laravel Reverb); polls if there is no WebSocket server. |
+| **Import** | Bring existing clients, matters, deadlines and trust opening balances over from Excel or CSV: tolerant headers, Philippine date and peso formats, duplicates found in the database and within the file, a preview before anything is saved, and undo for seven days. |
 | **Administration** | Users and roles, firm deadline rules, holiday calendar, workflows, and a Data Privacy Act–oriented audit log of changes to client data. |
 | **Account security** | Password reset by email (no account enumeration; signs out other sessions). Two-step verification with any authenticator app (TOTP), single-use recovery codes, codes accepted once only, and an administrator reset for lost phones. Firms can require two-step verification for everyone: staff without it can only set it up until they do. Portal clients reset their own password, or are invited by email to choose one; a person who is a client of several firms gets a separate link per firm. |
 
@@ -73,7 +80,7 @@ Open **http://localhost:5173**. Always use the Vite URL: the SPA and API must sh
 ## Running in production (Docker)
 
 ```bash
-cp .env.example .env                    # DOMAIN, APP_URL, passwords, BACKUP_PASSPHRASE, OPS_ALERT_EMAIL
+cp .env.example .env                    # DOMAIN, APP_URL, passwords, BACKUP_PASSPHRASE, REVERB_APP_KEY/SECRET, OPS_ALERT_EMAIL
 cp backend/.env.example backend/.env    # mail, PayMongo, Anthropic, SMS
 docker compose run --rm app php artisan key:generate --show   # paste into backend/.env as APP_KEY
 docker compose up -d --build
@@ -90,7 +97,8 @@ Point `DOMAIN` at the server and open ports 80 and 443; Caddy then gets and rene
 | `app` | PHP-FPM (Laravel). Trusts `X-Forwarded-*` only from the private Docker network; cookies are `Secure`. |
 | `queue` | Reminders, email and other quick jobs. |
 | `queue-heavy` | OCR, text extraction and the assistant, on their own queue, so a pile of scanned uploads can never delay a deadline reminder. |
-| `scheduler` | Deadline reminders (hourly), trust reconciliation (nightly), worker heartbeats, the health check and its alerts (every 5 min). |
+| `reverb` | WebSocket server for live notifications; browsers reach it at `/app` on the same domain. |
+| `scheduler` | Deadline reminders (hourly), trust reconciliation (nightly), retainer billing, payment and document reminders and trust top-up requests (daily at 9), worker heartbeats, the health check and its alerts (every 5 min). |
 | `backup` | Nightly encrypted backup, weekly restore test, optional off-site copy. |
 | `db`, `redis`, `clamav` | PostgreSQL 16 (the app connects as a non-superuser), Redis, virus scanner. |
 
@@ -188,10 +196,17 @@ CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on
 - **Use HTTPS only.** `docker-compose.yml` does this with Caddy. Behind another proxy or load balancer, set `TRUSTED_PROXIES` to its address, `SESSION_SECURE_COOKIE=true` and an `https://` `APP_URL`.
 - Use 64-bit PHP in production. 32-bit builds cannot represent peso amounts above about ₱21 million in centavos.
 
+### Before relying on the new tools
+
+- **Privacy notice:** have your Data Protection Officer review the built-in notice (or write your own under Data Privacy → Notice & DPO) and register the DPO with the NPC as required.
+- **Pleadings:** the assembled parts follow the 2019 Amended Rules of Civil Procedure and the Efficient Use of Paper Rule as commonly applied; check the format against your court's current requirements (some courts and agencies ask for A4 or other margins) and review every pleading before filing.
+- **Payment reminders** are off until you turn them on (Time & Billing → Collections); review the wording first.
+
 ## Not yet implemented
 
-- Text from legacy binary `.doc`/`.xls`/`.ppt`/`.msg` files (found by name and description only), and DOCX export (PDF export exists).
-- Real-time updates: messages and the assistant refresh by polling (every 15 s and 2 s), not WebSockets.
+- Text from legacy binary `.doc`/`.xls`/`.ppt`/`.msg` files (found by name and description only).
+- Live updates cover notifications; open message threads and the assistant still refresh by polling (every 15 s and 2 s).
+- Import of time entries, invoices and documents from other systems (clients, matters, deadlines and trust balances import from spreadsheets).
 - Calendar subscriptions for portal clients (their hearings are shown in the portal).
 - Third-party e-signature providers (DocuSign and similar); signing is built in and happens in the client portal.
 - Refunds through PayMongo from inside the app (issue them in the PayMongo dashboard).

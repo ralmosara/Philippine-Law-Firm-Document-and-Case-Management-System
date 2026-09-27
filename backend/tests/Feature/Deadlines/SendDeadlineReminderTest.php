@@ -75,7 +75,7 @@ class SendDeadlineReminderTest extends TestCase
         (new SendDeadlineReminder($deadline->id, ReminderStage::OneDay))->handle();
 
         Notification::assertSentTo($this->lawyer, DeadlineReminder::class, function ($notification, array $channels) {
-            return $channels === ['mail', SmsChannel::class];
+            return $channels === ['mail', SmsChannel::class, 'database', 'broadcast'];
         });
         Notification::assertCount(1); // assignee and responsible lawyer are the same person
 
@@ -91,7 +91,7 @@ class SendDeadlineReminderTest extends TestCase
 
         (new SendDeadlineReminder($deadline->id, ReminderStage::SevenDays))->handle();
 
-        Notification::assertSentTo($this->lawyer, DeadlineReminder::class, fn ($n, array $channels) => $channels === ['mail']);
+        Notification::assertSentTo($this->lawyer, DeadlineReminder::class, fn ($n, array $channels) => $channels === ['mail', 'database', 'broadcast']); // e-mail and the bell, no SMS
     }
 
     public function test_a_completed_deadline_is_not_reminded(): void

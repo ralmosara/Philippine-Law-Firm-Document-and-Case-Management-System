@@ -7,6 +7,7 @@ import { Field, FormError, Input } from '@/shared/ui/Form'
 import { Card, CardHeader, DescriptionList, PageHeader } from '@/shared/ui/Layout'
 import { useChangePassword } from '../api'
 import { CalendarSubscription } from './CalendarSubscription'
+import { CounselCredentials } from './CounselCredentials'
 import { TwoFactorSettings } from './TwoFactorSettings'
 
 export function ProfilePage() {
@@ -32,7 +33,7 @@ export function ProfilePage() {
       <PageHeader title="Profile" description={`${user.role_label} · ${firm.name}`} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Your details" description="Ask your managing partner to change these." />
+          <CardHeader title="Your details" description="Ask your managing partner to change your name, e-mail or rate." />
           <div className="p-5">
             <DescriptionList
               items={[
@@ -62,6 +63,11 @@ export function ProfilePage() {
             <Button type="submit" loading={change.isPending} className="self-start">Update password</Button>
           </form>
         </Card>
+        {user.is_lawyer && (
+          <div className="lg:col-span-2">
+            <CounselCredentials />
+          </div>
+        )}
         <div className="lg:col-span-2">
           <TwoFactorSettings />
         </div>

@@ -31,7 +31,7 @@ export function useClientOptions(enabled = true) {
   })
 }
 
-export type ClientInput = Pick<Client, 'type' | 'name'> & Partial<Pick<Client, 'tin' | 'email' | 'phone' | 'address' | 'notes'>>
+export type ClientInput = Pick<Client, 'type' | 'name'> & Partial<Pick<Client, 'tin' | 'email' | 'phone' | 'address' | 'notes' | 'aliases'>>
 
 export function useSaveClient(id?: number) {
   return useApiMutation((input: ClientInput) => (id ? put<Client>(`/v1/clients/${id}`, input) : post<Client>('/v1/clients', input)), {

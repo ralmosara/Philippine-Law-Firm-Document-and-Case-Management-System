@@ -3,6 +3,7 @@
 namespace App\Domain\Billing\Models;
 
 use App\Casts\DateOnly;
+use App\Domain\Billing\Collections\InvoiceReminder;
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
@@ -34,6 +35,7 @@ class Invoice extends Model
         'status' => 'draft',
         'settled_cents' => 0,
         'withholding_cents' => 0,
+        'reminders_paused_at' => null,
     ];
 
     protected function casts(): array
@@ -49,6 +51,7 @@ class Invoice extends Model
             'paid_at' => 'datetime',
             'settled_cents' => 'integer',
             'withholding_cents' => 'integer',
+            'reminders_paused_at' => 'datetime',
         ];
     }
 
@@ -65,6 +68,11 @@ class Invoice extends Model
     public function withholdingRoom(): int
     {
         return max(0, $this->subtotal_cents - (int) ($this->attributes['withholding_cents'] ?? 0));
+    }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(InvoiceReminder::class)->latest('sent_at');
     }
 
     public function invoicePayments(): HasMany

@@ -10,6 +10,7 @@ import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Field, FormError, Input } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader, Pagination, StatCard, Table, Td, Th } from '@/shared/ui/Layout'
 import { useToast } from '@/shared/ui/Toast'
+import { MinimumBalance } from './MinimumBalance'
 import { useCloseTrustAccount, usePostTrustTransaction, useReconcile, useTrustAccount, useTrustTransactions } from '../api'
 
 type PostType = 'deposit' | 'disbursement'
@@ -59,6 +60,7 @@ export function TrustAccountDetail() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Balance held in trust" value={money(a.balance_cents)} />
+        <MinimumBalance account={a} canEdit={abilities.manage_finances && isOpen} />
       </div>
 
       <Card>

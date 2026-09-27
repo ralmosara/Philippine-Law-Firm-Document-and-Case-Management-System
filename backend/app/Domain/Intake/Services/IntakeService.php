@@ -60,6 +60,7 @@ class IntakeService
                         'opposing_parties' => array_values(array_filter($data['opposing_parties'] ?? [])),
                         'preferred_times' => array_values($data['preferred_times'] ?? []),
                         'consent_at' => now(),
+                        'privacy_notice_version' => $firm->privacy_notice_version,
                         'ip_address' => $ip,
                         'conflict_check_ids' => $checks->pluck('id')->all(),
                         'conflict_status' => $checks->contains(fn ($c) => $c->status === ConflictCheckStatus::Flagged) ? 'flagged' : 'clear',

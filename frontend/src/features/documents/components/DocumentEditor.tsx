@@ -93,6 +93,7 @@ export function DocumentEditor() {
         actions={
           <>
             <DownloadButton href={`/api/v1/documents/${doc.id}/pdf`} icon={<FileDown className="size-4" />}>PDF</DownloadButton>
+            <DownloadButton href={`/api/v1/documents/${doc.id}/docx`} icon={<FileDown className="size-4" />}>Word</DownloadButton>
             <Button variant="text" icon={<Printer className="size-4" />} onClick={() => window.print()}>Print</Button>
             {abilities.practice_law && NEXT_STATUS[doc.status].map((next) => (
               <Button key={next.status} variant="outlined" loading={setStatus.isPending} disabled={dirty} onClick={() => setStatus.mutate(next.status)} title={dirty ? 'Save your changes first' : undefined}>

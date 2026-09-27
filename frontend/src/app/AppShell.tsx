@@ -18,6 +18,8 @@ import {
   Users,
   UserRound,
   X,
+  FileLock2,
+  Gavel,
 } from 'lucide-react'
 import { useEffect, useState, type ComponentType } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -27,6 +29,7 @@ import { useUnreadMessages } from '@/features/messages/api'
 import { useOpenIntakeCount } from '@/features/intake/api'
 import type { Abilities } from '@/shared/api/types'
 import { IconButton } from '@/shared/ui/Button'
+import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 import { Avatar } from '@/shared/ui/Feedback'
 
 interface NavItem {
@@ -44,6 +47,7 @@ const NAV: NavItem[] = [
   { to: '/matters', label: 'Matters', icon: Briefcase },
   { to: '/clients', label: 'Clients', icon: UserRound },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
+  { to: '/court-day', label: 'Court day', icon: Gavel, ability: 'work_matters' },
   { to: '/tasks', label: 'Tasks', icon: KanbanSquare },
   { to: '/messages', label: 'Messages', icon: MessagesSquare, badge: 'messages' },
   { to: '/intake', label: 'Intake', icon: Inbox, ability: 'work_matters', badge: 'intake' },
@@ -52,6 +56,7 @@ const NAV: NavItem[] = [
   { to: '/trust', label: 'Trust Accounts', icon: Landmark, ability: 'work_matters' },
   { to: '/reports', label: 'Reports', icon: ChartNoAxesColumn, ability: 'manage_finances' },
   { to: '/compliance', label: 'Compliance', icon: ShieldCheck },
+  { to: '/privacy', label: 'Data Privacy', icon: FileLock2, ability: 'manage_firm' },
   { to: '/settings', label: 'Firm Settings', icon: Settings, ability: 'manage_firm' },
 ]
 
@@ -136,6 +141,7 @@ export function AppShell() {
             <Menu className="size-5" />
           </IconButton>
           <div className="flex-1" />
+          <NotificationBell userId={user.id} />
           <UserMenu name={user.name} role={user.role_label} email={user.email} />
         </header>
 

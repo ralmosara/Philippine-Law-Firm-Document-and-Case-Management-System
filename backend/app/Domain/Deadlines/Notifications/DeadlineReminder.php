@@ -6,11 +6,14 @@ use App\Domain\Deadlines\Enums\ReminderStage;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Notifications\Channels\SmsChannel;
 use App\Notifications\Channels\SmsMessage;
+use App\Notifications\Concerns\ShowsInApp;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class DeadlineReminder extends Notification
 {
+    use ShowsInApp;
+
     public function __construct(
         public readonly MatterDeadline $deadline,
         public readonly ReminderStage $stage,
@@ -21,7 +24,19 @@ class DeadlineReminder extends Notification
         // SMS only for the final two stages, when it is most likely to matter.
         $urgent = $this->stage->rank() >= ReminderStage::OneDay->rank();
 
-        return $urgent && $notifiable->routeNotificationFor('sms') ? ['mail', SmsChannel::class] : ['mail'];
+        return $this->withInApp($notifiable, $urgent && $notifiable->routeNotificationFor('sms') ? ['mail', SmsChannel::class] : ['mail']);
+    }
+
+    protected function inApp(object $notifiable): array
+    {
+        $matter = $this->deadline->matter;
+
+        return [
+            'kind' => 'deadline',
+            'title' => "{$this->deadline->title}: {$this->stage->label()}",
+            'body' => "{$matter->reference} {$matter->title}, due ".$this->deadline->due_date->format('M j').($this->deadline->due_time ? ' at '.substr($this->deadline->due_time, 0, 5) : ''),
+            'url' => "/matters/{$matter->id}?tab=deadlines",
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

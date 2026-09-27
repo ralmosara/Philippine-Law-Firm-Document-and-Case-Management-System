@@ -24,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Private channels for live notifications; authorized at /api/broadcasting/auth.
+    ->withBroadcasting(__DIR__.'/../routes/channels.php', ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum']])
     ->withMiddleware(function (Middleware $middleware): void {
         // Cookie-based session auth for the first-party SPA (Sanctum).
         $middleware->statefulApi();

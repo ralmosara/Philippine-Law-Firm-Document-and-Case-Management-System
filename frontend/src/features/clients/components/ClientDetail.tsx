@@ -1,4 +1,4 @@
-import { ArrowLeft, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Download, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAbilities } from '@/features/auth/session'
@@ -8,7 +8,7 @@ import { useTrustAccounts } from '@/features/trust/api'
 import { ApiError } from '@/shared/api/axios'
 import type { Client } from '@/shared/api/types'
 import { date, dateTime, money } from '@/shared/lib/format'
-import { Button } from '@/shared/ui/Button'
+import { Button, DownloadButton } from '@/shared/ui/Button'
 import { ConfirmDialog, Dialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Field, FormError, Input } from '@/shared/ui/Form'
@@ -40,6 +40,7 @@ export function ClientDetail() {
             {abilities.manage_finances && !c.matters?.length && (
               <Button variant="text" icon={<Trash2 className="size-4" />} onClick={() => setDialog('delete')}>Delete</Button>
             )}
+            {abilities.manage_firm && <DownloadButton href={`/api/v1/clients/${c.id}/personal-data`} icon={<Download className="size-4" />}>Personal data</DownloadButton>}
             {abilities.practice_law && <Button variant="outlined" icon={<KeyRound className="size-4" />} onClick={() => setDialog('portal')}>Portal access</Button>}
             <Button variant="outlined" icon={<Pencil className="size-4" />} onClick={() => setDialog('edit')}>Edit</Button>
             {abilities.work_matters && <Button icon={<Plus className="size-4" />} onClick={() => setDialog('matter')}>New matter</Button>}

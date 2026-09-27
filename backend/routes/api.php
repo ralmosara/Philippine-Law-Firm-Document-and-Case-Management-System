@@ -7,13 +7,17 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CalendarFeedController;
 use App\Http\Controllers\Api\V1\ClientAuthController;
 use App\Http\Controllers\Api\V1\ClientController;
+use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\ConflictCheckController;
+use App\Http\Controllers\Api\V1\CourtDayController;
 use App\Http\Controllers\Api\V1\DeadlineRuleController;
 use App\Http\Controllers\Api\V1\DocumentController;
+use App\Http\Controllers\Api\V1\DocumentRequestController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
 use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\FirmController;
 use App\Http\Controllers\Api\V1\HolidayController;
+use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\IntakeController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoicePaymentController;
@@ -25,6 +29,9 @@ use App\Http\Controllers\Api\V1\MatterPartyController;
 use App\Http\Controllers\Api\V1\McleController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotarialEntryController;
+use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\PleadingController;
+use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SignatureRequestController;
 use App\Http\Controllers\Api\V1\TaskController;
@@ -36,7 +43,9 @@ use App\Http\Controllers\Api\V1\WorkflowTemplateController;
 use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PayMongoWebhookController;
+use App\Http\Controllers\PortalDocumentRequestController;
 use App\Http\Controllers\PortalMessageController;
+use App\Http\Controllers\PortalPrivacyController;
 use App\Http\Controllers\PublicIntakeController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,8 +71,12 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
+        Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id');
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::put('auth/password', [AuthController::class, 'updatePassword']);
+        Route::put('auth/credentials', [AuthController::class, 'updateCredentials']);
         Route::post('auth/two-factor', [TwoFactorController::class, 'enable']);
         Route::post('auth/two-factor/confirm', [TwoFactorController::class, 'confirm']);
         Route::delete('auth/two-factor', [TwoFactorController::class, 'disable']);
@@ -122,6 +135,12 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('tasks', [TaskController::class, 'index']);
         Route::post('tasks/{deadline}/move', [TaskController::class, 'move']);
 
+        Route::get('matters/{matter}/document-requests', [DocumentRequestController::class, 'index']);
+        Route::post('matters/{matter}/document-requests', [DocumentRequestController::class, 'store']);
+        Route::post('document-request-items/{item}/review', [DocumentRequestController::class, 'review']);
+        Route::post('document-requests/{documentRequest}/cancel', [DocumentRequestController::class, 'cancel']);
+        Route::get('court-day', [CourtDayController::class, 'index']);
+        Route::post('deadlines/{deadline}/hearing-outcome', [CourtDayController::class, 'outcome']);
         Route::get('deadlines', [MatterDeadlineController::class, 'index']);
         Route::post('deadlines/compute', [MatterDeadlineController::class, 'compute']);
         Route::get('deadlines/{deadline}', [MatterDeadlineController::class, 'show']);
@@ -137,6 +156,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::apiResource('document-templates', DocumentTemplateController::class);
         Route::apiResource('documents', DocumentController::class);
         Route::get('documents/{document}/pdf', [DocumentController::class, 'pdf']);
+        Route::get('documents/{document}/docx', [PleadingController::class, 'docx']);
+        Route::get('pleadings/options', [PleadingController::class, 'options']);
+        Route::post('matters/{matter}/pleadings/preview', [PleadingController::class, 'preview']);
+        Route::post('matters/{matter}/pleadings', [PleadingController::class, 'store']);
         Route::get('documents/{document}/versions', [DocumentController::class, 'versions']);
         Route::post('documents/{document}/versions', [DocumentController::class, 'saveVersion']);
         Route::post('documents/{document}/status', [DocumentController::class, 'transition']);
@@ -163,6 +186,34 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('invoices/{invoice}/pay', [InvoiceController::class, 'pay']);
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void']);
         Route::post('invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink']);
+        Route::get('privacy/summary', [PrivacyController::class, 'summary']);
+        Route::get('privacy/settings', [PrivacyController::class, 'settings']);
+        Route::put('privacy/settings', [PrivacyController::class, 'updateSettings']);
+        Route::get('privacy/requests', [PrivacyController::class, 'requests']);
+        Route::post('privacy/requests', [PrivacyController::class, 'storeRequest']);
+        Route::post('privacy/requests/{dataSubjectRequest}/resolve', [PrivacyController::class, 'resolveRequest']);
+        Route::get('privacy/retention', [PrivacyController::class, 'retention']);
+        Route::post('matters/{matter}/dispose', [PrivacyController::class, 'dispose']);
+        Route::get('clients/{client}/personal-data', [PrivacyController::class, 'export']);
+        Route::post('clients/{client}/anonymize', [PrivacyController::class, 'anonymize']);
+        Route::get('privacy/incidents', [PrivacyController::class, 'incidents']);
+        Route::post('privacy/incidents', [PrivacyController::class, 'storeIncident']);
+        Route::patch('privacy/incidents/{privacyIncident}', [PrivacyController::class, 'updateIncident']);
+
+        Route::get('imports/types', [ImportController::class, 'types']);
+        Route::get('imports/template/{type}', [ImportController::class, 'template'])->whereIn('type', ['clients', 'matters', 'deadlines', 'trust_balances']);
+        Route::get('imports', [ImportController::class, 'index']);
+        Route::post('imports', [ImportController::class, 'store']);
+        Route::get('imports/{import}', [ImportController::class, 'show']);
+        Route::post('imports/{import}/commit', [ImportController::class, 'commit']);
+        Route::post('imports/{import}/undo', [ImportController::class, 'undo']);
+
+        Route::get('collections', [CollectionsController::class, 'index']);
+        Route::post('invoices/{invoice}/remind', [CollectionsController::class, 'remind']);
+        Route::post('invoices/{invoice}/reminders-paused', [CollectionsController::class, 'pauseReminders']);
+        Route::put('trust-accounts/{trustAccount}/minimum-balance', [CollectionsController::class, 'setMinimum']);
+        Route::post('trust-accounts/{trustAccount}/replenishment-request', [CollectionsController::class, 'requestReplenishment']);
+
         Route::get('invoices/{invoice}/payments', [InvoicePaymentController::class, 'index']);
         Route::post('invoices/{invoice}/payments', [InvoicePaymentController::class, 'store']);
         Route::get('invoice-payments/awaiting-2307', [InvoicePaymentController::class, 'awaiting2307']);
@@ -171,6 +222,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         Route::apiResource('conflict-checks', ConflictCheckController::class)->only(['index', 'store', 'show']);
         Route::post('conflict-checks/{conflictCheck}/resolve', [ConflictCheckController::class, 'resolve']);
+        Route::get('conflict-checks/{conflictCheck}/pdf', [ConflictCheckController::class, 'pdf']);
 
         Route::get('mcle/periods', [McleController::class, 'periods']);
         Route::post('mcle/periods', [McleController::class, 'storePeriod']);
@@ -211,6 +263,12 @@ Route::prefix('portal')->middleware('throttle:api')->group(function () {
         Route::post('message-threads', [PortalMessageController::class, 'store']);
         Route::get('message-threads/{thread}', [PortalMessageController::class, 'show'])->whereNumber('thread');
         Route::post('message-threads/{thread}/messages', [PortalMessageController::class, 'reply'])->whereNumber('thread');
+        Route::get('document-requests', [PortalDocumentRequestController::class, 'index']);
+        Route::get('document-requests/{documentRequest}', [PortalDocumentRequestController::class, 'show'])->whereNumber('documentRequest');
+        Route::post('document-request-items/{item}/upload', [PortalDocumentRequestController::class, 'upload'])->whereNumber('item');
+        Route::get('privacy', [PortalPrivacyController::class, 'show']);
+        Route::post('privacy/accept', [PortalPrivacyController::class, 'accept']);
+        Route::post('privacy/requests', [PortalPrivacyController::class, 'storeRequest']);
         Route::get('signature-requests', [ClientPortalController::class, 'getSignatureRequests']);
         Route::get('signature-requests/{signatureRequest}', [ClientPortalController::class, 'getSignatureRequest'])->whereNumber('signatureRequest');
         Route::post('signature-requests/{signatureRequest}/sign', [ClientPortalController::class, 'signDocument'])->whereNumber('signatureRequest');

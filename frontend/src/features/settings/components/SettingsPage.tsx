@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { UsersList } from '@/features/users/components/UsersList'
 import { FirmPanel } from './FirmPanel'
+import { ImportPanel } from '@/features/imports/components/ImportPanel'
 import { useLookups } from '@/features/auth/session'
 import { ApiError } from '@/shared/api/axios'
 import type { DeadlineRule, WorkflowTemplate } from '@/shared/api/types'
@@ -16,7 +17,7 @@ import {
   useAddHoliday, useAllDeadlineRules, useAuditLog, useDeleteHoliday, useDeleteRule, useDeleteWorkflow, useHolidays, useSaveRule, useSaveWorkflow, useWorkflows,
 } from '../api'
 
-type Tab = 'firm' | 'users' | 'rules' | 'holidays' | 'workflows' | 'audit'
+type Tab = 'firm' | 'users' | 'rules' | 'holidays' | 'workflows' | 'import' | 'audit'
 
 export function SettingsPage() {
   const [tab, setTab] = useUrlState('tab', 'users')
@@ -34,6 +35,7 @@ export function SettingsPage() {
           { value: 'rules', label: 'Deadline rules' },
           { value: 'holidays', label: 'Holidays' },
           { value: 'workflows', label: 'Workflows' },
+          { value: 'import', label: 'Import data' },
           { value: 'audit', label: 'Audit log' },
         ]}
       />
@@ -42,6 +44,7 @@ export function SettingsPage() {
       {tab === 'rules' && <RulesPanel />}
       {tab === 'holidays' && <HolidaysPanel />}
       {tab === 'workflows' && <WorkflowsPanel />}
+      {tab === 'import' && <ImportPanel />}
       {tab === 'audit' && <AuditPanel />}
     </>
   )

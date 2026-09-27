@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\V1;
 use App\Domain\Compliance\Enums\ConflictCheckStatus;
 use App\Domain\Compliance\Models\ConflictCheck;
 use App\Domain\Compliance\Services\ConflictChecker;
+use App\Domain\Matters\Models\Firm;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ConflictCheckResource;
+use App\Support\Pdf\PdfRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -40,6 +43,18 @@ class ConflictCheckController extends Controller
     public function show(ConflictCheck $conflictCheck): ConflictCheckResource
     {
         return new ConflictCheckResource($conflictCheck->load(['requester', 'resolver']));
+    }
+
+    /** The check and its outcome on the firm's letterhead, for the client file. */
+    public function pdf(ConflictCheck $conflictCheck, PdfRenderer $pdf): Response
+    {
+        Gate::authorize('practice-law');
+        $conflictCheck->load(['requester', 'resolver']);
+
+        return $pdf->download('pdf.conflict-check', [
+            'check' => $conflictCheck,
+            'firm' => Firm::findOrFail($conflictCheck->firm_id),
+        ], 'conflict-check-'.$conflictCheck->id.'-'.$conflictCheck->created_at->format('Y-m-d'));
     }
 
     public function resolve(Request $request, ConflictCheck $conflictCheck): ConflictCheckResource

@@ -51,6 +51,11 @@ class Matter extends Model
         'acceptance_fee_cents',
         'appearance_fee_cents',
         'contingency_basis_points',
+        'retainer_auto_bill',
+        'retainer_billing_day',
+        'retainer_auto_issue',
+        'client_role',
+        'nature_of_action',
     ];
 
     protected $attributes = [
@@ -64,10 +69,16 @@ class Matter extends Model
             'opened_at' => DateOnly::class,
             'closed_at' => DateOnly::class,
             'fee_arrangement' => FeeArrangement::class,
+            'client_id' => 'integer',
+            'responsible_lawyer_id' => 'integer',
             'fixed_fee_cents' => 'integer',
             'acceptance_fee_cents' => 'integer',
             'appearance_fee_cents' => 'integer',
             'contingency_basis_points' => 'integer',
+            'retainer_auto_bill' => 'boolean',
+            'retainer_billing_day' => 'integer',
+            'retainer_auto_issue' => 'boolean',
+            'retainer_billed_through' => DateOnly::class,
         ];
     }
 

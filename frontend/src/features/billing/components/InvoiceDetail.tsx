@@ -11,6 +11,7 @@ import { Input } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader, Table, Td, Th } from '@/shared/ui/Layout'
 import { useToast } from '@/shared/ui/Toast'
 import { useInvoice, useInvoiceAction, usePaymentLink } from '../api'
+import { InvoiceReminders } from './InvoiceReminders'
 import { PaymentsCard, RecordPaymentDialog } from './InvoicePayments'
 
 export function InvoiceDetail() {
@@ -117,6 +118,7 @@ export function InvoiceDetail() {
       </Card>
 
       <PaymentsCard invoice={inv} />
+      <InvoiceReminders invoice={inv} />
 
       {!!inv.payments?.length && (
         <Card className="mx-auto mt-6 max-w-4xl print:hidden">

@@ -12,6 +12,8 @@ use App\Domain\Deadlines\Services\DeadlineScheduler;
 use App\Domain\Matters\Models\Matter;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DeadlineResource;
+use App\Models\User;
+use App\Notifications\WorkAssigned;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -108,6 +110,8 @@ class MatterDeadlineController extends Controller
             ]);
         }
 
+        $this->tellAssignee($deadline, $request->user());
+
         return (new DeadlineResource($deadline->load(['matter', 'assignee', 'rule'])))->response()->setStatusCode(201);
     }
 
@@ -124,7 +128,19 @@ class MatterDeadlineController extends Controller
             'priority' => ['sometimes', new Enum(TaskPriority::class)],
         ]));
 
+        if ($deadline->wasChanged('assigned_to')) {
+            $this->tellAssignee($deadline, $request->user());
+        }
+
         return new DeadlineResource($deadline->load(['matter', 'assignee', 'rule']));
+    }
+
+    /** The new assignee hears about it, unless they assigned it to themselves. */
+    private function tellAssignee(MatterDeadline $deadline, User $by): void
+    {
+        if ($deadline->assigned_to && $deadline->assigned_to !== $by->id) {
+            User::find($deadline->assigned_to)?->notify(new WorkAssigned($deadline, $by));
+        }
     }
 
     public function complete(Request $request, MatterDeadline $deadline): DeadlineResource

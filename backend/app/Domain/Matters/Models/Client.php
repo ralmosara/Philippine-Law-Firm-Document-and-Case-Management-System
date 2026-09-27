@@ -31,6 +31,7 @@ class Client extends Authenticatable
         'phone',
         'address',
         'notes',
+        'aliases',
         'portal_enabled',
         'password',
     ];
@@ -42,6 +43,10 @@ class Client extends Authenticatable
 
     protected $attributes = [
         'portal_enabled' => false,
+        'privacy_notice_version' => null,
+        'privacy_accepted_at' => null,
+        'anonymized_at' => null,
+        'aliases' => null,
     ];
 
     protected function casts(): array
@@ -50,6 +55,9 @@ class Client extends Authenticatable
             'portal_enabled' => 'boolean',
             'password' => 'hashed',
             'last_portal_login_at' => 'datetime',
+            'privacy_notice_version' => 'integer',
+            'privacy_accepted_at' => 'datetime',
+            'anonymized_at' => 'datetime',
         ];
     }
 

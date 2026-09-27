@@ -75,6 +75,16 @@ services:
       OPS_ALERT_EMAIL: ${OPS_ALERT_EMAIL:-}
       BACKUP_STATUS_FILE: /var/lexph-status/backup.json
       SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
+      # Live notifications: the app publishes to Reverb over the private
+      # network; browsers connect through Caddy and nginx at /app.
+      BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:-lexph}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:?Set REVERB_APP_KEY in .env (any random string)}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:?Set REVERB_APP_SECRET in .env (a long random string)}
+      REVERB_HOST: reverb
+      REVERB_PORT: "8080"
+      REVERB_SCHEME: http
+      REVERB_ALLOWED_ORIGINS: ${DOMAIN:-localhost}
     restart: unless-stopped
     depends_on:
       db:
@@ -83,6 +93,16 @@ services:
         condition: service_started
       clamav:
         condition: service_started
+
+  # WebSocket server for live notifications (Laravel Reverb).
+  reverb:
+    build: ./backend
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    env_file: ./backend/.env
+    environment: *laravel-env
+    restart: unless-stopped
+    depends_on:
+      - app
 
   # Reminders, email and other quick jobs. Nothing slow runs here.
   queue:

@@ -5,6 +5,7 @@ namespace App\Domain\Deadlines\Notifications;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Notifications\Channels\SmsChannel;
 use App\Notifications\Channels\SmsMessage;
+use App\Notifications\Concerns\ShowsInApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -12,13 +13,25 @@ use Illuminate\Notifications\Notification;
 
 class DeadlineMissed extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, ShowsInApp;
 
     public function __construct(public readonly MatterDeadline $deadline) {}
 
     public function via(object $notifiable): array
     {
-        return $notifiable->routeNotificationFor('sms') ? ['mail', SmsChannel::class] : ['mail'];
+        return $this->withInApp($notifiable, $notifiable->routeNotificationFor('sms') ? ['mail', SmsChannel::class] : ['mail']);
+    }
+
+    protected function inApp(object $notifiable): array
+    {
+        $matter = $this->deadline->matter;
+
+        return [
+            'kind' => 'deadline_missed',
+            'title' => "Missed: {$this->deadline->title}",
+            'body' => "{$matter->reference} {$matter->title}, was due ".$this->deadline->due_date->format('M j'),
+            'url' => "/matters/{$matter->id}?tab=deadlines",
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage
