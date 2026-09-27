@@ -21,6 +21,7 @@ use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
 use App\Domain\Privacy\Models\DataSubjectRequest;
 use App\Domain\Privacy\Models\PrivacyIncident;
+use App\Domain\Tax\Models\TaxFiling;
 use App\Models\User;
 use App\Support\Ops\OpsAlert;
 use App\Support\Tenancy\DatabaseTenancy;
@@ -76,6 +77,7 @@ class AppServiceProvider extends ServiceProvider
             'data_subject_request' => DataSubjectRequest::class,
             'privacy_incident' => PrivacyIncident::class,
             'document_request' => DocumentRequest::class,
+            'tax_filing' => TaxFiling::class,
         ]);
 
         $this->configureDatabaseTenancy();

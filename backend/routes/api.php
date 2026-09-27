@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SignatureRequestController;
 use App\Http\Controllers\Api\V1\TaskController;
+use App\Http\Controllers\Api\V1\TaxController;
 use App\Http\Controllers\Api\V1\TimeEntryController;
 use App\Http\Controllers\Api\V1\TrustAccountController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
@@ -208,6 +209,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('imports/{import}/commit', [ImportController::class, 'commit']);
         Route::post('imports/{import}/undo', [ImportController::class, 'undo']);
 
+        Route::get('tax/quarter', [TaxController::class, 'quarter']);
+        Route::get('tax/sawt.csv', [TaxController::class, 'sawtCsv']);
+        Route::get('tax/filings', [TaxController::class, 'filings']);
+        Route::patch('tax/filings/{taxFiling}', [TaxController::class, 'updateFiling']);
         Route::get('collections', [CollectionsController::class, 'index']);
         Route::post('invoices/{invoice}/remind', [CollectionsController::class, 'remind']);
         Route::post('invoices/{invoice}/reminders-paused', [CollectionsController::class, 'pauseReminders']);

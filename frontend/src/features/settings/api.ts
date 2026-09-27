@@ -73,6 +73,9 @@ export interface FirmSettings {
   pleading_paper: 'folio' | 'a4' | 'letter'
   pleading_font: string
   pleading_font_size: number
+  taxpayer_type: 'individual' | 'juridical'
+  withholding_atc: string
+  has_employees: boolean
   require_two_factor: boolean
   slug: string | null
   intake_enabled: boolean

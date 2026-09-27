@@ -3,6 +3,7 @@
 use App\Domain\Billing\Collections\Collections;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
 use App\Domain\Documents\Requests\DocumentRequests;
+use App\Domain\Tax\TaxFilingReminders;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Domain\Trust\Services\TrustLedgerService;
 use App\Jobs\QueueHeartbeat;
@@ -66,6 +67,11 @@ Artisan::command('document-requests:remind', function (DocumentRequests $request
     $this->info("Sent {$requests->sendReminders()} document request reminder(s).");
 })->purpose('Remind clients of documents still missing, before and after the due date');
 Schedule::command('document-requests:remind')->dailyAt('09:05')->withoutOverlapping()->onOneServer();
+
+Artisan::command('tax:remind', function (TaxFilingReminders $reminders) {
+    $this->info("Sent {$reminders->run()} BIR filing reminder(s).");
+})->purpose('Remind finance partners of BIR returns coming due or overdue');
+Schedule::command('tax:remind')->dailyAt('08:00')->withoutOverlapping()->onOneServer();
 
 Artisan::command('ops:health-check', function (SystemHealth $health) {
     $checks = $health->run();

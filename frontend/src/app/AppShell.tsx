@@ -53,6 +53,7 @@ const GROUPS: NavGroup[] = [
       { to: '/billing', label: 'Time & billing' },
       { to: '/trust', label: 'Trust accounts', ability: 'work_matters' },
       { to: '/reports', label: 'Reports', ability: 'manage_finances' },
+      { to: '/tax', label: 'BIR tax compliance', ability: 'manage_finances' },
     ],
   },
   {
