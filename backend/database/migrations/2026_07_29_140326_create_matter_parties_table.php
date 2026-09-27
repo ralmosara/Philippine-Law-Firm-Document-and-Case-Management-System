@@ -6,24 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('matter_parties', function (Blueprint $table) {
             $table->id();
             $table->foreignId('matter_id')->constrained('matters')->cascadeOnDelete();
-            $table->string('party_type');
+            $table->string('role', 32); // see PartyRole enum
             $table->string('name');
-            $table->foreignId('counsel_of_record_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('counsel_name')->nullable();
+            $table->string('contact')->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
+
+            $table->index('name'); // conflict-of-interest search
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('matter_parties');

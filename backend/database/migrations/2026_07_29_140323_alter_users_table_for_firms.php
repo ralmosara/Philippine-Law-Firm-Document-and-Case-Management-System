@@ -6,27 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('firm_id')->nullable()->constrained('firms')->cascadeOnDelete();
-            $table->string('role')->nullable();
-            $table->string('ibp_number')->nullable();
-            $table->date('mcle_compliance_until')->nullable();
+            $table->foreignId('firm_id')->nullable()->after('id')->constrained('firms')->cascadeOnDelete();
+            $table->string('role', 32)->default('associate');
+            $table->string('ibp_number', 32)->nullable();
+            $table->string('roll_number', 32)->nullable();
+            $table->string('mobile_number', 20)->nullable();
+            $table->unsignedBigInteger('hourly_rate_cents')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('last_login_at')->nullable();
+
+            $table->index(['firm_id', 'role']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign(['firm_id']);
-            $table->dropColumn(['firm_id', 'role', 'ibp_number', 'mcle_compliance_until']);
+            $table->dropConstrainedForeignId('firm_id');
+            $table->dropColumn(['role', 'ibp_number', 'roll_number', 'mobile_number', 'hourly_rate_cents', 'is_active', 'last_login_at']);
         });
     }
 };

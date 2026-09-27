@@ -2,74 +2,97 @@
 
 namespace App\Domain\Deadlines\Services;
 
-use Carbon\Carbon;
 use App\Domain\Deadlines\Models\HolidayCalendar;
-use Illuminate\Support\Collection;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use InvalidArgumentException;
 
+/**
+ * Computes reglementary due dates under Rule 22, Section 1 of the Rules of
+ * Court: exclude the first day, include the last, and if the last day falls
+ * on a Saturday, Sunday or legal holiday, the period runs until the next
+ * working day.
+ *
+ * `working_days` periods (used by some administrative and labor rules)
+ * count only working days.
+ */
 class DeadlineCalculator
 {
-    /**
-     * @var Collection<string>
-     */
-    protected $holidays;
+    /** @var array<string, string>|null date (Y-m-d) => holiday name, loaded lazily */
+    private ?array $holidays = null;
 
-    public function __construct()
+    public function calculate(CarbonInterface $triggerDate, int $periodDays, string $periodType = 'calendar'): CarbonImmutable
     {
-        // Cache holidays in memory for the duration of the request/job
-        $this->holidays = HolidayCalendar::pluck('date')->map(fn($date) => $date->format('Y-m-d'));
+        return $this->compute($triggerDate, $periodDays, $periodType)->dueDate;
     }
 
     /**
-     * Calculate the due date based on PH Rules of Court conventions.
-     * Excludes the first day, includes the last.
-     * If the last day falls on a weekend or holiday, moves to the next working day.
-     * 
-     * @param Carbon $triggerDate
-     * @param int $periodDays
-     * @param string $periodType 'calendar' | 'working_days'
-     * @return Carbon
+     * Compute the due date along with the reasons it moved, so users can see
+     * why a deadline lands where it does.
      */
-    public function calculate(Carbon $triggerDate, int $periodDays, string $periodType = 'calendar'): Carbon
+    public function compute(CarbonInterface $triggerDate, int $periodDays, string $periodType = 'calendar'): DeadlineComputation
     {
-        $dueDate = $triggerDate->copy();
+        if ($periodDays < 1) {
+            throw new InvalidArgumentException('A reglementary period must be at least one day.');
+        }
+
+        $date = CarbonImmutable::parse($triggerDate->format('Y-m-d'));
 
         if ($periodType === 'working_days') {
-            // Count exactly N working days, skipping weekends and holidays
-            $daysAdded = 0;
-            while ($daysAdded < $periodDays) {
-                $dueDate->addDay();
-                if ($this->isWorkingDay($dueDate)) {
-                    $daysAdded++;
+            for ($counted = 0; $counted < $periodDays;) {
+                $date = $date->addDay();
+                if ($this->nonWorkingReason($date) === null) {
+                    $counted++;
                 }
             }
-            return $dueDate;
+
+            return new DeadlineComputation($date, $date, []);
         }
 
-        // Calendar days calculation
-        // Add N calendar days directly (first day is excluded because addDays(N) natively does this)
-        $dueDate->addDays($periodDays);
-
-        // If the resulting date falls on a weekend or holiday, move forward to the next working day
-        while (!$this->isWorkingDay($dueDate)) {
-            $dueDate->addDay();
+        if ($periodType !== 'calendar') {
+            throw new InvalidArgumentException("Unknown period type [{$periodType}].");
         }
 
-        return $dueDate;
+        // addDays() naturally excludes the trigger day and includes the last.
+        $nominal = $date->addDays($periodDays);
+        $due = $nominal;
+        $adjustments = [];
+
+        while (($reason = $this->nonWorkingReason($due)) !== null) {
+            $adjustments[] = ['date' => $due->toDateString(), 'reason' => $reason];
+            $due = $due->addDay();
+        }
+
+        return new DeadlineComputation($due, $nominal, $adjustments);
+    }
+
+    public function isWorkingDay(CarbonInterface $date): bool
+    {
+        return $this->nonWorkingReason($date) === null;
+    }
+
+    /** Why a date is not a working day (holiday name first, as it is more informative), or null. */
+    private function nonWorkingReason(CarbonInterface $date): ?string
+    {
+        if ($holiday = $this->holidays()[$date->format('Y-m-d')] ?? null) {
+            return $holiday;
+        }
+
+        if ($date->isWeekend()) {
+            return $date->isSaturday() ? 'Saturday' : 'Sunday';
+        }
+
+        return null;
     }
 
     /**
-     * Check if a given date is a working day (not a weekend, not a holiday).
+     * @return array<string, string>
      */
-    protected function isWorkingDay(Carbon $date): bool
+    private function holidays(): array
     {
-        if ($date->isWeekend()) {
-            return false;
-        }
-
-        if ($this->holidays->contains($date->format('Y-m-d'))) {
-            return false;
-        }
-
-        return true;
+        return $this->holidays ??= HolidayCalendar::query()
+            ->get(['date', 'name'])
+            ->mapWithKeys(fn (HolidayCalendar $holiday) => [$holiday->date->format('Y-m-d') => $holiday->name])
+            ->all();
     }
 }

@@ -6,25 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('deadline_rules', function (Blueprint $table) {
             $table->id();
+            // Null firm_id = system rule shared by all firms (Rules of Court).
+            $table->foreignId('firm_id')->nullable()->constrained('firms')->cascadeOnDelete();
             $table->string('name');
             $table->string('trigger_event');
-            $table->integer('period_days');
-            $table->string('period_type'); // 'calendar' | 'working_days'
-            $table->text('computation_notes')->nullable();
+            $table->unsignedSmallInteger('period_days');
+            $table->string('period_type', 16)->default('calendar'); // calendar | working_days
+            $table->string('legal_basis')->nullable();
+            $table->text('notes')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('deadline_rules');

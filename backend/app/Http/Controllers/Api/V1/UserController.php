@@ -2,80 +2,100 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $users = DB::table('users')->select('id', 'name', 'email', 'created_at')->get();
-        return response()->json($users);
+        $users = User::query()
+            ->when($request->query('search'), fn ($q, $search) => $q->where(fn ($q) => $q
+                ->whereLike('name', "%{$search}%")
+                ->orWhereLike('email', "%{$search}%")))
+            ->when($request->boolean('lawyers_only'), fn ($q) => $q->whereIn('role', array_map(
+                fn (Role $role) => $role->value,
+                array_filter(Role::cases(), fn (Role $role) => $role->isLawyer()),
+            )))
+            ->when($request->boolean('active_only'), fn ($q) => $q->where('is_active', true))
+            ->orderBy('name')
+            ->paginate($this->perPage($request, 25));
+
+        return UserResource::collection($users);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
+        Gate::authorize('manage-firm');
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users|max:255',
-            'password' => 'required|string|min:8',
+            ...$this->rules(),
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'password' => ['required', Password::defaults()],
         ]);
-        
-        $userId = DB::table('users')->insertGetId([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        
-        $user = DB::table('users')->select('id', 'name', 'email')->find($userId);
-        return response()->json($user, 201);
+
+        $user = User::create($validated);
+
+        return (new UserResource($user))->response()->setStatusCode(201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(User $user): UserResource
     {
-        $user = DB::table('users')->select('id', 'name', 'email')->find($id);
-        if (!$user) {
-            return response()->json(['message' => 'Not found'], 404);
+        return new UserResource($user);
+    }
+
+    public function update(Request $request, User $user): UserResource
+    {
+        Gate::authorize('manage-firm');
+
+        $validated = $request->validate([
+            ...array_map(fn (array $rules) => ['sometimes', ...$rules], $this->rules()),
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => ['sometimes', Password::defaults()],
+        ]);
+
+        if ($user->is($request->user()) && (($validated['is_active'] ?? true) === false || ($validated['role'] ?? $user->role->value) !== $user->role->value)) {
+            abort(422, 'You cannot deactivate yourself or change your own role.');
         }
-        return response()->json($user);
+
+        $user->update($validated);
+
+        return new UserResource($user);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(Request $request, User $user): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|max:255',
-        ]);
-        
-        DB::table('users')->where('id', $id)->update(array_merge($validated, [
-            'updated_at' => now(),
-        ]));
-        
-        return response()->json(DB::table('users')->select('id', 'name', 'email')->find($id));
-    }
+        Gate::authorize('delete-user', $user);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        DB::table('users')->where('id', $id)->delete();
+        // Users are deactivated rather than deleted: their names remain on
+        // time entries, status history and the notarial register.
+        $user->update(['is_active' => false]);
+
         return response()->json(null, 204);
+    }
+
+    /**
+     * @return array<string, list<mixed>>
+     */
+    private function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'role' => ['required', new Enum(Role::class)],
+            'ibp_number' => ['nullable', 'string', 'max:32'],
+            'roll_number' => ['nullable', 'string', 'max:32'],
+            'mobile_number' => ['nullable', 'regex:/^(\+63|0)9\d{9}$/'],
+            'hourly_rate_cents' => ['nullable', 'integer', 'min:0', 'max:10000000'],
+            'is_active' => ['boolean'],
+        ];
     }
 }

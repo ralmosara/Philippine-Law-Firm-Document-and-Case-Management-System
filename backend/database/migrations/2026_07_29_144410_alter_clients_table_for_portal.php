@@ -7,36 +7,23 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Client portal credentials. Portal access is opt-in per client; clients
+     * log in with their email, which is unique within a firm.
      */
     public function up(): void
     {
         Schema::table('clients', function (Blueprint $table) {
-            $table->string('email')->nullable()->unique();
+            $table->boolean('portal_enabled')->default(false);
             $table->string('password')->nullable();
+            $table->rememberToken();
+            $table->timestamp('last_portal_login_at')->nullable();
         });
-
-        if (DB::getDriverName() === 'pgsql') {
-            // Client Isolation Policy on Matters
-            DB::statement("CREATE POLICY client_isolation_matters ON matters FOR SELECT USING (client_id = current_setting('app.current_client_id', true)::bigint);");
-            
-            // Client Isolation Policy on Trust Accounts
-            DB::statement("CREATE POLICY client_isolation_trust ON trust_accounts FOR SELECT USING (matter_id IN (SELECT id FROM matters WHERE client_id = current_setting('app.current_client_id', true)::bigint));");
-        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        if (DB::getDriverName() === 'pgsql') {
-            DB::statement('DROP POLICY IF EXISTS client_isolation_trust ON trust_accounts;');
-            DB::statement('DROP POLICY IF EXISTS client_isolation_matters ON matters;');
-        }
-        
         Schema::table('clients', function (Blueprint $table) {
-            $table->dropColumn(['email', 'password']);
+            $table->dropColumn(['portal_enabled', 'password', 'remember_token', 'last_portal_login_at']);
         });
     }
 };

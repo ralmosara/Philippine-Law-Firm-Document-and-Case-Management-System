@@ -54,18 +54,24 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // The React SPA, used for links in emails and notifications.
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions.
+    |
+    | Philippine time: "today" decides reglementary periods, reminder days
+    | and what counts as a future date, so it must be the courts' today, not
+    | UTC's (which is still yesterday until 8:00 AM in Manila).
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Asia/Manila'),
 
     /*
     |--------------------------------------------------------------------------

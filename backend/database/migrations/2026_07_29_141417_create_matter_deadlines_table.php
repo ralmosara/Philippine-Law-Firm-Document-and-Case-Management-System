@@ -6,26 +6,32 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('matter_deadlines', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('firm_id')->constrained('firms')->cascadeOnDelete();
             $table->foreignId('matter_id')->constrained('matters')->cascadeOnDelete();
             $table->foreignId('deadline_rule_id')->nullable()->constrained('deadline_rules')->nullOnDelete();
-            $table->date('trigger_date');
-            $table->date('computed_due_date');
-            $table->string('status')->default('pending'); // pending, met, missed, extended
-            $table->string('escalation_stage')->default('none'); // none, 72hr, 24hr, day-of
+            $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('kind', 16)->default('filing'); // filing | hearing | task
+            $table->string('title');
+            $table->date('trigger_date')->nullable();
+            $table->date('due_date');
+            $table->time('due_time')->nullable();
+            $table->string('location')->nullable();
+            $table->string('status', 16)->default('pending');
+            $table->string('last_reminder_stage', 16)->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->foreignId('completed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('notes')->nullable();
             $table->timestamps();
+
+            $table->index(['firm_id', 'due_date']);
+            $table->index(['status', 'due_date']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('matter_deadlines');

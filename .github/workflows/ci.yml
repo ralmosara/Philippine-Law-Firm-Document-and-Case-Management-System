@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (PHP ${{ matrix.php }}, ${{ matrix.db }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.4']
+        db: [sqlite, pgsql]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ph_legal_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U test -d ph_legal_test"
+          --health-interval 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_pgsql, pdo_sqlite, bcmath, intl
+          coverage: none
+      - uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Code style (Pint)
+        if: matrix.db == 'sqlite'
+        run: vendor/bin/pint --test
+      - name: Tests
+        env:
+          DB_CONNECTION: ${{ matrix.db }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: ${{ matrix.db == 'pgsql' && 'ph_legal_test' || ':memory:' }}
+          DB_USERNAME: test
+          DB_PASSWORD: test
+        run: php vendor/bin/phpunit
+      # Superusers bypass row-level security, so run the suite again as an
+      # ordinary database owner, the way the application runs in production.
+      - name: Tests with row-level security in force
+        if: matrix.db == 'pgsql'
+        env:
+          PGPASSWORD: test
+        run: |
+          psql -h 127.0.0.1 -U test -d ph_legal_test \
+            -c "CREATE ROLE lexapp LOGIN PASSWORD 'lexapp' NOSUPERUSER NOCREATEDB NOCREATEROLE" \
+            -c "CREATE DATABASE ph_legal_app OWNER lexapp"
+          DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=ph_legal_app \
+            DB_USERNAME=lexapp DB_PASSWORD=lexapp php vendor/bin/phpunit
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build # tsc -b (strict) + vite build
