@@ -1,157 +1,237 @@
 import clsx from 'clsx'
-import {
-  BarChart3,
-  ChartNoAxesColumn,
-  Briefcase,
-  CalendarDays,
-  FileText,
-  Inbox,
-  KanbanSquare,
-  Landmark,
-  LogOut,
-  MessagesSquare,
-  Menu,
-  Receipt,
-  Scale,
-  Settings,
-  ShieldCheck,
-  Users,
-  UserRound,
-  X,
-  FileLock2,
-  Gavel,
-} from 'lucide-react'
-import { useEffect, useState, type ComponentType } from 'react'
+import { ChevronDown, LogOut, Menu, Scale, Search, Users, X } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { GlobalTimeTracker } from '@/features/billing/components/GlobalTimeTracker'
 import { useCurrentSession, useLogout } from '@/features/auth/session'
 import { useUnreadMessages } from '@/features/messages/api'
 import { useOpenIntakeCount } from '@/features/intake/api'
-import type { Abilities } from '@/shared/api/types'
-import { IconButton } from '@/shared/ui/Button'
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
+import type { Abilities } from '@/shared/api/types'
 import { Avatar } from '@/shared/ui/Feedback'
 
 interface NavItem {
   to: string
   label: string
-  icon: ComponentType<{ className?: string }>
   ability?: keyof Abilities
   end?: boolean
   /** A live count shown next to the label. */
   badge?: 'messages' | 'intake'
 }
 
-const NAV: NavItem[] = [
-  { to: '/', label: 'Home', icon: BarChart3, end: true },
-  { to: '/matters', label: 'Matters', icon: Briefcase },
-  { to: '/clients', label: 'Clients', icon: UserRound },
-  { to: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { to: '/court-day', label: 'Court day', icon: Gavel, ability: 'work_matters' },
-  { to: '/tasks', label: 'Tasks', icon: KanbanSquare },
-  { to: '/messages', label: 'Messages', icon: MessagesSquare, badge: 'messages' },
-  { to: '/intake', label: 'Intake', icon: Inbox, ability: 'work_matters', badge: 'intake' },
-  { to: '/documents', label: 'Documents', icon: FileText },
-  { to: '/billing', label: 'Time & Billing', icon: Receipt },
-  { to: '/trust', label: 'Trust Accounts', icon: Landmark, ability: 'work_matters' },
-  { to: '/reports', label: 'Reports', icon: ChartNoAxesColumn, ability: 'manage_finances' },
-  { to: '/compliance', label: 'Compliance', icon: ShieldCheck },
-  { to: '/privacy', label: 'Data Privacy', icon: FileLock2, ability: 'manage_firm' },
-  { to: '/settings', label: 'Firm Settings', icon: Settings, ability: 'manage_firm' },
+interface NavGroup {
+  label: string
+  /** A group with a single link and no menu (Home). */
+  to?: string
+  items: NavItem[]
+}
+
+/** The menu bar, grouped the way the work is: cases, documents, money, compliance, setup. */
+const GROUPS: NavGroup[] = [
+  { label: 'Home', to: '/', items: [{ to: '/', label: 'Home', end: true }] },
+  {
+    label: 'Matters',
+    items: [
+      { to: '/matters', label: 'Matters' },
+      { to: '/clients', label: 'Clients' },
+      { to: '/intake', label: 'Intake requests', ability: 'work_matters', badge: 'intake' },
+      { to: '/court-day', label: 'Court day', ability: 'work_matters' },
+      { to: '/calendar', label: 'Calendar' },
+      { to: '/tasks', label: 'Tasks' },
+    ],
+  },
+  {
+    label: 'Documents',
+    items: [
+      { to: '/documents', label: 'Documents & files' },
+      { to: '/messages', label: 'Client messages', badge: 'messages' },
+    ],
+  },
+  {
+    label: 'Billing',
+    items: [
+      { to: '/billing', label: 'Time & billing' },
+      { to: '/trust', label: 'Trust accounts', ability: 'work_matters' },
+      { to: '/reports', label: 'Reports', ability: 'manage_finances' },
+    ],
+  },
+  {
+    label: 'Compliance',
+    items: [
+      { to: '/compliance', label: 'Conflicts, MCLE & notarial' },
+      { to: '/privacy', label: 'Data privacy', ability: 'manage_firm' },
+    ],
+  },
+  { label: 'Setup', items: [{ to: '/settings', label: 'Firm settings', ability: 'manage_firm' }] },
 ]
+
+const SEARCHES = [
+  { value: 'matters', label: 'Matters', path: '/matters' },
+  { value: 'clients', label: 'Clients', path: '/clients' },
+  { value: 'files', label: 'Files', path: '/documents?tab=files' },
+] as const
 
 export function AppShell() {
   const { user, firm, abilities } = useCurrentSession()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const location = useLocation()
 
-  // Close the mobile drawer on navigation.
+  // Close the mobile menu on navigation.
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
-  const items = NAV.filter((item) => !item.ability || abilities[item.ability])
+  const groups = GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => !i.ability || abilities[i.ability]) })).filter((g) => g.items.length > 0)
   const badges = { messages: useUnreadMessages().data ?? 0, intake: useOpenIntakeCount(abilities.work_matters).data ?? 0 }
-
-  const nav = (
-    <nav aria-label="Main" className="flex flex-col gap-0.5 px-3">
-      {items.map(({ to, label, icon: Icon, end, badge }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={({ isActive }) =>
-            clsx(
-              'flex h-10 items-center gap-3 rounded-full px-4 text-sm font-medium transition-colors',
-              isActive ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:bg-on-surface/5',
-            )
-          }
-        >
-          <Icon className="size-5 shrink-0" aria-hidden="true" />
-          <span className="flex-1">{label}</span>
-          {badge && badges[badge] > 0 && (
-            <span className="rounded-full bg-primary px-2 text-xs font-semibold text-on-primary" aria-label={`${badges[badge]} ${badge === 'messages' ? 'unread' : 'to review'}`}>{badges[badge]}</span>
-          )}
-        </NavLink>
-      ))}
-    </nav>
-  )
-
-  const brand = (
-    <div className="flex items-center gap-3 px-6 py-5">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-on-primary">
-        <Scale className="size-5" aria-hidden="true" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm leading-tight font-semibold">Lex PH</p>
-        <p className="truncate text-xs text-on-surface-variant">{firm.name}</p>
-      </div>
-    </div>
-  )
+  const groupBadge = (g: NavGroup) => g.items.reduce((sum, i) => sum + (i.badge ? badges[i.badge] : 0), 0)
+  const isActive = (g: NavGroup) => g.items.some((i) => (i.end ? location.pathname === i.to : location.pathname === i.to || location.pathname.startsWith(`${i.to}/`)))
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_1fr]">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary">
+    <div className="flex min-h-dvh flex-col">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary">
         Skip to content
       </a>
 
-      {/* Desktop navigation */}
-      <aside className="sticky top-0 hidden h-dvh flex-col overflow-y-auto border-r border-outline-variant bg-surface-dim lg:flex">
-        {brand}
-        {nav}
-      </aside>
+      <header className="sticky top-0 z-30 text-on-nav shadow-[0_1px_3px_rgb(0_0_0/0.25)]">
+        {/* Top bar: brand, search, notifications, user. */}
+        <div className="flex h-12 items-center gap-3 bg-nav px-3 lg:px-4">
+          <button type="button" aria-label="Open menu" onClick={() => setDrawerOpen(true)} className="flex size-9 items-center justify-center rounded-[3px] hover:bg-nav-hover lg:hidden">
+            <Menu className="size-5" />
+          </button>
+          <NavLink to="/" className="flex min-w-0 items-center gap-2">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-[3px] bg-primary text-white"><Scale className="size-4" aria-hidden="true" /></span>
+            <span className="hidden min-w-0 sm:block">
+              <span className="block text-sm leading-tight font-bold">Lex PH</span>
+              <span className="block max-w-56 truncate text-xs leading-tight opacity-75">{firm.name}</span>
+            </span>
+          </NavLink>
+          <GlobalSearch />
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationBell userId={user.id} />
+            <UserMenu name={user.name} role={user.role_label} email={user.email} />
+          </div>
+        </div>
 
-      {/* Mobile drawer */}
+        {/* Menu bar with drop-down groups (desktop). */}
+        <nav aria-label="Main" className="hidden h-9 items-stretch bg-nav-2 px-2 lg:flex">
+          {groups.map((g) => <MenuGroup key={g.label} group={g} active={isActive(g)} badge={groupBadge(g)} badges={badges} />)}
+        </nav>
+      </header>
+
+      {/* Mobile menu: the same groups, listed. */}
       {drawerOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <button type="button" aria-label="Close menu" className="absolute inset-0 bg-black/40" onClick={() => setDrawerOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col overflow-y-auto rounded-r-3xl bg-surface">
-            <div className="flex items-center justify-between pr-3">
-              {brand}
-              <IconButton label="Close menu" onClick={() => setDrawerOpen(false)}>
-                <X className="size-5" />
-              </IconButton>
+          <nav aria-label="Main" className="absolute inset-y-0 left-0 flex w-72 flex-col overflow-y-auto bg-surface shadow-(--shadow-elevated)">
+            <div className="flex h-12 items-center justify-between bg-nav px-3 text-on-nav">
+              <span className="text-sm font-bold">Lex PH</span>
+              <button type="button" aria-label="Close menu" onClick={() => setDrawerOpen(false)} className="flex size-9 items-center justify-center rounded-[3px] hover:bg-nav-hover"><X className="size-5" /></button>
             </div>
-            {nav}
-          </aside>
+            {groups.map((g) => (
+              <div key={g.label} className="border-b border-outline-variant py-1">
+                {g.items.length > 1 && <p className="px-4 pt-2 pb-1 text-xs font-bold tracking-wide text-on-surface-variant uppercase">{g.label}</p>}
+                {g.items.map((i) => (
+                  <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive: on }) => clsx('flex items-center justify-between px-4 py-2 text-sm', on ? 'bg-primary-container font-semibold text-on-primary-container' : 'text-on-surface hover:bg-surface-container')}>
+                    {i.label}
+                    {i.badge && badges[i.badge] > 0 && <span className="rounded-[2px] bg-primary px-1.5 text-xs font-semibold text-on-primary">{badges[i.badge]}</span>}
+                  </NavLink>
+                ))}
+              </div>
+            ))}
+          </nav>
         </div>
       )}
 
-      <div className="flex min-w-0 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-outline-variant bg-surface-dim/90 px-4 backdrop-blur lg:px-8">
-          <IconButton label="Open menu" onClick={() => setDrawerOpen(true)} className="lg:hidden">
-            <Menu className="size-5" />
-          </IconButton>
-          <div className="flex-1" />
-          <NotificationBell userId={user.id} />
-          <UserMenu name={user.name} role={user.role_label} email={user.email} />
-        </header>
-
-        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-24 focus:outline-none lg:px-8 lg:pt-8">
-          <Outlet />
-        </main>
-      </div>
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[1600px] flex-1 px-3 pt-4 pb-24 focus:outline-none lg:px-5">
+        <Outlet />
+      </main>
 
       {abilities.work_matters && <GlobalTimeTracker />}
     </div>
+  )
+}
+
+/** One menu on the bar: opens on hover or click, closes on Escape or leaving. */
+function MenuGroup({ group, active, badge, badges }: { group: NavGroup; active: boolean; badge: number; badges: Record<'messages' | 'intake', number> }) {
+  const [open, setOpen] = useState(false)
+  const location = useLocation()
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => setOpen(false), [location.pathname])
+  useEffect(() => {
+    if (!open) return
+    const close = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [open])
+
+  const item = clsx('flex items-center gap-1.5 px-3.5 text-sm font-semibold transition-colors', active ? 'bg-surface-dim text-on-surface' : 'text-on-nav hover:bg-nav-hover')
+
+  if (group.to) {
+    return <NavLink to={group.to} end className={item}>{group.label}</NavLink>
+  }
+
+  return (
+    <div
+      className="relative flex"
+      onMouseEnter={() => { clearTimeout(closeTimer.current); setOpen(true) }}
+      onMouseLeave={() => { closeTimer.current = setTimeout(() => setOpen(false), 120) }}
+    >
+      <button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className={item}>
+        {group.label}
+        {badge > 0 && <span className="rounded-[2px] bg-primary px-1 text-xs text-on-primary" aria-label={`${badge} new`}>{badge}</span>}
+        <ChevronDown className="size-3.5 opacity-70" aria-hidden="true" />
+      </button>
+      {open && (
+        <div role="menu" className="absolute top-full left-0 z-50 min-w-56 border border-outline bg-surface py-1 shadow-(--shadow-elevated)">
+          {group.items.map((i) => (
+            <NavLink
+              key={i.to}
+              to={i.to}
+              end={i.end}
+              role="menuitem"
+              className={({ isActive: on }) => clsx('flex items-center justify-between gap-4 px-3 py-1.5 text-sm', on ? 'bg-primary-container font-semibold text-on-primary-container' : 'text-on-surface hover:bg-primary hover:text-on-primary')}
+            >
+              {i.label}
+              {i.badge && badges[i.badge] > 0 && <span className="rounded-[2px] bg-primary px-1.5 text-xs font-semibold text-on-primary">{badges[i.badge]}</span>}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Search matters, clients or files from anywhere. */
+function GlobalSearch() {
+  const navigate = useNavigate()
+  const [scope, setScope] = useState<(typeof SEARCHES)[number]['value']>('matters')
+  const [term, setTerm] = useState('')
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    const target = SEARCHES.find((s) => s.value === scope) ?? SEARCHES[0]
+    const q = term.trim()
+    navigate(q ? `${target.path}${target.path.includes('?') ? '&' : '?'}q=${encodeURIComponent(q)}` : target.path)
+    setTerm('')
+  }
+
+  return (
+    <form role="search" onSubmit={submit} className="mx-auto hidden h-8 w-full max-w-xl overflow-hidden rounded-[3px] bg-surface text-on-surface md:flex">
+      <label className="sr-only" htmlFor="global-search-scope">Search in</label>
+      <select id="global-search-scope" value={scope} onChange={(e) => setScope(e.target.value as typeof scope)} className="border-r border-outline-variant bg-surface-container-high px-2 text-xs font-semibold text-on-surface focus:outline-none">
+        {SEARCHES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+      </select>
+      <input
+        type="search"
+        aria-label="Search"
+        value={term}
+        onChange={(e) => setTerm(e.target.value)}
+        placeholder="Search by name, reference, case number…"
+        className="min-w-0 flex-1 bg-transparent px-2.5 text-sm placeholder:text-on-surface-variant focus:outline-none"
+      />
+      <button type="submit" aria-label="Run search" className="flex w-9 items-center justify-center bg-primary text-on-primary hover:bg-primary-hover">
+        <Search className="size-4" />
+      </button>
+    </form>
   )
 }
 
@@ -174,24 +254,24 @@ function UserMenu({ name, role, email }: { name: string; role: string; email: st
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-full py-1 pr-3 pl-1 hover:bg-on-surface/5"
+        className="flex items-center gap-2 rounded-[3px] py-1 pr-2 pl-1 hover:bg-nav-hover"
       >
-        <Avatar name={name} />
+        <Avatar name={name} className="size-7" />
         <span className="hidden text-left sm:block">
-          <span className="block text-sm leading-tight font-medium">{name}</span>
-          <span className="block text-xs text-on-surface-variant">{role}</span>
+          <span className="block text-sm leading-tight font-semibold">{name}</span>
+          <span className="block text-xs leading-tight opacity-75">{role}</span>
         </span>
+        <ChevronDown className="hidden size-3.5 opacity-70 sm:block" aria-hidden="true" />
       </button>
 
       {open && (
         <>
           <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} />
-          <div role="menu" className="absolute right-0 z-50 mt-2 w-64 rounded-2xl border border-outline-variant bg-surface p-2 shadow-(--shadow-elevated)">
-            <div className="px-3 py-2">
-              <p className="text-sm font-medium">{name}</p>
+          <div role="menu" className="absolute right-0 z-50 mt-1 w-64 border border-outline bg-surface py-1 text-on-surface shadow-(--shadow-elevated)">
+            <div className="border-b border-outline-variant px-3 py-2">
+              <p className="text-sm font-semibold">{name}</p>
               <p className="truncate text-xs text-on-surface-variant">{email}</p>
             </div>
-            <hr className="my-1 border-outline-variant" />
             <button
               type="button"
               role="menuitem"
@@ -199,7 +279,7 @@ function UserMenu({ name, role, email }: { name: string; role: string; email: st
                 setOpen(false)
                 navigate('/profile')
               }}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-container"
+              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary hover:text-on-primary"
             >
               <Users className="size-4" aria-hidden="true" /> Profile & password
             </button>
@@ -207,7 +287,7 @@ function UserMenu({ name, role, email }: { name: string; role: string; email: st
               type="button"
               role="menuitem"
               onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/login', { replace: true }) })}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-container"
+              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary hover:text-on-primary"
             >
               <LogOut className="size-4" aria-hidden="true" /> Sign out
             </button>

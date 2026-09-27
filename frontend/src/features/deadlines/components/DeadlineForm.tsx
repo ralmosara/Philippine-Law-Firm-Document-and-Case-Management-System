@@ -113,7 +113,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
             </Field>
 
             <div className="flex items-end sm:col-span-1">
-              <div aria-live="polite" className="w-full rounded-xl bg-primary-container p-3 text-on-primary-container">
+              <div aria-live="polite" className="w-full rounded-[3px] bg-primary-container p-3 text-on-primary-container">
                 {preview.isFetching ? (
                   <span className="flex items-center gap-2 text-sm"><Spinner className="size-4" /> Computing…</span>
                 ) : preview.data ? (
@@ -128,7 +128,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
             </div>
 
             {preview.data && preview.data.adjustments.length > 0 && (
-              <p className="flex gap-2 rounded-lg bg-surface-container p-3 text-xs text-on-surface-variant sm:col-span-2">
+              <p className="flex gap-2 rounded-[3px] bg-surface-container p-3 text-xs text-on-surface-variant sm:col-span-2">
                 <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 <span>
                   The period ends on {longDate(preview.data.nominal_date)}, which is not a working day (

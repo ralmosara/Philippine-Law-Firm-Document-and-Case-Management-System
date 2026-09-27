@@ -110,7 +110,7 @@ export function PortalPrivacyPage() {
                   </p>
                   <p className="text-xs text-on-surface-variant">Sent {date(r.created_at)}</p>
                   {r.details && <p className="mt-1 whitespace-pre-line">{r.details}</p>}
-                  {r.resolution && <p className="mt-2 rounded-lg bg-surface-container p-3"><span className="font-medium">Our answer:</span> {r.resolution}</p>}
+                  {r.resolution && <p className="mt-2 rounded-[3px] bg-surface-container p-3"><span className="font-medium">Our answer:</span> {r.resolution}</p>}
                 </li>
               ))}
             </ul>

@@ -50,14 +50,14 @@ export function PublicIntakePage() {
     <main className="min-h-dvh bg-surface-dim px-4 py-10">
       <div className="mx-auto max-w-2xl">
         <header className="mb-6 flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-on-primary"><Scale className="size-6" aria-hidden="true" /></span>
+          <span className="flex size-11 items-center justify-center rounded-[3px] bg-primary text-on-primary"><Scale className="size-6" aria-hidden="true" /></span>
           <div>
             <h1 className="text-xl font-semibold tracking-tight">{firm.name}</h1>
             <p className="text-sm text-on-surface-variant">{[firm.address, firm.phone, firm.email].filter(Boolean).join(' · ')}</p>
           </div>
         </header>
 
-        <div className="rounded-3xl border border-outline-variant bg-surface p-6 sm:p-8">
+        <div className="rounded-[3px] border border-outline-variant bg-surface p-6 sm:p-8">
           {submit.isSuccess ? (
             <div role="status" className="flex flex-col items-center gap-3 py-8 text-center">
               <CheckCircle2 className="size-12 text-success" aria-hidden="true" />
@@ -142,7 +142,7 @@ export function PublicIntakePage() {
                   {privacy_notice && (
                     <details className="mt-2 text-sm">
                       <summary className="cursor-pointer text-primary">Read our privacy notice</summary>
-                      <div className="mt-2 max-h-72 overflow-y-auto rounded-lg bg-surface-container p-3 whitespace-pre-line text-on-surface-variant">{privacy_notice}</div>
+                      <div className="mt-2 max-h-72 overflow-y-auto rounded-[3px] bg-surface-container p-3 whitespace-pre-line text-on-surface-variant">{privacy_notice}</div>
                     </details>
                   )}
                 </div>

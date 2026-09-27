@@ -78,11 +78,11 @@ function DeadlineRow({ deadline: d, showMatter, compact }: { deadline: Deadline;
               {menu && (
                 <>
                   <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-10 cursor-default" onClick={() => setMenu(false)} />
-                  <div role="menu" className="absolute top-10 right-0 z-20 w-44 rounded-xl border border-outline-variant bg-surface p-1 shadow-(--shadow-elevated)">
-                    <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-container" onClick={() => { setMenu(false); setDialog('reschedule') }}>
+                  <div role="menu" className="absolute top-10 right-0 z-20 w-44 rounded-[3px] border border-outline-variant bg-surface p-1 shadow-(--shadow-elevated)">
+                    <button type="button" role="menuitem" className="w-full rounded-[3px] px-3 py-2 text-left text-sm hover:bg-surface-container" onClick={() => { setMenu(false); setDialog('reschedule') }}>
                       Reschedule…
                     </button>
-                    <button type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left text-sm text-danger hover:bg-surface-container" onClick={() => { setMenu(false); setDialog('cancel') }}>
+                    <button type="button" role="menuitem" className="w-full rounded-[3px] px-3 py-2 text-left text-sm text-danger hover:bg-surface-container" onClick={() => { setMenu(false); setDialog('cancel') }}>
                       Cancel deadline…
                     </button>
                   </div>

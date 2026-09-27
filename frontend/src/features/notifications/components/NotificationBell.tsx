@@ -50,11 +50,11 @@ export function NotificationBell({ userId }: { userId: number }) {
         aria-expanded={open}
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
         onClick={() => setOpen((o) => !o)}
-        className="relative flex size-10 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/5"
+        className="relative flex size-9 items-center justify-center rounded-[3px] text-current hover:bg-white/10"
       >
         <Bell className="size-5" aria-hidden="true" />
         {unread > 0 && (
-          <span className="absolute top-1 right-1 min-w-5 rounded-full bg-danger px-1 text-center text-[11px] leading-5 font-semibold text-white" aria-hidden="true">
+          <span className="absolute top-0.5 right-0.5 min-w-5 rounded-[2px] bg-danger px-1 text-center text-[11px] leading-5 font-semibold text-white" aria-hidden="true">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
@@ -63,7 +63,7 @@ export function NotificationBell({ userId }: { userId: number }) {
       {open && (
         <>
           <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} />
-          <div role="dialog" aria-label="Notifications" className="fixed inset-x-2 top-16 z-50 flex max-h-[70vh] flex-col rounded-2xl border border-outline-variant bg-surface shadow-(--shadow-elevated) sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-96">
+          <div role="dialog" aria-label="Notifications" className="fixed inset-x-2 top-16 z-50 flex max-h-[70vh] flex-col rounded-[3px] border border-outline bg-surface text-on-surface shadow-(--shadow-elevated) sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-96">
             <div className="flex items-center justify-between border-b border-outline-variant px-4 py-3">
               <p className="font-medium">Notifications</p>
               {unread > 0 && <Button size="sm" variant="text" onClick={() => markAll.mutate()}>Mark all read</Button>}

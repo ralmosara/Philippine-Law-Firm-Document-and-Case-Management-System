@@ -3,7 +3,7 @@ import { Search } from 'lucide-react'
 import { useId, type InputHTMLAttributes, type ReactNode, type Ref, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 
 const control =
-  'block w-full rounded-lg border border-outline bg-surface px-3 text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-colors hover:border-on-surface-variant focus:border-primary focus:outline-2 focus:outline-offset-0 focus:outline-primary disabled:opacity-60 aria-[invalid=true]:border-danger aria-[invalid=true]:outline-danger'
+  'block w-full rounded-[2px] border border-outline bg-surface px-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-colors hover:border-on-surface-variant focus:border-primary focus:outline-2 focus:outline-offset-0 focus:outline-primary disabled:opacity-60 aria-[invalid=true]:border-danger aria-[invalid=true]:outline-danger'
 
 interface FieldProps {
   label: string
@@ -23,8 +23,8 @@ export function Field({ label, error, hint, required, className, children }: Fie
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined
 
   return (
-    <div className={clsx('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="text-sm font-medium text-on-surface">
+    <div className={clsx('flex flex-col gap-1', className)}>
+      <label htmlFor={id} className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
         {label}
         {required && <span className="text-danger" aria-hidden="true"> *</span>}
       </label>
@@ -44,7 +44,7 @@ export function Field({ label, error, hint, required, className, children }: Fie
 }
 
 export function Input({ className, ref, ...props }: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
-  return <input ref={ref} className={clsx(control, 'h-10', className)} {...props} />
+  return <input ref={ref} className={clsx(control, 'h-8', className)} {...props} />
 }
 
 export function Textarea({ className, ref, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
@@ -53,7 +53,7 @@ export function Textarea({ className, ref, ...props }: TextareaHTMLAttributes<HT
 
 export function Select({ className, ref, children, ...props }: SelectHTMLAttributes<HTMLSelectElement> & { ref?: Ref<HTMLSelectElement> }) {
   return (
-    <select ref={ref} className={clsx(control, 'h-10 pr-8', className)} {...props}>
+    <select ref={ref} className={clsx(control, 'h-8 pr-8', className)} {...props}>
       {children}
     </select>
   )
@@ -71,14 +71,14 @@ export function Checkbox({ label, className, ref, ...props }: InputHTMLAttribute
 export function SearchInput({ value, onChange, placeholder = 'Search', label = 'Search', className }: { value: string; onChange: (value: string) => void; placeholder?: string; label?: string; className?: string }) {
   return (
     <div className={clsx('relative', className)}>
-      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-on-surface-variant" aria-hidden="true" />
+      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-on-surface-variant" aria-hidden="true" />
       <input
         type="search"
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-10 w-full rounded-full border border-transparent bg-surface-container-high pr-4 pl-9 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:bg-surface focus:outline-none"
+        className="h-8 w-full rounded-[2px] border border-outline bg-surface pr-3 pl-8 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-2 focus:outline-offset-0 focus:outline-primary"
       />
     </div>
   )
@@ -88,7 +88,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search', label = '
 export function FormError({ message }: { message?: string | null }) {
   if (!message) return null
   return (
-    <p role="alert" className="rounded-lg bg-danger-container px-3 py-2 text-sm text-on-danger-container">
+    <p role="alert" className="rounded-[2px] border border-danger/40 bg-danger-container px-3 py-2 text-sm text-on-danger-container">
       {message}
     </p>
   )

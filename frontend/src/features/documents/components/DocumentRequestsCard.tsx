@@ -150,7 +150,7 @@ function NewRequestDialog({ matterId, onClose }: { matterId: number; onClose: ()
             </div>
           ))}
           {items.length > 0 && (
-            <div className="mt-3 flex flex-col gap-1 rounded-lg bg-surface-container p-3">
+            <div className="mt-3 flex flex-col gap-1 rounded-[3px] bg-surface-container p-3">
               <p className="text-xs text-on-surface-variant">Untick "required" for documents that are only helpful:</p>
               {items.map((i) => <Checkbox key={i.label} label={`${i.label}: required`} checked={i.required} onChange={(e) => setItems((list) => list.map((x) => (x.label === i.label ? { ...x, required: e.target.checked } : x)))} />)}
             </div>

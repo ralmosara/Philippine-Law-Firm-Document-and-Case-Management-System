@@ -131,7 +131,7 @@ function CertificateDialog({ request, onClose }: { request: SignatureRequest; on
   return (
     <Dialog open onClose={onClose} title={signed ? 'Signature record' : 'Declined'} size="lg">
       {signed && (
-        <div className="mb-4 rounded-xl border border-outline-variant bg-white p-4 text-center text-black">
+        <div className="mb-4 rounded-[3px] border border-outline-variant bg-white p-4 text-center text-black">
           {request.signature_method === 'drawn' && request.signature_image ? (
             <img src={request.signature_image} alt={`Signature of ${request.signer_name}`} className="mx-auto max-h-32" />
           ) : (

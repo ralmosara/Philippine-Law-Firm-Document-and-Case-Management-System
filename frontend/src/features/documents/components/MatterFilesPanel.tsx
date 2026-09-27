@@ -156,7 +156,7 @@ function Uploader({ matterId }: { matterId: number }) {
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={clsx(
-          'flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center text-sm transition-colors',
+          'flex cursor-pointer flex-col items-center gap-2 rounded-[3px] border-2 border-dashed px-4 py-6 text-center text-sm transition-colors',
           dragging ? 'border-primary bg-primary/5' : 'border-outline-variant hover:border-primary',
         )}
       >

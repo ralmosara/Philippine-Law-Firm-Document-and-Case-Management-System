@@ -89,17 +89,17 @@ export function GlobalTimeTracker() {
         role="group"
         aria-label="Time tracker"
         className={clsx(
-          'fixed right-4 bottom-4 z-30 flex items-center gap-1 rounded-full border py-1.5 pr-2 pl-4 shadow-(--shadow-elevated) print:hidden sm:right-6 sm:bottom-6',
+          'fixed right-4 bottom-4 z-30 flex items-center gap-1 rounded-[3px] border py-1 pr-1.5 pl-3 shadow-(--shadow-elevated) print:hidden sm:right-6 sm:bottom-6',
           running ? 'border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant bg-surface',
         )}
       >
         <Timer className={clsx('size-4', running && 'animate-pulse')} aria-hidden="true" />
         <span className="mr-1 ml-1 font-mono text-sm tabular-nums" aria-live="off">{clock(ms)}</span>
-        <button type="button" onClick={toggle} aria-label={running ? 'Pause timer' : 'Start timer'} className="flex size-9 items-center justify-center rounded-full hover:bg-on-surface/8">
+        <button type="button" onClick={toggle} aria-label={running ? 'Pause timer' : 'Start timer'} className="flex size-9 items-center justify-center rounded-[3px] hover:bg-on-surface/8">
           {running ? <Pause className="size-4" /> : <Play className="size-4" />}
         </button>
         {ms > 0 && (
-          <button type="button" onClick={stop} aria-label="Stop and log time" className="flex h-9 items-center gap-1 rounded-full bg-primary px-3 text-sm font-medium text-on-primary hover:bg-primary-hover">
+          <button type="button" onClick={stop} aria-label="Stop and log time" className="flex h-9 items-center gap-1 rounded-[3px] bg-primary px-3 text-sm font-medium text-on-primary hover:bg-primary-hover">
             <Square className="size-3.5" aria-hidden="true" /> Log
           </button>
         )}

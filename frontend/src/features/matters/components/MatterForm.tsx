@@ -207,7 +207,7 @@ export function MatterForm({ open, onClose, matter, defaultClientId }: Props) {
             </Field>
           )}
           {arrangement === 'retainer' && (
-            <div className="flex flex-col gap-3 rounded-lg bg-surface-container p-3 sm:col-span-2">
+            <div className="flex flex-col gap-3 rounded-[3px] bg-surface-container p-3 sm:col-span-2">
               <Checkbox label="Bill this retainer automatically every month" {...register('retainer_auto_bill')} />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Billing day" hint="1 to 28" error={formState.errors.retainer_billing_day?.message}>

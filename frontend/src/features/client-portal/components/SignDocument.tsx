@@ -76,7 +76,7 @@ export function SignDocument() {
         description={[r.matter?.title, r.requested_by && `Requested by ${r.requested_by}`, r.expires_at && `Please respond by ${dateTime(r.expires_at)}`].filter(Boolean).join(' · ')}
       />
 
-      {r.message && <p className="mb-6 rounded-xl bg-primary-container p-4 text-sm text-on-primary-container">“{r.message}”</p>}
+      {r.message && <p className="mb-6 rounded-[3px] bg-primary-container p-4 text-sm text-on-primary-container">“{r.message}”</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_22rem]">
         <Card>
@@ -102,7 +102,7 @@ export function SignDocument() {
             {method === 'drawn' ? (
               <SignaturePad label="Signature drawing area" onChange={setImage} />
             ) : (
-              <div className="rounded-xl border border-outline bg-white px-4 py-6 text-center font-serif text-3xl text-black italic" aria-label="Typed signature preview">
+              <div className="rounded-[3px] border border-outline bg-white px-4 py-6 text-center font-serif text-3xl text-black italic" aria-label="Typed signature preview">
                 {signerName || 'Your name'}
               </div>
             )}

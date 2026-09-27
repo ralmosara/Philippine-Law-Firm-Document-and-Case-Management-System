@@ -33,9 +33,9 @@ export function ClientLogin() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-surface-dim px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-outline-variant bg-surface p-8 sm:p-10">
+        <div className="rounded-[3px] border border-outline-variant bg-surface p-8 sm:p-10">
           <div className="mb-8 flex flex-col items-center text-center">
-            <span className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary-container text-on-primary-container">
+            <span className="mb-4 flex size-12 items-center justify-center rounded-[3px] bg-primary-container text-on-primary-container">
               <Scale className="size-6" aria-hidden="true" />
             </span>
             <h1 className="text-2xl font-semibold tracking-tight">Client portal</h1>

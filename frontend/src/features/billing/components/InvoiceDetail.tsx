@@ -110,7 +110,7 @@ export function InvoiceDetail() {
         </dl>
 
         {inv.status === 'paid' && (
-          <p className="mt-6 rounded-lg bg-success-container p-3 text-sm text-on-success-container">
+          <p className="mt-6 rounded-[3px] bg-success-container p-3 text-sm text-on-success-container">
             Paid {date(inv.paid_at)}{inv.payment_reference && ` · Ref. ${inv.payment_reference}`}
           </p>
         )}

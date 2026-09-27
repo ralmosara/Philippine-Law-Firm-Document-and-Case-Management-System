@@ -70,7 +70,7 @@ export function SignaturePad({ onChange, label }: { onChange: (dataUrl: string |
 
   return (
     <div>
-      <div className="relative rounded-xl border border-outline bg-white">
+      <div className="relative rounded-[3px] border border-outline bg-white">
         <canvas
           ref={canvas}
           role="img"

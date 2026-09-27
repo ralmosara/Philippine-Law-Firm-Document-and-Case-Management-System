@@ -153,9 +153,9 @@ export function StatusMenu({ matter }: { matter: Matter }) {
       {open && (
         <>
           <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-10 cursor-default" onClick={() => setOpen(false)} />
-          <div role="menu" className="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-outline-variant bg-surface p-1 shadow-(--shadow-elevated)">
+          <div role="menu" className="absolute right-0 z-20 mt-2 w-52 rounded-[3px] border border-outline-variant bg-surface p-1 shadow-(--shadow-elevated)">
             {matter.allowed_transitions.map((t) => (
-              <button key={t.value} type="button" role="menuitem" className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-container" onClick={() => { setOpen(false); setTarget(t) }}>
+              <button key={t.value} type="button" role="menuitem" className="w-full rounded-[3px] px-3 py-2 text-left text-sm hover:bg-surface-container" onClick={() => { setOpen(false); setTarget(t) }}>
                 Move to {t.label}
               </button>
             ))}
