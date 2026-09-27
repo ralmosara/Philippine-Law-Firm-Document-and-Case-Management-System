@@ -38,25 +38,23 @@ export function Dialog({ open, onClose, title, description, children, footer, si
       }}
       aria-labelledby="dialog-title"
       className={clsx(
-        'm-auto w-[calc(100%-2rem)] rounded-3xl bg-surface p-0 text-on-surface shadow-(--shadow-elevated) backdrop:backdrop-blur-[1px]',
+        'm-auto w-[calc(100%-2rem)] rounded-[3px] border border-nav bg-surface p-0 text-on-surface shadow-(--shadow-elevated)',
         { md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }[size],
       )}
     >
       {open && (
         <div className="flex max-h-[85vh] flex-col">
-          <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-2">
-            <div>
-              <h2 id="dialog-title" className="text-xl font-semibold">
-                {title}
-              </h2>
-              {description && <div className="mt-1 text-sm text-on-surface-variant">{description}</div>}
-            </div>
-            <IconButton label="Close" onClick={onClose} className="-mt-1 -mr-2">
-              <X className="size-5" />
+          <div className="flex items-center justify-between gap-4 bg-nav py-1.5 pr-1.5 pl-4 text-on-nav">
+            <h2 id="dialog-title" className="text-base font-semibold">
+              {title}
+            </h2>
+            <IconButton label="Close" onClick={onClose} className="!text-on-nav hover:!bg-nav-hover">
+              <X className="size-4" />
             </IconButton>
           </div>
-          <div className="overflow-y-auto px-6 py-4">{children}</div>
-          {footer && <div className="flex justify-end gap-2 px-6 pt-2 pb-6">{footer}</div>}
+          {description && <div className="border-b border-outline-variant bg-surface-container px-4 py-2 text-sm text-on-surface-variant">{description}</div>}
+          <div className="overflow-y-auto px-4 py-4">{children}</div>
+          {footer && <div className="flex justify-end gap-1.5 border-t border-outline-variant bg-surface-container px-4 py-2.5">{footer}</div>}
         </div>
       )}
     </dialog>

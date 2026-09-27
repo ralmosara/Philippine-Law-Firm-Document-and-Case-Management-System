@@ -109,7 +109,7 @@ function AssistantCard({ firm }: { firm: FirmSettings }) {
         <p className="text-on-surface-variant">
           When someone asks a question, that matter’s details, drafted documents and uploaded files’ text are sent to Anthropic, a third-party processor outside the Philippines, to produce the answer. Before turning this on, confirm your data processing agreement with Anthropic and that your engagement terms and privacy notice cover it (Data Privacy Act of 2012). Every question is recorded in the audit log.
         </p>
-        {!firm.ai_configured && <p className="rounded-lg bg-warning-container p-3 text-on-warning-container">The server has no Anthropic API key yet (ANTHROPIC_API_KEY), so the assistant stays unavailable until one is added.</p>}
+        {!firm.ai_configured && <p className="rounded-[3px] bg-warning-container p-3 text-on-warning-container">The server has no Anthropic API key yet (ANTHROPIC_API_KEY), so the assistant stays unavailable until one is added.</p>}
         <div>
           {firm.ai_enabled
             ? <Button variant="outlined" loading={save.isPending} onClick={() => save.mutate({ ai_enabled: false })}>Turn off</Button>
@@ -215,7 +215,7 @@ function SecurityCard({ firm }: { firm: FirmSettings }) {
           </div>
         </div>
         <FormError message={error} />
-        <p className="rounded-lg bg-surface-container p-3 text-sm" role="status">
+        <p className="rounded-[3px] bg-surface-container p-3 text-sm" role="status">
           {firm.require_two_factor ? 'Required. ' : 'Optional. '}
           {firm.users_without_two_factor === 0
             ? 'Every active user has it on.'

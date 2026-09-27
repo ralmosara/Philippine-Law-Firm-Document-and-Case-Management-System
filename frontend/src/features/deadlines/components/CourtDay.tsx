@@ -107,7 +107,7 @@ export function CourtDay() {
                   {h.matter.client_phone && (
                     <div className="flex gap-2"><Phone className="size-4 shrink-0 text-on-surface-variant" aria-hidden /><dd><a href={`tel:${h.matter.client_phone.replace(/\s/g, '')}`} className="text-primary">Call client: {h.matter.client_phone}</a></dd></div>
                   )}
-                  {h.notes && <div className="rounded-lg bg-warning-container p-3 text-on-warning-container"><dt className="font-medium">Bring / remember</dt><dd className="whitespace-pre-line">{h.notes}</dd></div>}
+                  {h.notes && <div className="rounded-[3px] bg-warning-container p-3 text-on-warning-container"><dt className="font-medium">Bring / remember</dt><dd className="whitespace-pre-line">{h.notes}</dd></div>}
                   {h.assignee && <p className="text-xs text-on-surface-variant">Appearing: {h.assignee}</p>}
                 </dl>
 
@@ -157,7 +157,7 @@ function OutcomeDialog({ hearing, onClose }: { hearing: Hearing; onClose: () => 
       <form id="outcome-form" onSubmit={submit} className="flex flex-col gap-4">
         <fieldset className="grid grid-cols-3 gap-2" aria-label="Outcome">
           {([['held', 'Held'], ['reset', 'Reset'], ['cancelled', 'Cancelled']] as const).map(([value, label]) => (
-            <label key={value} className={`flex h-12 cursor-pointer items-center justify-center rounded-lg border text-sm font-medium ${outcome === value ? 'border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant'}`}>
+            <label key={value} className={`flex h-12 cursor-pointer items-center justify-center rounded-[3px] border text-sm font-medium ${outcome === value ? 'border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant'}`}>
               <input type="radio" name="outcome" value={value} checked={outcome === value} onChange={() => setOutcome(value)} className="sr-only" />
               {label}
             </label>

@@ -235,7 +235,7 @@ export function RecordPaymentDialog({ invoice, onClose }: { invoice: Invoice; on
             {(a) => <Input {...a} value={reference} maxLength={100} onChange={(e) => setReference(e.target.value)} />}
           </Field>
         ) : (
-          <p className="rounded-lg bg-warning-container p-3 text-sm text-on-warning-container">
+          <p className="rounded-[3px] bg-warning-container p-3 text-sm text-on-warning-container">
             {money(amountCents || 0)} will be disbursed from trust account {selectedTrust?.account_number} and recorded in its ledger. Confirm the client has authorised applying trust funds to fees.
           </p>
         )}
@@ -246,7 +246,7 @@ export function RecordPaymentDialog({ invoice, onClose }: { invoice: Invoice; on
           </Field>
         )}
 
-        <p className="rounded-lg bg-surface-container p-3 text-sm tabular-nums" aria-live="polite">
+        <p className="rounded-[3px] bg-surface-container p-3 text-sm tabular-nums" aria-live="polite">
           Credits {money(credited)} · {remaining < 0 ? <span className="text-danger">{money(-remaining)} more than the balance</span> : remaining === 0 ? 'settles the invoice in full' : `leaves ${money(remaining)} due`}
         </p>
         <FormError message={record.error && Object.keys(errors).length === 0 ? record.error.message : null} />

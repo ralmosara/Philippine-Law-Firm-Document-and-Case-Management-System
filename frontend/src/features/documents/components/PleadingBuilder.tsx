@@ -107,7 +107,7 @@ export function PleadingBuilder({ matterId, open, onClose }: { matterId: number;
         </div>
         <div className="min-w-0">
           <p className="mb-1 text-sm font-medium">Preview</p>
-          <pre className="max-h-[60vh] overflow-auto rounded-lg border border-outline-variant bg-surface-container p-4 font-mono text-xs leading-relaxed whitespace-pre" aria-label="Pleading preview">{preview || 'Preparing preview…'}</pre>
+          <pre className="max-h-[60vh] overflow-auto rounded-[3px] border border-outline-variant bg-surface-container p-4 font-mono text-xs leading-relaxed whitespace-pre" aria-label="Pleading preview">{preview || 'Preparing preview…'}</pre>
         </div>
       </div>
     </Dialog>

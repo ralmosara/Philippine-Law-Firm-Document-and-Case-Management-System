@@ -64,9 +64,9 @@ export function PortalDocumentRequest() {
         title={r.title}
         description={`${r.matter ?? ''}${r.due_on ? ` · needed by ${date(r.due_on)}` : ''}`}
       />
-      {r.message && <p className="mb-4 rounded-lg bg-surface-container p-4 text-sm whitespace-pre-line">{r.message}</p>}
+      {r.message && <p className="mb-4 rounded-[3px] bg-surface-container p-4 text-sm whitespace-pre-line">{r.message}</p>}
       <div className="mb-4 max-w-md"><ProgressBar value={r.progress.total ? (r.progress.done / r.progress.total) * 100 : 0} label={`${r.progress.done} of ${r.progress.total} done`} tone={r.status === 'completed' ? 'success' : 'primary'} /></div>
-      {r.status === 'completed' && <p className="mb-4 flex items-center gap-2 rounded-lg bg-success-container p-4 text-sm text-on-success-container"><CheckCircle2 className="size-5" aria-hidden /> Thank you, we have everything we asked for.</p>}
+      {r.status === 'completed' && <p className="mb-4 flex items-center gap-2 rounded-[3px] bg-success-container p-4 text-sm text-on-success-container"><CheckCircle2 className="size-5" aria-hidden /> Thank you, we have everything we asked for.</p>}
       <Card>
         <ul className="divide-y divide-outline-variant">
           {r.items.map((item) => <ItemRow key={item.id} item={item} open={r.status === 'open'} overdue={!!r.due_on && r.due_on < today()} />)}

@@ -7,7 +7,7 @@ const prefersDark = () => typeof window !== 'undefined' && window.matchMedia('(p
 /** Side-by-side redline between two document versions. */
 export function DocumentDiffViewer({ before, after }: { before: DocumentVersion; after: DocumentVersion }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-outline-variant text-sm">
+    <div className="overflow-hidden rounded-[3px] border border-outline-variant text-sm">
       <ReactDiffViewer
         oldValue={before.content}
         newValue={after.content}

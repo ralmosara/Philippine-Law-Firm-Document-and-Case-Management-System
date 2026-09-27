@@ -100,7 +100,7 @@ export function TemplatePicker({ open, onClose, matterId }: { open: boolean; onC
         </Field>
 
         {customFields.length > 0 && (
-          <fieldset className="grid grid-cols-1 gap-4 rounded-xl bg-surface-container p-4 sm:grid-cols-2">
+          <fieldset className="grid grid-cols-1 gap-4 rounded-[3px] bg-surface-container p-4 sm:grid-cols-2">
             <legend className="sr-only">Template fields</legend>
             <p className="text-sm text-on-surface-variant sm:col-span-2">This template needs a few details. Client, matter, court and lawyer fields are filled in automatically.</p>
             {customFields.map((f) => (
@@ -122,7 +122,7 @@ function TemplateOption({ selected, onSelect, icon, name, detail }: { selected: 
       aria-pressed={selected}
       onClick={onSelect}
       className={clsx(
-        'flex items-start gap-3 rounded-xl border p-3 text-left transition-colors',
+        'flex items-start gap-3 rounded-[3px] border p-3 text-left transition-colors',
         selected ? 'border-primary bg-primary-container/50' : 'border-outline-variant hover:bg-surface-container',
       )}
     >

@@ -85,7 +85,7 @@ export function MatterAssistant({ matterId }: { matterId: number }) {
               </div>
               <div className="grid w-full gap-2 sm:grid-cols-2">
                 {QUICK_PROMPTS.map((p) => (
-                  <button key={p} type="button" disabled={ask.isPending} onClick={() => void send(p)} className="rounded-xl border border-outline-variant p-3 text-left text-sm hover:border-primary hover:bg-primary/5 disabled:opacity-50">{p}</button>
+                  <button key={p} type="button" disabled={ask.isPending} onClick={() => void send(p)} className="rounded-[3px] border border-outline-variant p-3 text-left text-sm hover:border-primary hover:bg-primary/5 disabled:opacity-50">{p}</button>
                 ))}
               </div>
             </div>
@@ -116,7 +116,7 @@ function AssistantTurn({ message }: { message: AiMessage }) {
   const [saving, setSaving] = useState(false)
 
   if (message.role === 'user') {
-    return <li className="self-end max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm whitespace-pre-wrap text-on-primary">{message.content}</li>
+    return <li className="self-end max-w-[85%] rounded-[3px] rounded-br-md bg-primary px-4 py-2.5 text-sm whitespace-pre-wrap text-on-primary">{message.content}</li>
   }
 
   if (message.status === 'pending') {
@@ -125,7 +125,7 @@ function AssistantTurn({ message }: { message: AiMessage }) {
 
   if (message.status === 'failed') {
     return (
-      <li className="flex flex-col items-start gap-2 rounded-xl bg-danger-container p-3 text-sm text-on-danger-container">
+      <li className="flex flex-col items-start gap-2 rounded-[3px] bg-danger-container p-3 text-sm text-on-danger-container">
         {message.error}
         <Button variant="text" size="sm" icon={<RotateCcw className="size-4" />} loading={retry.isPending} onClick={() => retry.mutate(message.id)}>Try again</Button>
       </li>
@@ -143,7 +143,7 @@ function AssistantTurn({ message }: { message: AiMessage }) {
 
   return (
     <li className="flex flex-col gap-2">
-      <div className="rounded-2xl rounded-bl-md bg-surface-container-high px-4 py-3 text-sm leading-6 whitespace-pre-wrap text-on-surface">
+      <div className="rounded-[3px] rounded-bl-md bg-surface-container-high px-4 py-3 text-sm leading-6 whitespace-pre-wrap text-on-surface">
         <WithCitations text={message.content ?? ''} />
       </div>
       <div className="flex gap-1">
@@ -164,7 +164,7 @@ function WithCitations({ text }: { text: string }) {
         const match = /^\[(M|D|F)(\d*)\]$/.exec(part)
         if (!match) return <Fragment key={i}>{part}</Fragment>
         const [, kind, id] = match
-        const chip = 'mx-0.5 inline-flex items-center rounded-md bg-primary-container px-1.5 text-[11px] font-semibold text-on-primary-container align-baseline no-underline hover:brightness-95'
+        const chip = 'mx-0.5 inline-flex items-center rounded-[2px] bg-primary-container px-1.5 text-[11px] font-semibold text-on-primary-container align-baseline no-underline hover:brightness-95'
         if (kind === 'D') return <Link key={i} to={`/documents/${id}`} className={chip} title="Open the cited document">D{id}</Link>
         if (kind === 'F') return <a key={i} href={fileDownloadUrl(Number(id))} download className={chip} title="Download the cited file">F{id}</a>
         return <span key={i} className={chip} title="From the matter’s details">Matter</span>

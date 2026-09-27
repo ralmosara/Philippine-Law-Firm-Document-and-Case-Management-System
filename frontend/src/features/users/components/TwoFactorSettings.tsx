@@ -115,7 +115,7 @@ export function EnableDialog({ onClose }: { onClose: () => void }) {
     <Dialog open onClose={onClose} title="Scan with your authenticator app" description="Google Authenticator, Microsoft Authenticator, 1Password and similar apps work.">
       <form onSubmit={submitCode} className="flex flex-col gap-4">
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-          <div className="flex size-[200px] shrink-0 items-center justify-center rounded-xl bg-white p-2">
+          <div className="flex size-[200px] shrink-0 items-center justify-center rounded-[3px] bg-white p-2">
             {qr ? <img src={qr} alt="QR code for your authenticator app" width={184} height={184} /> : null}
           </div>
           <div className="min-w-0 text-sm text-on-surface-variant">
@@ -208,7 +208,7 @@ function RecoveryCodesDialog({ codes, onClose }: { codes: string[]; onClose: () 
       description="Each code signs you in once if you lose your phone. Keep them somewhere safe; they won’t be shown again."
       footer={<Button onClick={onClose}>I’ve saved them</Button>}
     >
-      <ul className="grid grid-cols-2 gap-2 rounded-xl bg-surface-container p-4 font-mono text-sm">
+      <ul className="grid grid-cols-2 gap-2 rounded-[3px] bg-surface-container p-4 font-mono text-sm">
         {codes.map((c) => <li key={c}>{c}</li>)}
       </ul>
       <div className="mt-4 flex gap-2">

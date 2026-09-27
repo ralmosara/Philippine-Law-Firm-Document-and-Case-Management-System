@@ -86,7 +86,7 @@ function ConflictResult({ check }: { check: ConflictCheck }) {
 
   if (check.match_count === 0) {
     return (
-      <div role="status" className="mx-5 mb-5 flex items-center gap-3 rounded-xl bg-success-container p-4 text-on-success-container">
+      <div role="status" className="mx-5 mb-5 flex items-center gap-3 rounded-[3px] bg-success-container p-4 text-on-success-container">
         <CheckCircle2 className="size-5 shrink-0" aria-hidden="true" />
         <p className="flex-1 text-sm">No matches for <strong>{check.search_term}</strong>. This clear result has been recorded.</p>
         <DownloadButton href={`/api/v1/conflict-checks/${check.id}/pdf`} size="sm" icon={<FileDown className="size-4" />}>Report</DownloadButton>
@@ -96,7 +96,7 @@ function ConflictResult({ check }: { check: ConflictCheck }) {
 
   return (
     <div className="border-t border-outline-variant">
-      <div role="alert" className="mx-5 my-4 flex items-center gap-3 rounded-xl bg-danger-container p-4 text-on-danger-container">
+      <div role="alert" className="mx-5 my-4 flex items-center gap-3 rounded-[3px] bg-danger-container p-4 text-on-danger-container">
         <AlertTriangle className="size-5 shrink-0" aria-hidden="true" />
         <p className="flex-1 text-sm"><strong>{check.match_count} potential conflict(s)</strong> for “{check.search_term}”. A lawyer must review before the firm accepts the engagement.</p>
         {abilities.practice_law && check.status === 'flagged' && (

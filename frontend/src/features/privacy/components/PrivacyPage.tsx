@@ -393,7 +393,7 @@ function NoticeForm({ initial }: { initial: NonNullable<ReturnType<typeof usePri
         {custom ? (
           <Field label="Privacy notice" error={error?.field('privacy_notice')}>{(a) => <Textarea {...a} rows={14} value={form.privacy_notice} onChange={(e) => setForm({ ...form, privacy_notice: e.target.value })} />}</Field>
         ) : (
-          <div className="rounded-lg bg-surface-container p-4 text-sm whitespace-pre-line">{initial.default_notice}</div>
+          <div className="rounded-[3px] bg-surface-container p-4 text-sm whitespace-pre-line">{initial.default_notice}</div>
         )}
         <FormError message={error && !Object.keys(error.errors).length ? error.message : null} />
         <Button type="submit" loading={save.isPending} className="self-start">Save</Button>

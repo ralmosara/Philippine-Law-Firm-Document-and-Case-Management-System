@@ -109,7 +109,7 @@ function RevenueChart({ data }: { data: Dashboard['revenue_trend'] }) {
           })}
         </svg>
         {active !== null && data[active] && (
-          <div role="tooltip" className="pointer-events-none absolute top-0 rounded-lg bg-surface-container-high px-3 py-2 text-xs shadow-(--shadow-elevated)" style={{ left: `${((active + 0.5) / data.length) * 100}%`, transform: 'translateX(-50%)' }}>
+          <div role="tooltip" className="pointer-events-none absolute top-0 rounded-[3px] bg-surface-container-high px-3 py-2 text-xs shadow-(--shadow-elevated)" style={{ left: `${((active + 0.5) / data.length) * 100}%`, transform: 'translateX(-50%)' }}>
             <p className="text-on-surface-variant">{data[active].month}</p>
             <p className="font-semibold text-on-surface tabular-nums">{money(data[active].collected_cents)}</p>
           </div>

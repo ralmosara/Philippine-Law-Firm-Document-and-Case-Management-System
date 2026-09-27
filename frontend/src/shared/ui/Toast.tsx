@@ -47,19 +47,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 flex-col gap-2 px-4">
+      <div aria-live="polite" className="pointer-events-none fixed top-24 left-1/2 z-50 flex w-full max-w-lg -translate-x-1/2 flex-col gap-2 px-4">
         {toasts.map((toast) => (
           <div
             key={toast.id}
             role={toast.tone === 'error' ? 'alert' : 'status'}
             className={clsx(
-              'pointer-events-auto flex items-center gap-3 rounded-xl px-4 py-3 text-sm shadow-(--shadow-elevated)',
-              'bg-[#303030] text-[#f2f2f2] dark:bg-[#e3e3e3] dark:text-[#1f1f1f]',
+              'pointer-events-auto flex items-center gap-3 rounded-[3px] border border-l-4 bg-surface px-3 py-2.5 text-sm text-on-surface shadow-(--shadow-elevated)',
+              toast.tone === 'error' ? 'border-danger/50 border-l-danger' : 'border-success/40 border-l-success',
             )}
           >
-            {toast.tone === 'error' ? <AlertCircle className="size-5 shrink-0 text-[#f2b8b5] dark:text-danger" aria-hidden="true" /> : <CheckCircle2 className="size-5 shrink-0 text-[#6dd58c] dark:text-success" aria-hidden="true" />}
+            {toast.tone === 'error' ? <AlertCircle className="size-5 shrink-0 text-danger" aria-hidden="true" /> : <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />}
             <span className="flex-1">{toast.message}</span>
-            <button type="button" onClick={() => dismiss(toast.id)} aria-label="Dismiss" className="rounded-full p-1 opacity-70 hover:opacity-100">
+            <button type="button" onClick={() => dismiss(toast.id)} aria-label="Dismiss" className="rounded-[2px] p-1 text-on-surface-variant hover:bg-surface-container-high">
               <X className="size-4" />
             </button>
           </div>

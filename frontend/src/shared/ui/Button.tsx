@@ -7,19 +7,19 @@ type Variant = 'filled' | 'tonal' | 'outlined' | 'text' | 'danger'
 type Size = 'sm' | 'md'
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors select-none disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap'
+  'inline-flex items-center justify-center gap-1.5 rounded-[3px] font-semibold transition-colors select-none disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap'
 
 const variants: Record<Variant, string> = {
-  filled: 'bg-primary text-on-primary hover:bg-primary-hover shadow-sm',
-  tonal: 'bg-primary-container text-on-primary-container hover:brightness-95',
-  outlined: 'border border-outline text-primary hover:bg-primary/5',
-  text: 'text-primary hover:bg-primary/8',
-  danger: 'bg-danger text-white hover:brightness-110 dark:text-on-danger-container',
+  filled: 'border border-primary-hover bg-primary text-on-primary hover:bg-primary-hover',
+  tonal: 'border border-outline bg-surface-container-high text-on-surface hover:bg-outline-variant',
+  outlined: 'border border-outline bg-surface text-on-surface hover:bg-surface-container',
+  text: 'text-primary hover:bg-primary/8 hover:underline',
+  danger: 'border border-danger bg-danger text-white hover:brightness-110 dark:text-on-danger-container',
 }
 
 const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-sm',
-  md: 'h-10 px-5 text-sm',
+  sm: 'h-7 px-2.5 text-xs',
+  md: 'h-8 px-3.5 text-sm',
 }
 
 export function buttonClass(variant: Variant = 'filled', size: Size = 'md', className?: string): string {
@@ -57,7 +57,7 @@ export function IconButton({ label, className, children, ...props }: ButtonHTMLA
       type="button"
       aria-label={label}
       title={label}
-      className={clsx('inline-flex size-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-on-surface/8 disabled:opacity-40', className)}
+      className={clsx('inline-flex size-8 items-center justify-center rounded-[3px] text-on-surface-variant transition-colors hover:bg-on-surface/8 disabled:opacity-40', className)}
       {...props}
     >
       {children}

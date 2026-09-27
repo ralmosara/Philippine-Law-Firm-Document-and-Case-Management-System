@@ -63,7 +63,7 @@ export function Conversation({
         {messages.map((m) => (
           <li key={m.id} className={clsx('flex max-w-[85%] flex-col', m.mine ? 'self-end items-end' : 'self-start items-start')}>
             <span className="mb-1 text-xs text-on-surface-variant">{m.mine ? 'You' : (m.sender_name ?? otherSideLabel)} · {dateTime(m.created_at)}</span>
-            <div className={clsx('rounded-2xl px-4 py-2.5 text-sm leading-6 whitespace-pre-wrap break-words', m.mine ? 'rounded-br-md bg-primary text-on-primary' : 'rounded-bl-md bg-surface-container-high text-on-surface')}>
+            <div className={clsx('rounded-[3px] px-4 py-2.5 text-sm leading-6 whitespace-pre-wrap break-words', m.mine ? 'rounded-br-md bg-primary text-on-primary' : 'rounded-bl-md bg-surface-container-high text-on-surface')}>
               {m.body}
             </div>
             {m.attachment && (

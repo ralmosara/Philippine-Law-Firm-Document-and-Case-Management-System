@@ -180,7 +180,7 @@ function PaymentReturnBanner() {
         : 'Thank you. We’re confirming your payment with PayMongo; this usually takes a few seconds.'
 
   return (
-    <div role="status" className={`mb-6 flex items-start gap-3 rounded-xl p-4 text-sm ${outcome === 'cancelled' ? 'bg-surface-container-high' : 'bg-success-container text-on-success-container'}`}>
+    <div role="status" className={`mb-6 flex items-start gap-3 rounded-[3px] p-4 text-sm ${outcome === 'cancelled' ? 'bg-surface-container-high' : 'bg-success-container text-on-success-container'}`}>
       <p className="flex-1">{text}</p>
       <IconButton label="Dismiss" onClick={dismiss}><X className="size-4" /></IconButton>
     </div>

@@ -131,7 +131,7 @@ function TaskCard({ task, onMove, canMove }: { task: Deadline; onMove: (column: 
     <li
       draggable={canMove}
       onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(task.id)); e.dataTransfer.effectAllowed = 'move' }}
-      className={clsx('rounded-xl border border-outline-variant bg-surface p-3 shadow-sm', canMove && 'cursor-grab active:cursor-grabbing', task.status === 'completed' && 'opacity-70')}
+      className={clsx('rounded-[3px] border border-outline-variant bg-surface p-3 shadow-sm', canMove && 'cursor-grab active:cursor-grabbing', task.status === 'completed' && 'opacity-70')}
     >
       <div className="flex items-start justify-between gap-2">
         <p className={clsx('text-sm font-medium', task.status === 'completed' && 'line-through')}>{task.title}</p>

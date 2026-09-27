@@ -107,7 +107,7 @@ export function InvoiceDraftDialog({ matter, onClose }: { matter: Matter; onClos
             </div>
           )}
           {percent > 0 && (
-            <div className="flex flex-col gap-2 rounded-xl bg-surface-container p-3 sm:flex-row sm:items-end">
+            <div className="flex flex-col gap-2 rounded-[3px] bg-surface-container p-3 sm:flex-row sm:items-end">
               <Field label={`Amount recovered (₱) for the ${percent}% contingency fee`} className="flex-1">
                 {(a) => <Input {...a} inputMode="decimal" placeholder="0.00" value={recovered} onChange={(e) => setRecovered(e.target.value)} />}
               </Field>

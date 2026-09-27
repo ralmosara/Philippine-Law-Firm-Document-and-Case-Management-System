@@ -53,7 +53,7 @@ export function CalendarSubscription() {
             )}
 
             {url ? (
-              <div className="flex flex-col gap-3 rounded-xl bg-surface-container p-4">
+              <div className="flex flex-col gap-3 rounded-[3px] bg-surface-container p-4">
                 <p className="font-medium">Your private calendar link. Copy it now; it won’t be shown again.</p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input aria-label="Calendar link" readOnly value={url} onFocus={(e) => e.target.select()} className="flex-1 font-mono text-xs" />

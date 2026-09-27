@@ -148,7 +148,7 @@ function PortalAccessDialog({ client, onClose }: { client: Client; onClose: () =
     >
       <form id="portal-form" onSubmit={submit} className="flex flex-col gap-4">
         <FormError message={error && !error.field('password') ? error.message : undefined} />
-        {!client.email && <p className="rounded-lg bg-warning-container p-3 text-sm text-on-warning-container">Add an email address to this client before enabling portal access.</p>}
+        {!client.email && <p className="rounded-[3px] bg-warning-container p-3 text-sm text-on-warning-container">Add an email address to this client before enabling portal access.</p>}
         <Checkbox label="Allow this client to sign in to the portal" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} disabled={!client.email} />
         {enabled && (
           <fieldset className="flex flex-col gap-2">
