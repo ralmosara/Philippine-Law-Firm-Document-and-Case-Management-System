@@ -127,6 +127,8 @@ class ClientController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            // Maiden or former names, trade names, affiliates: one per line.
+            'aliases' => ['nullable', 'string', 'max:2000'],
         ];
     }
 }

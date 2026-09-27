@@ -20,6 +20,7 @@ class ClientResource extends JsonResource
             'phone' => $this->phone,
             'address' => $this->address,
             'notes' => $this->notes,
+            'aliases' => $this->aliases,
             'portal_enabled' => $this->portal_enabled,
             // False until an invited client chooses their password.
             'portal_password_set' => isset($this->resource->getAttributes()['password']),

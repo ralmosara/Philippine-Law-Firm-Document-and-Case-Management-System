@@ -31,6 +31,7 @@ class Client extends Authenticatable
         'phone',
         'address',
         'notes',
+        'aliases',
         'portal_enabled',
         'password',
     ];
@@ -45,6 +46,7 @@ class Client extends Authenticatable
         'privacy_notice_version' => null,
         'privacy_accepted_at' => null,
         'anonymized_at' => null,
+        'aliases' => null,
     ];
 
     protected function casts(): array

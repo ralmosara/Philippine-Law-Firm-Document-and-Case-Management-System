@@ -91,6 +91,7 @@ export interface Client {
   phone: string | null
   address: string | null
   notes: string | null
+  aliases?: string | null
   portal_enabled: boolean
   portal_password_set: boolean
   last_portal_login_at: string | null
@@ -438,6 +439,9 @@ export interface ConflictMatch {
   matter_id: number | null
   matter_reference: string | null
   matter_title: string | null
+  /** How close the names are (60-100) and why they matched; absent on older checks. */
+  score?: number
+  reason?: string
 }
 
 export interface ConflictCheck {

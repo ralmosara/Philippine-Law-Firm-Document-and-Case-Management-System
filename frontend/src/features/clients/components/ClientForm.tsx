@@ -17,6 +17,7 @@ const schema = z.object({
   tin: z.union([z.literal(''), z.string().regex(/^\d{3}-?\d{3}-?\d{3}(-?\d{3,5})?$/, 'Use the format 123-456-789-000.')]),
   address: z.string().trim().max(255),
   notes: z.string().max(5000),
+  aliases: z.string().max(2000),
 })
 
 type Values = z.infer<typeof schema>
@@ -36,6 +37,7 @@ export function ClientForm({ open, onClose, client }: { open: boolean; onClose: 
       tin: client?.tin ?? '',
       address: client?.address ?? '',
       notes: client?.notes ?? '',
+      aliases: client?.aliases ?? '',
     },
   })
 
@@ -54,6 +56,7 @@ export function ClientForm({ open, onClose, client }: { open: boolean; onClose: 
         tin: nullable(values.tin),
         address: nullable(values.address),
         notes: nullable(values.notes),
+        aliases: nullable(values.aliases),
       })
       close()
       if (!client) navigate(`/clients/${saved.id}`)
@@ -99,6 +102,9 @@ export function ClientForm({ open, onClose, client }: { open: boolean; onClose: 
         </Field>
         <Field label="Address" error={formState.errors.address?.message}>
           {(a) => <Input {...a} {...register('address')} />}
+        </Field>
+        <Field label="Also known as" className="sm:col-span-2" hint="Maiden or former names, trade names, affiliated companies; one per line. Conflict checks search these too." error={formState.errors.aliases?.message}>
+          {(a) => <Textarea {...a} rows={2} {...register('aliases')} />}
         </Field>
         <Field label="Notes" className="sm:col-span-2" error={formState.errors.notes?.message}>
           {(a) => <Textarea {...a} rows={3} {...register('notes')} />}

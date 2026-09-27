@@ -216,6 +216,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         Route::apiResource('conflict-checks', ConflictCheckController::class)->only(['index', 'store', 'show']);
         Route::post('conflict-checks/{conflictCheck}/resolve', [ConflictCheckController::class, 'resolve']);
+        Route::get('conflict-checks/{conflictCheck}/pdf', [ConflictCheckController::class, 'pdf']);
 
         Route::get('mcle/periods', [McleController::class, 'periods']);
         Route::post('mcle/periods', [McleController::class, 'storePeriod']);

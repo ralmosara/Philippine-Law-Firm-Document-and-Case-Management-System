@@ -144,6 +144,7 @@ class PrivacyService
                 'tin' => null,
                 'address' => null,
                 'notes' => null,
+                'aliases' => null,
                 'portal_enabled' => false,
                 'password' => null,
                 'anonymized_at' => now(),
