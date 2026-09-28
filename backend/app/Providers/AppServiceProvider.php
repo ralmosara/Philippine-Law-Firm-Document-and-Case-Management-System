@@ -13,6 +13,8 @@ use App\Domain\Corporate\Models\CorporateObligation;
 use App\Domain\Corporate\Models\CorporateProfile;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Services\DeadlineCalculator;
+use App\Domain\Directory\Models\Contact;
+use App\Domain\Directory\Models\Court;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Documents\Models\SignatureRequest;
@@ -86,6 +88,8 @@ class AppServiceProvider extends ServiceProvider
             'corporate_obligation' => CorporateObligation::class,
             'exhibit' => Exhibit::class,
             'disbursement_request' => DisbursementRequest::class,
+            'court' => Court::class,
+            'contact' => Contact::class,
         ]);
 
         $this->configureDatabaseTenancy();

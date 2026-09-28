@@ -110,7 +110,7 @@ function ConflictResult({ check }: { check: ConflictCheck }) {
         <thead><tr><Th>Name</Th><Th>Relationship</Th><Th>Matter</Th><Th>Why it matched</Th></tr></thead>
         <tbody>
           {check.matches.map((m) => (
-            <tr key={`${m.source}-${m.id}`}>
+            <tr key={`${m.source}-${m.id}-${m.matter_id ?? 0}`}>
               <Td className="font-medium">{m.name}</Td>
               <Td><Badge tone={m.is_adverse ? 'danger' : 'primary'}>{m.relationship}</Badge></Td>
               <Td>{m.matter_id ? <Link to={`/matters/${m.matter_id}`} className="text-primary hover:underline">{m.matter_reference} · {m.matter_title}</Link> : <span className="text-on-surface-variant">{m.matter_title}</span>}</Td>
