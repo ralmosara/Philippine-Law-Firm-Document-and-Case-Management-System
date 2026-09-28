@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\InvoicePaymentController;
 use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MatterController;
 use App\Http\Controllers\Api\V1\MatterDeadlineController;
+use App\Http\Controllers\Api\V1\MatterEmailController;
 use App\Http\Controllers\Api\V1\MatterFileController;
 use App\Http\Controllers\Api\V1\MatterPartyController;
 use App\Http\Controllers\Api\V1\McleController;
@@ -45,6 +46,7 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WorkflowTemplateController;
 use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\InboundEmailWebhookController;
 use App\Http\Controllers\PayMongoWebhookController;
 use App\Http\Controllers\PortalDocumentRequestController;
 use App\Http\Controllers\PortalMessageController;
@@ -109,6 +111,12 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('matters/{matter}/files', [MatterFileController::class, 'store']);
         Route::get('files', [MatterFileController::class, 'search']);
         Route::get('files/{file}/download', [MatterFileController::class, 'download']);
+        Route::get('matters/{matter}/emails', [MatterEmailController::class, 'index']);
+        Route::post('matters/{matter}/emails', [MatterEmailController::class, 'upload']);
+        Route::post('matters/{matter}/emails/address', [MatterEmailController::class, 'rotate']);
+        Route::get('matter-emails/{matterEmail}', [MatterEmailController::class, 'show']);
+        Route::post('matter-emails/{matterEmail}/accept', [MatterEmailController::class, 'accept']);
+        Route::post('matter-emails/{matterEmail}/reject', [MatterEmailController::class, 'reject']);
         Route::patch('files/{file}', [MatterFileController::class, 'update']);
         Route::delete('files/{file}', [MatterFileController::class, 'destroy']);
 
@@ -308,6 +316,7 @@ Route::prefix('portal')->middleware('throttle:api')->group(function () {
 */
 
 Route::post('webhooks/paymongo', PayMongoWebhookController::class)->middleware('throttle:api');
+Route::post('webhooks/inbound-email', InboundEmailWebhookController::class)->middleware('throttle:api');
 
 // A firm's public consultation-request form.
 Route::get('public/intake/{slug}', [PublicIntakeController::class, 'show'])->middleware('throttle:api');

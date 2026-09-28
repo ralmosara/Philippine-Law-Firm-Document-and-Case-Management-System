@@ -10,6 +10,7 @@ import { DeadlineForm } from '@/features/deadlines/components/DeadlineForm'
 import { DeadlineList } from '@/features/deadlines/components/DeadlineList'
 import { useDocuments } from '@/features/documents/api'
 import { EvidencePanel } from '@/features/evidence/components/EvidencePanel'
+import { MatterEmailsCard } from '@/features/correspondence/components/MatterEmailsCard'
 import { DocumentsTable } from '@/features/documents/components/DocumentsTable'
 import { MatterFilesPanel } from '@/features/documents/components/MatterFilesPanel'
 import { NewThreadDialog, ThreadList } from '@/features/messages/components/MessagesInbox'
@@ -107,6 +108,7 @@ export function MatterDetail() {
       {tab === 'files' && (
         <div className="flex flex-col gap-6">
           {m.client?.portal_enabled && <DocumentRequestsCard matterId={id} canEdit={abilities.work_matters} />}
+          <MatterEmailsCard matterId={id} canEdit={abilities.work_matters} />
           <MatterFilesPanel matterId={id} canEdit={abilities.work_matters} />
         </div>
       )}

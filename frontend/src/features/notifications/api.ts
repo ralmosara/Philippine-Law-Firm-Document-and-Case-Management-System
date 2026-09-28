@@ -33,6 +33,7 @@ const AFFECTS: Record<string, string[][]> = {
   privacy: [['privacy']],
   tax: [['tax']],
   corporate: [['corporate']],
+  email: [['matter-emails']],
   document_uploaded: [['document-requests'], ['files']],
 }
 
