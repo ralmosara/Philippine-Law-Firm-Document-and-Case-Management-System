@@ -68,7 +68,7 @@ class CorporateController extends Controller
     {
         Gate::authorize('work-matters');
         $validated = $request->validate([
-            'sec_registration_no' => ['nullable', 'string', 'max:50'],
+            'sec_registration_no' => ['nullable', 'string', 'max:32'],
             'incorporated_on' => ['nullable', 'date', 'before_or_equal:today'],
             'fiscal_year_end' => ['required', 'string', self::MONTH_DAY],
             'annual_meeting_date' => ['nullable', 'string', self::MONTH_DAY],

@@ -19,6 +19,7 @@ use App\Domain\Documents\Requests\DocumentRequest;
 use App\Domain\Documents\Scanning\ClamAvScanner;
 use App\Domain\Documents\Scanning\NullVirusScanner;
 use App\Domain\Documents\Scanning\VirusScanner;
+use App\Domain\Evidence\Models\Exhibit;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
 use App\Domain\Privacy\Models\DataSubjectRequest;
@@ -82,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
             'tax_filing' => TaxFiling::class,
             'corporate_profile' => CorporateProfile::class,
             'corporate_obligation' => CorporateObligation::class,
+            'exhibit' => Exhibit::class,
         ]);
 
         $this->configureDatabaseTenancy();

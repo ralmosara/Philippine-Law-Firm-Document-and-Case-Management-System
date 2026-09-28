@@ -9,6 +9,7 @@ import { ExpensesPanel } from '@/features/billing/components/ExpensesPanel'
 import { DeadlineForm } from '@/features/deadlines/components/DeadlineForm'
 import { DeadlineList } from '@/features/deadlines/components/DeadlineList'
 import { useDocuments } from '@/features/documents/api'
+import { EvidencePanel } from '@/features/evidence/components/EvidencePanel'
 import { DocumentsTable } from '@/features/documents/components/DocumentsTable'
 import { MatterFilesPanel } from '@/features/documents/components/MatterFilesPanel'
 import { NewThreadDialog, ThreadList } from '@/features/messages/components/MessagesInbox'
@@ -27,7 +28,7 @@ import { MatterForm } from './MatterForm'
 import { MatterHistory, MatterOverview, StatusMenu } from './MatterOverview'
 import { MatterStatusBadge } from './StatusBadge'
 
-type Tab = 'overview' | 'deadlines' | 'documents' | 'files' | 'messages' | 'assistant' | 'time' | 'billing' | 'history'
+type Tab = 'overview' | 'deadlines' | 'documents' | 'files' | 'evidence' | 'messages' | 'assistant' | 'time' | 'billing' | 'history'
 
 export function MatterDetail() {
   const id = Number(useParams().id)
@@ -75,6 +76,7 @@ export function MatterDetail() {
           { value: 'deadlines', label: 'Deadlines', count: pendingDeadlines.length },
           { value: 'documents', label: 'Documents' },
           { value: 'files', label: 'Files' },
+          { value: 'evidence', label: 'Evidence' },
           { value: 'messages', label: 'Messages' },
           ...(abilities.work_matters ? [{ value: 'assistant' as const, label: 'AI assistant' }] : []),
           { value: 'time', label: 'Time & expenses' },
@@ -108,7 +110,8 @@ export function MatterDetail() {
           <MatterFilesPanel matterId={id} canEdit={abilities.work_matters} />
         </div>
       )}
-      {tab === 'assistant' && abilities.work_matters && <MatterAssistant matterId={id} />}
+      {tab === 'evidence' && <EvidencePanel matter={m} />}
+      {tab === 'assistant' &&abilities.work_matters && <MatterAssistant matterId={id} />}
       {tab === 'messages' && <MatterMessages matterId={id} canWrite={abilities.work_matters && !!m.client?.portal_enabled} />}
       {tab === 'time' && (
         <div className="flex flex-col gap-6">

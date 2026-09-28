@@ -27,6 +27,7 @@ class PleadingAssembler
         'comment' => ['label' => 'Comment / Opposition', 'initiatory' => false],
         'position_paper' => ['label' => 'Position Paper', 'initiatory' => false],
         'memorandum' => ['label' => 'Memorandum', 'initiatory' => false],
+        'formal_offer' => ['label' => 'Formal Offer of Evidence', 'initiatory' => false],
     ];
 
     public const CLIENT_ROLES = ['plaintiff', 'defendant', 'petitioner', 'respondent', 'complainant', 'accused', 'appellant', 'appellee'];
@@ -186,6 +187,7 @@ class PleadingAssembler
             'complaint', 'petition' => "THE PARTIES\n\n1. [Allegations about the parties.]\n\nCAUSE OF ACTION\n\n2. [Allegations of fact constituting the cause of action.]",
             'answer' => "ADMISSIONS AND DENIALS\n\n1. [Specific admissions and denials.]\n\nAFFIRMATIVE DEFENSES\n\n2. [Affirmative defenses.]",
             'motion' => "1. [Grounds for the motion.]\n\n2. [Supporting facts and law.]",
+            'formal_offer' => "The following exhibits are offered in evidence:\n\nExhibit \"[A]\" — [Description]\n    Purpose: [What it is offered to prove.]",
             default => '1. [Statement.]',
         };
     }
