@@ -23,6 +23,7 @@ use App\Domain\Documents\Scanning\ClamAvScanner;
 use App\Domain\Documents\Scanning\NullVirusScanner;
 use App\Domain\Documents\Scanning\VirusScanner;
 use App\Domain\Evidence\Models\Exhibit;
+use App\Domain\Knowledge\Models\KnowledgeItem;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
 use App\Domain\Privacy\Models\DataSubjectRequest;
@@ -90,6 +91,7 @@ class AppServiceProvider extends ServiceProvider
             'disbursement_request' => DisbursementRequest::class,
             'court' => Court::class,
             'contact' => Contact::class,
+            'knowledge_item' => KnowledgeItem::class,
         ]);
 
         $this->configureDatabaseTenancy();

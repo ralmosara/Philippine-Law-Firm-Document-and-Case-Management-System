@@ -47,6 +47,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { to: '/documents', label: 'Documents & files' },
       { to: '/messages', label: 'Client messages', badge: 'messages' },
+      { to: '/knowledge', label: 'Knowledge bank' },
     ],
   },
   {

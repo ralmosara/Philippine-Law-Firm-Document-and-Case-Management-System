@@ -157,15 +157,16 @@ function AssistantTurn({ message }: { message: AiMessage }) {
 
 /** Turns [D12], [F5] and [M] into links to the cited document, file or matter facts. */
 function WithCitations({ text }: { text: string }) {
-  const parts = text.split(/(\[(?:M|[DF]\d+)\])/g)
+  const parts = text.split(/(\[(?:M|[DFK]\d+)\])/g)
   return (
     <>
       {parts.map((part, i) => {
-        const match = /^\[(M|D|F)(\d*)\]$/.exec(part)
+        const match = /^\[(M|D|F|K)(\d*)\]$/.exec(part)
         if (!match) return <Fragment key={i}>{part}</Fragment>
         const [, kind, id] = match
         const chip = 'mx-0.5 inline-flex items-center rounded-[2px] bg-primary-container px-1.5 text-[11px] font-semibold text-on-primary-container align-baseline no-underline hover:brightness-95'
         if (kind === 'D') return <Link key={i} to={`/documents/${id}`} className={chip} title="Open the cited document">D{id}</Link>
+        if (kind === 'K') return <Link key={i} to={`/knowledge?open=${id}`} className={chip} title="Open the knowledge bank entry">K{id}</Link>
         if (kind === 'F') return <a key={i} href={fileDownloadUrl(Number(id))} download className={chip} title="Download the cited file">F{id}</a>
         return <span key={i} className={chip} title="From the matter’s details">Matter</span>
       })}

@@ -5,6 +5,7 @@ namespace App\Domain\Assistant;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
+use App\Domain\Knowledge\Models\KnowledgeItem;
 use App\Domain\Matters\Models\Matter;
 use Illuminate\Support\Str;
 
@@ -17,6 +18,11 @@ class MatterContext
 {
     /** Per-source cap, so one long transcript cannot crowd out everything else. */
     private const PER_SOURCE_CHARS = 60_000;
+
+    /** Knowledge bank entries offered with each matter, and the size of each. */
+    private const KNOWLEDGE_ITEMS = 30;
+
+    private const KNOWLEDGE_CHARS = 15_000;
 
     /**
      * @return array{text: string, sources: list<string>}
@@ -32,9 +38,19 @@ class MatterContext
         $documents = Document::where('matter_id', $matter->id)->with('latestVersion')->latest('updated_at')->get();
         $files = MatterFile::where('matter_id', $matter->id)->whereNotNull('content_text')->latest('id')->get();
 
+        // The firm's knowledge bank for this kind of case (and general entries), after the case file itself.
+        $knowledge = KnowledgeItem::query()
+            ->where(fn ($q) => $q->whereNull('practice_area')->orWhere('practice_area', (string) $matter->case_type))
+            ->latest('updated_at')->limit(self::KNOWLEDGE_ITEMS)->get();
+
         $candidates = [
             ...$documents->map(fn (Document $d) => ['id' => "D{$d->id}", 'attrs' => 'type="document" title="'.e($d->title).'" status="'.$d->status->value.'" version="'.$d->current_version.'"', 'text' => (string) $d->latestVersion?->content]),
             ...$files->map(fn (MatterFile $f) => ['id' => "F{$f->id}", 'attrs' => 'type="uploaded file" name="'.e($f->original_name).'" uploaded="'.$f->created_at?->toDateString().'"'.($f->text_source === 'ocr' ? ' note="text recognised by OCR; may contain reading errors"' : ''), 'text' => (string) $f->content_text]),
+            ...$knowledge->map(fn (KnowledgeItem $k) => [
+                'id' => "K{$k->id}",
+                'attrs' => 'type="firm knowledge bank" kind="'.e($k->kind).'" title="'.e($k->title).'"'.($k->citation ? ' citation="'.e($k->citation).'"' : ''),
+                'text' => Str::limit(trim(($k->doctrine ? "Doctrine: {$k->doctrine}\n\n" : '').(string) $k->body), self::KNOWLEDGE_CHARS, "\n[… truncated]"),
+            ]),
         ];
 
         $omitted = 0;
