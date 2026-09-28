@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { AlertTriangle, Bell, ClipboardCheck, CalendarClock, FileSignature, Inbox, MessagesSquare, ShieldCheck, UserPlus, Wallet } from 'lucide-react'
+import { AlertTriangle, Bell, Building2, ClipboardCheck, Landmark, CalendarClock, FileSignature, Inbox, MessagesSquare, ShieldCheck, UserPlus, Wallet } from 'lucide-react'
 import { useEffect, useState, type ComponentType } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dateTime } from '@/shared/lib/format'
@@ -16,6 +16,8 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   signature: FileSignature,
   signature_declined: FileSignature,
   privacy: ShieldCheck,
+  tax: Landmark,
+  corporate: Building2,
   document_uploaded: ClipboardCheck,
 }
 

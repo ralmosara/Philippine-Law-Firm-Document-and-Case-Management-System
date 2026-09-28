@@ -43,6 +43,9 @@ class FirmController extends Controller
             'pleading_paper' => ['sometimes', Rule::in(array_keys(DocxWriter::PAPERS))],
             'pleading_font' => ['sometimes', 'string', 'max:64', 'regex:/^[A-Za-z0-9 ]+$/'],
             'pleading_font_size' => ['sometimes', 'integer', 'min:10', 'max:16'],
+            'taxpayer_type' => ['sometimes', Rule::in(['individual', 'juridical'])],
+            'withholding_atc' => ['sometimes', 'string', 'max:8', 'regex:/^[A-Z]{2}[0-9]{3}$/'],
+            'has_employees' => ['sometimes', 'boolean'],
         ], ['slug.regex' => 'Use lowercase letters, numbers and single hyphens, e.g. santos-reyes-law.']);
 
         $firm = $this->firm($request);
@@ -84,7 +87,7 @@ class FirmController extends Controller
     private function payload(Firm $firm): array
     {
         return [
-            ...$firm->only(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'payment_reminders_enabled', 'pleading_paper', 'pleading_font', 'pleading_font_size']),
+            ...$firm->only(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'payment_reminders_enabled', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees']),
             'ai_configured' => filled(config('services.anthropic.api_key')),
             'users_without_two_factor' => User::where('firm_id', $firm->id)
                 ->where('is_active', true)

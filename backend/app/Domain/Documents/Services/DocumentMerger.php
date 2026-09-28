@@ -2,6 +2,7 @@
 
 namespace App\Domain\Documents\Services;
 
+use App\Domain\Corporate\Models\CorporateProfile;
 use App\Domain\Documents\Actions\CreateDocumentVersion;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\DocumentTemplate;
@@ -54,6 +55,7 @@ class DocumentMerger
     {
         $matter->loadMissing(['client', 'responsibleLawyer', 'firm']);
         $lawyer ??= $matter->responsibleLawyer;
+        $corp = $matter->client_id ? CorporateProfile::where('client_id', $matter->client_id)->first() : null;
 
         return [
             'firm_name' => $matter->firm?->name,
@@ -72,7 +74,26 @@ class DocumentMerger
             'lawyer_roll_number' => $lawyer?->roll_number,
             'lawyer_ibp_number' => $lawyer?->ibp_number,
             'date_today' => now()->format('F j, Y'),
+            // The client company's profile, for corporate secretarial documents.
+            'corp_sec_reg_no' => $corp?->sec_registration_no,
+            'corp_principal_office' => $corp?->principal_office ?: $matter->client?->address,
+            'corp_secretary' => $corp?->corporate_secretary,
+            'corp_incorporated_on' => $corp?->incorporated_on?->format('F j, Y'),
+            'fiscal_year_end_text' => $corp ? $this->fiscalYearEnd($corp->fiscal_year_end) : null,
         ];
+    }
+
+    /** "December 31, 2025": the last fiscal year end on or before today. */
+    private function fiscalYearEnd(string $monthDay): string
+    {
+        [$m, $d] = array_map('intval', explode('-', $monthDay));
+        $end = now()->startOfDay()->setDate(now()->year, $m, 1);
+        $end = $end->setDay(min($d, $end->daysInMonth));
+        if ($end->isFuture()) {
+            $end = $end->subYearNoOverflow();
+        }
+
+        return $end->format('F j, Y');
     }
 
     /**

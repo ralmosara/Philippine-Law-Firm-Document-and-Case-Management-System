@@ -8,6 +8,8 @@ use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Compliance\Models\McleCredit;
+use App\Domain\Corporate\Models\CorporateObligation;
+use App\Domain\Corporate\Models\CorporateProfile;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Services\DeadlineCalculator;
 use App\Domain\Documents\Models\Document;
@@ -17,10 +19,12 @@ use App\Domain\Documents\Requests\DocumentRequest;
 use App\Domain\Documents\Scanning\ClamAvScanner;
 use App\Domain\Documents\Scanning\NullVirusScanner;
 use App\Domain\Documents\Scanning\VirusScanner;
+use App\Domain\Evidence\Models\Exhibit;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
 use App\Domain\Privacy\Models\DataSubjectRequest;
 use App\Domain\Privacy\Models\PrivacyIncident;
+use App\Domain\Tax\Models\TaxFiling;
 use App\Models\User;
 use App\Support\Ops\OpsAlert;
 use App\Support\Tenancy\DatabaseTenancy;
@@ -76,6 +80,10 @@ class AppServiceProvider extends ServiceProvider
             'data_subject_request' => DataSubjectRequest::class,
             'privacy_incident' => PrivacyIncident::class,
             'document_request' => DocumentRequest::class,
+            'tax_filing' => TaxFiling::class,
+            'corporate_profile' => CorporateProfile::class,
+            'corporate_obligation' => CorporateObligation::class,
+            'exhibit' => Exhibit::class,
         ]);
 
         $this->configureDatabaseTenancy();

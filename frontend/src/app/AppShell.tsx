@@ -36,6 +36,7 @@ const GROUPS: NavGroup[] = [
       { to: '/clients', label: 'Clients' },
       { to: '/intake', label: 'Intake requests', ability: 'work_matters', badge: 'intake' },
       { to: '/court-day', label: 'Court day', ability: 'work_matters' },
+      { to: '/corporate', label: 'Corporate secretarial' },
       { to: '/calendar', label: 'Calendar' },
       { to: '/tasks', label: 'Tasks' },
     ],
@@ -53,6 +54,7 @@ const GROUPS: NavGroup[] = [
       { to: '/billing', label: 'Time & billing' },
       { to: '/trust', label: 'Trust accounts', ability: 'work_matters' },
       { to: '/reports', label: 'Reports', ability: 'manage_finances' },
+      { to: '/tax', label: 'BIR tax compliance', ability: 'manage_finances' },
     ],
   },
   {
