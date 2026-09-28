@@ -68,10 +68,12 @@ export function EvidencePanel({ matter }: { matter: Matter }) {
         }
       />
       <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant px-3 py-2">
-        <Select aria-label="Side" value={side} onChange={(e) => setSide(e.target.value)} className="w-56">
-          <option value="ours">Our exhibits ({count('ours')})</option>
-          <option value="adverse">Other side's exhibits ({count('adverse')})</option>
-        </Select>
+        <div className="w-full sm:w-64">
+          <Select aria-label="Side" value={side} onChange={(e) => setSide(e.target.value)}>
+            <option value="ours">Our exhibits ({count('ours')})</option>
+            <option value="adverse">Other side's exhibits ({count('adverse')})</option>
+          </Select>
+        </div>
         {canEdit && selected.length > 0 && (
           <Button size="sm" variant="outlined" icon={<Gavel className="size-4" />} onClick={() => setDialog({ kind: 'ruling' })}>Record ruling for {selected.length}</Button>
         )}

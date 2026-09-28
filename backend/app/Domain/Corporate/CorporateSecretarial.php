@@ -52,10 +52,19 @@ class CorporateSecretarial
         return $items;
     }
 
-    /** Add the year's obligations that do not exist yet; done or edited ones stay as they are. */
+    /**
+     * Add the year's obligations that do not exist yet; done or edited ones
+     * stay as they are. Obligations that fell due before the company was
+     * tracked here are not back-filled: they were handled elsewhere.
+     */
     public function ensureYear(CorporateProfile $profile, int $year): void
     {
+        $since = ($profile->created_at ?? now())->toDateString();
+
         foreach ($this->obligationsFor($profile, $year) as $item) {
+            if ($item['due_on'] < $since) {
+                continue;
+            }
             CorporateObligation::firstOrCreate(
                 ['client_id' => $profile->client_id, 'kind' => $item['kind'], 'year' => $item['year']],
                 ['firm_id' => $profile->firm_id, 'title' => $item['title'], 'due_on' => $item['due_on']],

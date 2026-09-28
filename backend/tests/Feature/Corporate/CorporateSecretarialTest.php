@@ -74,6 +74,18 @@ class CorporateSecretarialTest extends TestCase
         $this->assertSame('2027-05-17', $next->firstWhere('kind', 'gis')['due_on']);
     }
 
+    public function test_a_company_added_mid_year_is_not_shown_overdue_for_what_came_before(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-09-28 09:00', 'Asia/Manila'));
+        $this->profile();
+
+        $kinds = CorporateObligation::where('year', 2026)->pluck('kind')->all();
+        $this->assertNotContains('annual_meeting', $kinds); // April 15, before it was tracked
+        $this->assertNotContains('gis', $kinds);
+        $this->assertContains('afs', $kinds);               // April 2027, still ahead
+        $this->assertSame(4, CorporateObligation::where('year', 2027)->count());
+    }
+
     public function test_obligations_are_marked_done_and_a_new_schedule_regenerates_the_pending_ones(): void
     {
         $this->profile();

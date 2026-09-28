@@ -16,6 +16,9 @@ export function CorporateCard({ clientId, clientName }: { clientId: number; clie
   const [dialog, setDialog] = useState<'profile' | 'add' | null>(null)
   const [editing, setEditing] = useState<CorporateObligation | null>(null)
   const profile = query.data?.profile ?? null
+  const ahead = new Date()
+  ahead.setFullYear(ahead.getFullYear() + 1)
+  const yearAhead = ahead.toISOString().slice(0, 10)
 
   return (
     <Card>
@@ -81,7 +84,8 @@ export function CorporateCard({ clientId, clientName }: { clientId: number; clie
           </div>
           <ul className="divide-y divide-outline-variant border-t border-outline-variant">
             {query.data.obligations
-              .filter((o) => o.status === 'pending' || o.year >= new Date().getFullYear())
+              // The coming twelve months, plus anything overdue or recorded this year.
+              .filter((o) => o.due_on <= yearAhead && (o.status === 'pending' || o.year >= new Date().getFullYear()))
               .map((o) => (
                 <li key={o.id} className="flex items-center gap-2 px-4 py-2 text-sm">
                   <button type="button" disabled={!abilities.work_matters} onClick={() => setEditing({ ...o, client_name: clientName })} className="min-w-0 flex-1 text-left enabled:hover:text-primary">
