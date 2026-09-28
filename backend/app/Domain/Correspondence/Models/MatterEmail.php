@@ -35,6 +35,10 @@ class MatterEmail extends Model
             'reviewed_at' => 'datetime',
             'attachments' => 'array',
             'matter_id' => 'integer',
+            'eml_file_id' => 'integer',
+            'sender_user_id' => 'integer',
+            'sender_client_id' => 'integer',
+            'reviewed_by' => 'integer',
         ];
     }
 

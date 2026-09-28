@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { AlertTriangle, Bell, Building2, ClipboardCheck, Landmark, Mail, CalendarClock, FileSignature, Inbox, MessagesSquare, ShieldCheck, UserPlus, Wallet } from 'lucide-react'
+import { AlertTriangle, Bell, Building2, ClipboardCheck, Landmark, Mail, HandCoins, CalendarClock, FileSignature, Inbox, MessagesSquare, ShieldCheck, UserPlus, Wallet } from 'lucide-react'
 import { useEffect, useState, type ComponentType } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dateTime } from '@/shared/lib/format'
@@ -19,6 +19,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   tax: Landmark,
   corporate: Building2,
   email: Mail,
+  disbursement: HandCoins,
   document_uploaded: ClipboardCheck,
 }
 

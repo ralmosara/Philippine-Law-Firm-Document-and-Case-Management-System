@@ -74,7 +74,7 @@ return [
     'inbound_email' => [
         'address' => env('INBOUND_EMAIL_ADDRESS'),   // e.g. files@inbound.yourfirm.ph
         'secret' => env('INBOUND_EMAIL_SECRET'),
-        'max_kilobytes' => (int) env('INBOUND_EMAIL_MAX_KILOBYTES', 30 * 1024),
+        'max_kilobytes' => (int) env('INBOUND_EMAIL_MAX_KILOBYTES', 23 * 1024), // under PHP's 24 MB post limit
     ],
 
     'resend' => [

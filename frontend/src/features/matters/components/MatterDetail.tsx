@@ -11,6 +11,7 @@ import { DeadlineList } from '@/features/deadlines/components/DeadlineList'
 import { useDocuments } from '@/features/documents/api'
 import { EvidencePanel } from '@/features/evidence/components/EvidencePanel'
 import { MatterEmailsCard } from '@/features/correspondence/components/MatterEmailsCard'
+import { MatterDisbursementsCard } from '@/features/disbursements/components/MatterDisbursementsCard'
 import { DocumentsTable } from '@/features/documents/components/DocumentsTable'
 import { MatterFilesPanel } from '@/features/documents/components/MatterFilesPanel'
 import { NewThreadDialog, ThreadList } from '@/features/messages/components/MessagesInbox'
@@ -118,6 +119,7 @@ export function MatterDetail() {
       {tab === 'time' && (
         <div className="flex flex-col gap-6">
           <MatterTime matterId={id} onLog={() => setDialog('time')} canLog={abilities.work_matters} />
+          <MatterDisbursementsCard matter={{ id, client_id: m.client_id }} canRequest={abilities.work_matters} />
           <ExpensesPanel matterId={id} />
         </div>
       )}

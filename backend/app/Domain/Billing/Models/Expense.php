@@ -19,7 +19,7 @@ class Expense extends Model
 {
     use Auditable, HasTenantScope, SoftDeletes;
 
-    protected $fillable = ['firm_id', 'matter_id', 'user_id', 'expense_date', 'category', 'description', 'amount_cents', 'is_billable', 'receipt_file_id'];
+    protected $fillable = ['firm_id', 'matter_id', 'user_id', 'expense_date', 'category', 'description', 'amount_cents', 'is_billable', 'receipt_file_id', 'disbursement_request_id'];
 
     protected $attributes = [
         'is_billable' => true,
@@ -32,6 +32,8 @@ class Expense extends Model
             'category' => ExpenseCategory::class,
             'amount_cents' => 'integer',
             'is_billable' => 'boolean',
+            'receipt_file_id' => 'integer',
+            'disbursement_request_id' => 'integer',
         ];
     }
 

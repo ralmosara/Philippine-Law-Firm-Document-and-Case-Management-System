@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Domain\Billing\Models\DisbursementRequest;
 use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoicePayment;
@@ -84,6 +85,7 @@ class AppServiceProvider extends ServiceProvider
             'corporate_profile' => CorporateProfile::class,
             'corporate_obligation' => CorporateObligation::class,
             'exhibit' => Exhibit::class,
+            'disbursement_request' => DisbursementRequest::class,
         ]);
 
         $this->configureDatabaseTenancy();
@@ -161,7 +163,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('work-matters', fn (User $user) => $user->role->canWorkMatters());
         Gate::define('practice-law', fn (User $user) => $user->role->isLawyer());
 
-        Gate::define('modify-expense', fn (User $user, Expense $expense) => ! $expense->isInvoiced()
+        // Expenses from a liquidated cash advance must keep matching it (and the trust ledger).
+        Gate::define('modify-expense', fn (User $user, Expense $expense) => ! $expense->isInvoiced() && $expense->disbursement_request_id === null
             && ((int) $expense->user_id === $user->id || $user->role->canManageFinances()));
 
         Gate::define('modify-time-entry', fn (User $user, TimeEntry $entry) => ! $entry->isInvoiced()
