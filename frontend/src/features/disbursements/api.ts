@@ -13,6 +13,7 @@ export interface Disbursement {
   description: string
   amount_cents: number
   needed_by: string | null
+  requested_at: string | null
   source: 'firm' | 'trust'
   trust_account: { id: number; account_number: string; balance_cents: number } | null
   status: DisbursementStatus

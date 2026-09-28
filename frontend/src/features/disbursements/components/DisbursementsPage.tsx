@@ -79,7 +79,10 @@ export function DisbursementTable({ rows, onOpen, showMatter }: { rows: Disburse
       <tbody>
         {rows.map((d) => (
           <Tr key={d.id} onClick={() => onOpen(d)}>
-            <Td className="whitespace-nowrap">{d.needed_by ? <>Needed {date(d.needed_by)}</> : '—'}</Td>
+            <Td className="whitespace-nowrap">
+              {date(d.requested_at)}
+              {d.needed_by && <div className="text-xs text-on-surface-variant">needed {date(d.needed_by)}</div>}
+            </Td>
             {showMatter && <Td>{d.matter && <Link to={`/matters/${d.matter.id}?tab=time`} onClick={(e) => e.stopPropagation()} className="hover:text-primary">{d.matter.reference}</Link>}</Td>}
             <Td>
               <div className="font-medium">{d.description}</div>

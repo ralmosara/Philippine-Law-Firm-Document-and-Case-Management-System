@@ -147,6 +147,7 @@ class DisbursementController extends Controller
             'description' => $r->description,
             'amount_cents' => $r->amount_cents,
             'needed_by' => $r->needed_by?->toDateString(),
+            'requested_at' => $r->created_at?->toIso8601String(),
             'source' => $r->source,
             'trust_account' => $r->trustAccount ? ['id' => $r->trustAccount->id, 'account_number' => $r->trustAccount->account_number, 'balance_cents' => $r->trustAccount->balance_cents] : null,
             'status' => $r->status,

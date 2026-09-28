@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { get, post } from '@/shared/api/axios'
 import { useApiMutation } from '@/shared/api/hooks'
 
@@ -29,12 +30,21 @@ export interface MatterEmail {
 }
 
 export function useMatterEmails(matterId: number) {
-  return useQuery({
+  const queryClient = useQueryClient()
+  const query = useQuery({
     queryKey: ['matter-emails', matterId],
     queryFn: () => get<{ enabled: boolean; address: string | null; emails: MatterEmail[] }>(`/v1/matters/${matterId}/emails`),
     // Filing (virus scan, attachments) runs in the background; refresh until it finishes.
     refetchInterval: (query) => (query.state.data?.emails.some((e) => e.status === 'queued') ? 3000 : false),
   })
+
+  // Filing finishes after the upload returns; refresh the matter's files when it does.
+  const filed = query.data?.emails.filter((e) => e.status === 'filed').length
+  useEffect(() => {
+    if (filed !== undefined) void queryClient.invalidateQueries({ queryKey: ['files', matterId] })
+  }, [filed, matterId, queryClient])
+
+  return query
 }
 
 export function useMatterEmail(id: number | null) {
