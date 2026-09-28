@@ -127,10 +127,12 @@ function PeopleTab() {
     <Card>
       <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant p-3">
         <div className="min-w-0 flex-1"><SearchInput value={search} onChange={setSearch} placeholder="Search names, firms, offices, emails" label="Search people" /></div>
-        <Select aria-label="Kind" value={kind} onChange={(e) => setKind(e.target.value)} className="w-48">
-          <option value="">Everyone</option>
-          {Object.entries(kinds).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </Select>
+        <div className="w-full sm:w-48">
+          <Select aria-label="Kind" value={kind} onChange={(e) => setKind(e.target.value)}>
+            <option value="">Everyone</option>
+            {Object.entries(kinds).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </Select>
+        </div>
         <Checkbox label="Include inactive" checked={inactive} onChange={(e) => setInactive(e.target.checked)} />
         {abilities.work_matters && <Button icon={<Plus className="size-4" />} onClick={() => setEditing('new')}>Add person</Button>}
       </div>

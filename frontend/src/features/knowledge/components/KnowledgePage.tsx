@@ -34,14 +34,18 @@ export function KnowledgePage() {
       <Card>
         <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant p-3">
           <div className="min-w-60 flex-1"><SearchInput value={search} onChange={setSearch} placeholder="Search words, doctrines, G.R. numbers" label="Search the knowledge bank" /></div>
-          <Select aria-label="Kind" value={kind} onChange={(e) => setKind(e.target.value)} className="w-44">
-            <option value="">All kinds</option>
-            {Object.entries(kinds).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </Select>
-          <Select aria-label="Practice area" value={area} onChange={(e) => setArea(e.target.value)} className="w-44">
-            <option value="">All practice areas</option>
-            {lookups.data?.case_types.map((t) => <option key={t} value={t}>{t}</option>)}
-          </Select>
+          <div className="w-full sm:w-44">
+            <Select aria-label="Kind" value={kind} onChange={(e) => setKind(e.target.value)}>
+              <option value="">All kinds</option>
+              {Object.entries(kinds).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </Select>
+          </div>
+          <div className="w-full sm:w-48">
+            <Select aria-label="Practice area" value={area} onChange={(e) => setArea(e.target.value)}>
+              <option value="">All practice areas</option>
+              {lookups.data?.case_types.map((t) => <option key={t} value={t}>{t}</option>)}
+            </Select>
+          </div>
         </div>
         {!!query.data?.tags.length && (
           <div className="flex flex-wrap gap-1.5 border-b border-outline-variant px-3 py-2">

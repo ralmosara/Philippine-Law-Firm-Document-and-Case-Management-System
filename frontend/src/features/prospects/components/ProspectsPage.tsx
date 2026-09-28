@@ -100,9 +100,9 @@ function Report() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="text-on-surface-variant">Prospects added from</span>
-        <Input type="date" aria-label="From" value={from || query.data?.from || ''} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+        <div className="w-40"><Input type="date" aria-label="From" value={from || query.data?.from || ''} onChange={(e) => setFrom(e.target.value)} /></div>
         <span className="text-on-surface-variant">to</span>
-        <Input type="date" aria-label="To" value={to || query.data?.to || ''} onChange={(e) => setTo(e.target.value)} className="w-40" />
+        <div className="w-40"><Input type="date" aria-label="To" value={to || query.data?.to || ''} onChange={(e) => setTo(e.target.value)} /></div>
       </div>
       {query.isPending ? <PageLoader /> : query.isError ? <ErrorState error={query.error} /> : (() => {
         const r = query.data
