@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { KnowledgePicker } from '@/features/knowledge/components/KnowledgeDialogs'
 import { useLawyerOptions } from '@/features/users/api'
 import { ApiError, get, post } from '@/shared/api/axios'
 import { useApiMutation } from '@/shared/api/hooks'
@@ -38,6 +39,7 @@ export function PleadingBuilder({ matterId, open, onClose }: { matterId: number;
   const navigate = useNavigate()
   const [form, setForm] = useState<PleadingInput>({ type: 'motion', title: '', body: '', verification: false, certification: false, service: true })
   const [preview, setPreview] = useState('')
+  const [picking, setPicking] = useState(false)
   const create = useApiMutation((input: PleadingInput) => post<{ id: number }>(`/v1/matters/${matterId}/pleadings`, clean(input)), {
     invalidate: [['documents']],
     success: 'Pleading created as a draft document',
@@ -103,6 +105,10 @@ export function PleadingBuilder({ matterId, open, onClose }: { matterId: number;
           <Field label="Body (optional)" hint="Leave blank for an outline to fill in.">
             {(a) => <Textarea {...a} rows={6} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />}
           </Field>
+          <Button size="sm" variant="text" className="self-start" onClick={() => setPicking(true)}>Insert from the knowledge bank…</Button>
+          {picking && <KnowledgePicker onClose={() => setPicking(false)} onInsert={(text) => setForm((f) => ({ ...f, body: f.body ? `${f.body}
+
+${text}` : text }))} />}
           <FormError message={error?.message} />
         </div>
         <div className="min-w-0">

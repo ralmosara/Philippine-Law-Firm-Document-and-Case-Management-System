@@ -2,16 +2,20 @@
 
 namespace App\Providers;
 
+use App\Domain\Billing\Models\DisbursementRequest;
 use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Models\TimeEntry;
+use App\Domain\Business\Models\Prospect;
 use App\Domain\Compliance\Models\McleCredit;
 use App\Domain\Corporate\Models\CorporateObligation;
 use App\Domain\Corporate\Models\CorporateProfile;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Services\DeadlineCalculator;
+use App\Domain\Directory\Models\Contact;
+use App\Domain\Directory\Models\Court;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Documents\Models\SignatureRequest;
@@ -20,6 +24,7 @@ use App\Domain\Documents\Scanning\ClamAvScanner;
 use App\Domain\Documents\Scanning\NullVirusScanner;
 use App\Domain\Documents\Scanning\VirusScanner;
 use App\Domain\Evidence\Models\Exhibit;
+use App\Domain\Knowledge\Models\KnowledgeItem;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
 use App\Domain\Privacy\Models\DataSubjectRequest;
@@ -84,6 +89,11 @@ class AppServiceProvider extends ServiceProvider
             'corporate_profile' => CorporateProfile::class,
             'corporate_obligation' => CorporateObligation::class,
             'exhibit' => Exhibit::class,
+            'disbursement_request' => DisbursementRequest::class,
+            'court' => Court::class,
+            'contact' => Contact::class,
+            'knowledge_item' => KnowledgeItem::class,
+            'prospect' => Prospect::class,
         ]);
 
         $this->configureDatabaseTenancy();
@@ -161,7 +171,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('work-matters', fn (User $user) => $user->role->canWorkMatters());
         Gate::define('practice-law', fn (User $user) => $user->role->isLawyer());
 
-        Gate::define('modify-expense', fn (User $user, Expense $expense) => ! $expense->isInvoiced()
+        // Expenses from a liquidated cash advance must keep matching it (and the trust ledger).
+        Gate::define('modify-expense', fn (User $user, Expense $expense) => ! $expense->isInvoiced() && $expense->disbursement_request_id === null
             && ((int) $expense->user_id === $user->id || $user->role->canManageFinances()));
 
         Gate::define('modify-time-entry', fn (User $user, TimeEntry $entry) => ! $entry->isInvoiced()

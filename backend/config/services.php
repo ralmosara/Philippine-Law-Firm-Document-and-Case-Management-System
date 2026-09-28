@@ -66,6 +66,17 @@ return [
         'payment_methods' => array_values(array_filter(explode(',', (string) env('PAYMONGO_PAYMENT_METHODS', 'card,gcash,paymaya,qrph')))),
     ],
 
+    // Email to matter. Point your inbound email provider (SendGrid Inbound
+    // Parse with "raw", Mailgun routes with "store()/forward" of the MIME,
+    // or anything that posts the raw message) at
+    // https://<your-domain>/api/webhooks/inbound-email?secret=<secret>.
+    // Each matter gets its own address: <local>+<matter code>@<domain>.
+    'inbound_email' => [
+        'address' => env('INBOUND_EMAIL_ADDRESS'),   // e.g. files@inbound.yourfirm.ph
+        'secret' => env('INBOUND_EMAIL_SECRET'),
+        'max_kilobytes' => (int) env('INBOUND_EMAIL_MAX_KILOBYTES', 23 * 1024), // under PHP's 24 MB post limit
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

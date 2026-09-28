@@ -2,6 +2,7 @@ import { ChevronDown, Pencil, Plus, Trash2, UserX } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useAbilities, useLookups } from '@/features/auth/session'
 import { DeadlineList } from '@/features/deadlines/components/DeadlineList'
+import { MatterContactsCard } from '@/features/directory/components/MatterContactsCard'
 import { ApiError } from '@/shared/api/axios'
 import type { Deadline, Matter, MatterParty, MatterStatus } from '@/shared/api/types'
 import { date, dateTime } from '@/shared/lib/format'
@@ -13,6 +14,7 @@ import { Card, CardHeader, DescriptionList } from '@/shared/ui/Layout'
 import { useDeleteParty, useMatterTimeline, useSaveParty, useTransitionMatter } from '../api'
 
 export function MatterOverview({ matter, upcoming, onShowDeadlines }: { matter: Matter; upcoming: Deadline[]; onShowDeadlines: () => void }) {
+  const abilities = useAbilities()
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="flex flex-col gap-6 lg:col-span-2">
@@ -37,10 +39,13 @@ export function MatterOverview({ matter, upcoming, onShowDeadlines }: { matter: 
         <PartiesCard matter={matter} />
       </div>
 
-      <Card className="self-start">
-        <CardHeader title="Coming up" actions={<Button variant="text" size="sm" onClick={onShowDeadlines}>View all</Button>} />
-        <DeadlineList deadlines={upcoming} compact emptyText="Nothing pending." />
-      </Card>
+      <div className="flex flex-col gap-6 self-start">
+        <Card>
+          <CardHeader title="Coming up" actions={<Button variant="text" size="sm" onClick={onShowDeadlines}>View all</Button>} />
+          <DeadlineList deadlines={upcoming} compact emptyText="Nothing pending." />
+        </Card>
+        <MatterContactsCard matterId={matter.id} canEdit={abilities.work_matters} />
+      </div>
     </div>
   )
 }

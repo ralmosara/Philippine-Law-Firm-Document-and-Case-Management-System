@@ -1,8 +1,9 @@
 import clsx from 'clsx'
-import { ArrowLeft, FileDown, GitCompare, Printer, Save, Share2, Trash2 } from 'lucide-react'
+import { ArrowLeft, BookmarkPlus, FileDown, GitCompare, Printer, Save, Share2, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import { useAbilities } from '@/features/auth/session'
+import { SaveToKnowledgeDialog } from '@/features/knowledge/components/KnowledgeDialogs'
 import { DocumentStatusBadge } from '@/features/matters/components/StatusBadge'
 import type { DocumentStatus, DocumentVersion } from '@/shared/api/types'
 import { dateTime } from '@/shared/lib/format'
@@ -48,6 +49,7 @@ export function DocumentEditor() {
   const [summary, setSummary] = useState('')
   const [compare, setCompare] = useState<[DocumentVersion, DocumentVersion] | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [keeping, setKeeping] = useState(false)
 
   const latest = document.data?.latest_version
   useEffect(() => {
@@ -95,6 +97,8 @@ export function DocumentEditor() {
             <DownloadButton href={`/api/v1/documents/${doc.id}/pdf`} icon={<FileDown className="size-4" />}>PDF</DownloadButton>
             <DownloadButton href={`/api/v1/documents/${doc.id}/docx`} icon={<FileDown className="size-4" />}>Word</DownloadButton>
             <Button variant="text" icon={<Printer className="size-4" />} onClick={() => window.print()}>Print</Button>
+            {abilities.work_matters && <Button variant="text" icon={<BookmarkPlus className="size-4" />} onClick={() => setKeeping(true)}>Keep as model</Button>}
+            {keeping && <SaveToKnowledgeDialog documentId={doc.id} title={doc.title} onClose={() => setKeeping(false)} />}
             {abilities.practice_law && NEXT_STATUS[doc.status].map((next) => (
               <Button key={next.status} variant="outlined" loading={setStatus.isPending} disabled={dirty} onClick={() => setStatus.mutate(next.status)} title={dirty ? 'Save your changes first' : undefined}>
                 {next.label}

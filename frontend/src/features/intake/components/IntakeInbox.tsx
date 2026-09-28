@@ -1,9 +1,10 @@
-import { AlertTriangle, ArrowLeft, CalendarCheck, CheckCircle2, Inbox, XCircle } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CalendarCheck, CheckCircle2, Inbox, TrendingUp, XCircle } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAbilities } from '@/features/auth/session'
 import { useResolveConflict } from '@/features/compliance/api'
+import { useTrackIntake } from '@/features/prospects/api'
 import { useLawyerOptions } from '@/features/users/api'
 import { ApiError } from '@/shared/api/axios'
 import { dateTime } from '@/shared/lib/format'
@@ -77,6 +78,8 @@ export function IntakeReview() {
   const id = Number(useParams().id)
   const request = useIntakeRequest(id)
   const abilities = useAbilities()
+  const navigate = useNavigate()
+  const track = useTrackIntake()
   const [dialog, setDialog] = useState<'schedule' | 'accept' | 'decline' | null>(null)
   const [resolving, setResolving] = useState<IntakeDetail['conflict_checks'][number] | null>(null)
 
@@ -94,6 +97,7 @@ export function IntakeReview() {
         actions={
           abilities.practice_law && open && (
             <>
+              <Button variant="text" icon={<TrendingUp className="size-4" />} loading={track.isPending} onClick={() => track.mutate(r.id, { onSuccess: (p) => navigate(`/prospects?open=${p.id}`) })}>Track in pipeline</Button>
               <Button variant="outlined" icon={<CalendarCheck className="size-4" />} onClick={() => setDialog('schedule')}>{r.status === 'scheduled' ? 'Reschedule' : 'Schedule consultation'}</Button>
               <Button icon={<CheckCircle2 className="size-4" />} onClick={() => setDialog('accept')}>Accept as client</Button>
               <Button variant="text" icon={<XCircle className="size-4" />} onClick={() => setDialog('decline')}>Decline</Button>

@@ -35,8 +35,10 @@ const GROUPS: NavGroup[] = [
       { to: '/matters', label: 'Matters' },
       { to: '/clients', label: 'Clients' },
       { to: '/intake', label: 'Intake requests', ability: 'work_matters', badge: 'intake' },
+      { to: '/prospects', label: 'Business development', ability: 'work_matters' },
       { to: '/court-day', label: 'Court day', ability: 'work_matters' },
       { to: '/corporate', label: 'Corporate secretarial' },
+      { to: '/directory', label: 'Directory' },
       { to: '/calendar', label: 'Calendar' },
       { to: '/tasks', label: 'Tasks' },
     ],
@@ -46,6 +48,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { to: '/documents', label: 'Documents & files' },
       { to: '/messages', label: 'Client messages', badge: 'messages' },
+      { to: '/knowledge', label: 'Knowledge bank' },
     ],
   },
   {
@@ -53,6 +56,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { to: '/billing', label: 'Time & billing' },
       { to: '/trust', label: 'Trust accounts', ability: 'work_matters' },
+      { to: '/disbursements', label: 'Cash advances', ability: 'work_matters' },
       { to: '/reports', label: 'Reports', ability: 'manage_finances' },
       { to: '/tax', label: 'BIR tax compliance', ability: 'manage_finances' },
     ],
