@@ -98,6 +98,7 @@ export const router = createBrowserRouter([
           { path: 'compliance', element: page(() => import('./features/compliance/components/ComplianceDashboard'), 'ComplianceDashboard') },
           { path: 'reports', element: gated('manage_finances', page(() => import('./features/reports/components/ReportsPage'), 'ReportsPage')) },
           { path: 'disbursements', element: gated('work_matters', page(() => import('./features/disbursements/components/DisbursementsPage'), 'DisbursementsPage')) },
+          { path: 'prospects', element: gated('work_matters', page(() => import('./features/prospects/components/ProspectsPage'), 'ProspectsPage')) },
           { path: 'knowledge', element: page(() => import('./features/knowledge/components/KnowledgePage'), 'KnowledgePage') },
           { path: 'directory', element: page(() => import('./features/directory/components/DirectoryPage'), 'DirectoryPage') },
           { path: 'corporate', element: page(() => import('./features/corporate/components/CorporatePage'), 'CorporatePage') },

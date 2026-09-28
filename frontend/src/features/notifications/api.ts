@@ -35,6 +35,7 @@ const AFFECTS: Record<string, string[][]> = {
   corporate: [['corporate']],
   email: [['matter-emails']],
   disbursement: [['disbursements']],
+  prospect: [['prospects']],
   document_uploaded: [['document-requests'], ['files']],
 }
 

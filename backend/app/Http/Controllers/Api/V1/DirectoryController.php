@@ -246,7 +246,7 @@ class DirectoryController extends Controller
         return [
             'id' => $c->id, 'level' => $c->level, 'level_label' => Court::LEVELS[$c->level] ?? $c->level, 'name' => $c->name, 'branch' => $c->branch,
             'station' => $c->station, 'label' => $c->label(), 'address' => $c->address, 'email' => $c->email, 'phone' => $c->phone, 'notes' => $c->notes,
-            'matters_count' => $c->matters_count ?? null, 'contacts_count' => $c->contacts_count ?? null,
+            'matters_count' => isset($c->matters_count) ? (int) $c->matters_count : null, 'contacts_count' => isset($c->contacts_count) ? (int) $c->contacts_count : null,
         ];
     }
 
@@ -257,7 +257,7 @@ class DirectoryController extends Controller
             'display_name' => $c->displayName(), 'organization' => $c->organization, 'court_id' => $c->court_id,
             'court' => $c->relationLoaded('court') && $c->court ? trim($c->court->label().($c->court->branch ? ", {$c->court->branch}" : '')) : null,
             'email' => $c->email, 'phone' => $c->phone, 'address' => $c->address, 'roll_number' => $c->roll_number, 'notes' => $c->notes,
-            'is_active' => $c->is_active, 'matters_count' => $c->matter_links_count ?? null,
+            'is_active' => $c->is_active, 'matters_count' => isset($c->matter_links_count) ? (int) $c->matter_links_count : null,
         ];
     }
 }

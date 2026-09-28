@@ -8,6 +8,7 @@ use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Models\TimeEntry;
+use App\Domain\Business\Models\Prospect;
 use App\Domain\Compliance\Models\McleCredit;
 use App\Domain\Corporate\Models\CorporateObligation;
 use App\Domain\Corporate\Models\CorporateProfile;
@@ -92,6 +93,7 @@ class AppServiceProvider extends ServiceProvider
             'court' => Court::class,
             'contact' => Contact::class,
             'knowledge_item' => KnowledgeItem::class,
+            'prospect' => Prospect::class,
         ]);
 
         $this->configureDatabaseTenancy();

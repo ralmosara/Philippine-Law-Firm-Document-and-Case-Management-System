@@ -2,6 +2,7 @@
 
 use App\Domain\Billing\Collections\Collections;
 use App\Domain\Billing\Services\Disbursements;
+use App\Domain\Business\Pipeline;
 use App\Domain\Corporate\CorporateSecretarial;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
 use App\Domain\Documents\Requests\DocumentRequests;
@@ -84,6 +85,11 @@ Artisan::command('disbursements:remind', function (Disbursements $disbursements)
     $this->info("Sent {$disbursements->sendReminders()} cash advance liquidation reminder(s).");
 })->purpose('Remind lawyers to liquidate cash advances, and partners once overdue');
 Schedule::command('disbursements:remind')->dailyAt('08:20')->withoutOverlapping()->onOneServer();
+
+Artisan::command('prospects:remind', function (Pipeline $pipeline) {
+    $this->info("Sent {$pipeline->sendFollowUps()} prospect follow-up reminder(s).");
+})->purpose('Remind lawyers of follow-ups due with prospective clients');
+Schedule::command('prospects:remind')->dailyAt('08:30')->withoutOverlapping()->onOneServer();
 
 Artisan::command('ops:health-check', function (SystemHealth $health) {
     $checks = $health->run();
