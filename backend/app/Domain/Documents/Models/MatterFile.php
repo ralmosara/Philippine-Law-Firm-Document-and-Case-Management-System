@@ -36,7 +36,7 @@ class MatterFile extends Model
     ];
 
     // The extracted text can be large; it is only read by search.
-    protected $hidden = ['path', 'content_text'];
+    protected $hidden = ['path', 'content_text', 'search_vector'];
 
     protected function casts(): array
     {

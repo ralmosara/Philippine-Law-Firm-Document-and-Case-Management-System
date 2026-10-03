@@ -19,7 +19,8 @@ class FileSearch
 
     public const MARK_END = '⟧';
 
-    private const DOCUMENT = "to_tsvector('simple', coalesce(original_name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(content_text, ''))";
+    /** Stored, indexed tsvector of name, description and text (PostgreSQL keeps it current). */
+    private const DOCUMENT = 'search_vector';
 
     /** Every column except the (potentially large) extracted text. */
     public const COLUMNS = [
@@ -55,9 +56,8 @@ class FileSearch
             return $query
                 ->select(self::COLUMNS)
                 ->selectRaw("ts_headline('simple', coalesce(content_text, ''), to_tsquery('simple', ?), ?) as snippet", [$tsquery, $options])
-                ->where(fn ($q) => $q
-                    ->whereRaw(self::DOCUMENT." @@ to_tsquery('simple', ?)", [$tsquery])
-                    ->orWhereLike('original_name', '%'.implode('%', $terms).'%'))
+                // Names are in the vector split into words, so the index finds them too.
+                ->whereRaw(self::DOCUMENT." @@ to_tsquery('simple', ?)", [$tsquery])
                 ->orderByRaw('ts_rank('.self::DOCUMENT.", to_tsquery('simple', ?)) desc", [$tsquery])
                 ->latest('id');
         }

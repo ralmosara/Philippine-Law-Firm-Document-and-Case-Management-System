@@ -33,7 +33,7 @@ class KnowledgeController extends Controller
             ->get()
             // Tags are a JSON list; filtered here so SQLite and PostgreSQL behave alike.
             ->when($validated['tag'] ?? null, fn ($c, $tag) => $c->filter(fn (KnowledgeItem $i) => in_array(mb_strtolower($tag), array_map('mb_strtolower', $i->tags ?? []), true)))
-            ->take(200)
+            ->take(100)
             ->values();
 
         return response()->json([

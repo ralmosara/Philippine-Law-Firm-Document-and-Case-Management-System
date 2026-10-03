@@ -246,6 +246,20 @@ services:
       interval: 5s
       retries: 10
 
+  # One-shot: settings only the superuser can make (backend/docker/postgres/
+  # admin.sql), applied on every "up"; safe to repeat.
+  db-setup:
+    image: postgres:16-alpine
+    command: ["psql", "--host=db", "--username=postgres", "--dbname=ph_legal", "--set=ON_ERROR_STOP=1", "--file=/setup/admin.sql"]
+    environment:
+      PGPASSWORD: ${DB_ROOT_PASSWORD:-change-me-root}
+    volumes:
+      - ./backend/docker/postgres/admin.sql:/setup/admin.sql:ro
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
   redis:
     image: redis:7-alpine
     volumes:
