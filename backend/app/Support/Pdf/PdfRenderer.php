@@ -14,7 +14,14 @@ use Illuminate\Support\Str;
  */
 class PdfRenderer
 {
-    public function render(string $view, array $data): string
+    /** Court paper sizes in points ([x, y, width, height]), by the firm's pleading_paper setting. */
+    public const PAPERS = [
+        'folio' => [0, 0, 612, 936],          // 8.5 x 13 in (long bond)
+        'a4' => [0, 0, 595.28, 841.89],
+        'letter' => [0, 0, 612, 792],
+    ];
+
+    public function render(string $view, array $data, string $paper = 'a4'): string
     {
         return Pdf::setOption([
             'isRemoteEnabled' => false,
@@ -24,7 +31,7 @@ class PdfRenderer
             'dpi' => 96,
         ])
             ->loadView($view, $data)
-            ->setPaper('a4')
+            ->setPaper(self::PAPERS[$paper] ?? 'a4')
             ->output();
     }
 

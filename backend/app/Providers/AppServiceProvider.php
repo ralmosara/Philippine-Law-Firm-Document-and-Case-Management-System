@@ -24,6 +24,7 @@ use App\Domain\Documents\Scanning\ClamAvScanner;
 use App\Domain\Documents\Scanning\NullVirusScanner;
 use App\Domain\Documents\Scanning\VirusScanner;
 use App\Domain\Evidence\Models\Exhibit;
+use App\Domain\Filing\Models\EFiling;
 use App\Domain\Knowledge\Models\KnowledgeItem;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
@@ -94,6 +95,7 @@ class AppServiceProvider extends ServiceProvider
             'contact' => Contact::class,
             'knowledge_item' => KnowledgeItem::class,
             'prospect' => Prospect::class,
+            'e_filing' => EFiling::class,
         ]);
 
         $this->configureDatabaseTenancy();
