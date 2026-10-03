@@ -22,6 +22,28 @@ run_backup() {
     echo "$out"
 }
 
+# Ship archived WAL every pass. A failure is recorded for the health check
+# (wal_error in the status file) and cleared once shipping works again; the
+# backup's own ok/error is kept as it was.
+run_ship_wal() {
+    if out=$(ship-wal.sh 2>&1); then
+        if [ -s "$STATUS_DIR/wal_error" ]; then
+            rm -f "$STATUS_DIR/wal_error"
+            rewrite_status
+        fi
+    else
+        echo "$out"
+        first_error "$out" > "$STATUS_DIR/wal_error"
+        rewrite_status
+    fi
+}
+
+rewrite_status() {
+    ok=$(grep -q '"ok":true' "$STATUS_DIR/backup.json" 2>/dev/null && echo true || echo false)
+    previous=$(sed -n 's/.*"error":"\([^"]*\)".*/\1/p' "$STATUS_DIR/backup.json" 2>/dev/null || true)
+    write_status "$ok" "$previous"
+}
+
 run_verify() {
     if ! out=$(verify.sh 2>&1); then
         echo "$out"
@@ -41,6 +63,7 @@ catch_up=$([ -z "$(latest_stamp)" ] && echo 1 || echo 0)
 schema_ready() { [ "$(psql -d "$DB_NAME" -tAc "select to_regclass('public.migrations') is not null" 2>/dev/null)" = "t" ]; }
 
 while true; do
+    run_ship_wal
     if [ "$catch_up" = 1 ] && schema_ready; then
         catch_up=0
         run_backup && run_verify || true

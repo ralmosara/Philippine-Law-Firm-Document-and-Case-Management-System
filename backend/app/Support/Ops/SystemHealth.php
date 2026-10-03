@@ -57,6 +57,10 @@ class SystemHealth
             $checks['backups'] = $this->backups();
         }
 
+        if (config('ops.expect_wal_archiving')) {
+            $checks['point_in_time_recovery'] = $this->walArchiving();
+        }
+
         $checks['disk'] = $this->disk();
 
         return $checks;
@@ -151,6 +155,43 @@ class SystemHealth
         fclose($socket);
 
         return $reply === 'PONG' ? $this->ok('Responding') : $this->failing('Unexpected reply');
+    }
+
+    /**
+     * WAL archiving, the basis of point-in-time recovery: PostgreSQL must be
+     * able to archive each segment, and the backup container must be
+     * encrypting and shipping what was archived.
+     */
+    private function walArchiving(): array
+    {
+        $path = (string) config('ops.backup_status_file');
+        $status = filled($path) && is_readable($path) ? json_decode((string) file_get_contents($path), true) : null;
+        if (is_array($status) && filled($status['wal_error'] ?? null)) {
+            return $this->failing('Archived WAL is not being shipped: '.$status['wal_error']);
+        }
+
+        try {
+            $archiver = DB::selectOne('select archived_count, last_archived_time, failed_count, last_failed_time, last_failed_wal from pg_stat_archiver');
+        } catch (Throwable) {
+            return $this->warning('Could not read the WAL archiver status');
+        }
+
+        if ($archiver->last_failed_time && (! $archiver->last_archived_time || CarbonImmutable::parse($archiver->last_failed_time)->gt(CarbonImmutable::parse($archiver->last_archived_time)))) {
+            return $this->failing("PostgreSQL cannot archive WAL (segment {$archiver->last_failed_wal}); changes since the last backup are not protected. Check the db container log.");
+        }
+
+        // Archived, but not shipped for a while: the backup container is stuck or down.
+        $shipped = is_array($status) && ! empty($status['wal_shipped_at']) ? CarbonImmutable::parse($status['wal_shipped_at']) : null;
+        if ($archiver->last_archived_time && ($shipped === null || CarbonImmutable::parse($archiver->last_archived_time)->gt($shipped))) {
+            $waiting = (int) CarbonImmutable::parse($archiver->last_archived_time)->diffInMinutes(now(), true);
+            if ($waiting > config('ops.wal_ship_max_delay_minutes')) {
+                return $this->failing("WAL archived {$waiting} minutes ago has not been shipped. Is the backup container running?");
+            }
+        }
+
+        return $this->ok($archiver->last_archived_time
+            ? 'Archiving; last segment '.CarbonImmutable::parse($archiver->last_archived_time)->diffForHumans()
+            : 'Archiving is on; nothing archived yet');
     }
 
     private function backups(): array

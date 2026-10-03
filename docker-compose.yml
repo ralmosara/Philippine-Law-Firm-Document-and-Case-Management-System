@@ -74,6 +74,7 @@ services:
       HEALTH_TOKEN: ${HEALTH_TOKEN:-}
       OPS_ALERT_EMAIL: ${OPS_ALERT_EMAIL:-}
       BACKUP_STATUS_FILE: /var/lexph-status/backup.json
+      OPS_EXPECT_WAL_ARCHIVING: "true"
       SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
       # Live notifications: the app publishes to Reverb over the private
       # network; browsers connect through Caddy and nginx at /app.
@@ -168,6 +169,7 @@ services:
       - backups:/backups
       - backupstatus:/status
       - storage:/storage:ro
+      - walarchive:/walsrc
       # rclone.conf for off-site copies (rclone config, then copy it here).
       - ./backend/docker/backup/config:/config:ro
     restart: unless-stopped
@@ -190,6 +192,20 @@ services:
       db:
         condition: service_healthy
 
+  # Point-in-time recovery only; never starts on its own. See pitr.sh. The
+  # database must be stopped while it runs.
+  pitr:
+    build: ./backend/docker/backup
+    entrypoint: ["/usr/local/bin/pitr.sh"]
+    profiles: ["restore"]
+    environment: *backup-env
+    volumes:
+      - backups:/backups
+      - backupstatus:/status
+      - walarchive:/walsrc
+      - dbdata:/pgdata
+      - ./backend/docker/backup/config:/config:ro
+
   # The superuser is for administration and backups only. The app connects
   # as the ordinary role `ph_legal` (created by 10-app-role.sh), which keeps
   # PostgreSQL row-level security in force.
@@ -201,9 +217,29 @@ services:
       POSTGRES_PASSWORD: ${DB_ROOT_PASSWORD:-change-me-root}
       APP_DB_USER: ph_legal
       APP_DB_PASSWORD: ${DB_PASSWORD:-change-me}
+    # Point-in-time recovery: every finished WAL segment is archived (at
+    # least every ARCHIVE_TIMEOUT seconds while there are changes) for the
+    # backup container to encrypt and ship off-site; the superuser may take
+    # base backups over a replication connection (pg_hba.conf).
+    command:
+      - postgres
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=sh /usr/local/bin/archive-wal.sh %p %f
+      - -c
+      - archive_timeout=${ARCHIVE_TIMEOUT:-300}
     volumes:
       - dbdata:/var/lib/postgresql/data
+      # Archived WAL lands in /var/lib/postgresql/wal (owned by postgres).
+      - walarchive:/var/lib/postgresql
       - ./backend/docker/postgres/10-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+      - ./backend/docker/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./backend/docker/postgres/archive-wal.sh:/usr/local/bin/archive-wal.sh:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ph_legal"]
@@ -223,5 +259,6 @@ volumes:
   clamavdata:
   backups:
   backupstatus:
+  walarchive:
   caddydata:
   caddyconfig:

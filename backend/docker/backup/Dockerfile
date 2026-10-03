@@ -6,7 +6,7 @@ FROM postgres:16-alpine
 
 RUN apk add --no-cache openssl rclone tar gzip tzdata
 
-COPY common.sh backup.sh verify.sh restore.sh backup-loop.sh /usr/local/bin/
+COPY common.sh backup.sh verify.sh restore.sh backup-loop.sh ship-wal.sh pitr.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/*.sh
 
 ENTRYPOINT ["/usr/local/bin/backup-loop.sh"]

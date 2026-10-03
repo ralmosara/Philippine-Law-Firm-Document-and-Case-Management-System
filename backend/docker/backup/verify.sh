@@ -36,6 +36,11 @@ if [ "$restored_migrations" -ne "$live_migrations" ]; then
     log "Note: the schema changed since this backup (migrations differ); still restorable."
 fi
 
+if [ -f "base-$stamp.tar.gz.enc" ]; then
+    log "Reading the base backup for point-in-time recovery end to end"
+    decrypt < "base-$stamp.tar.gz.enc" | tar -tzf - | grep -q '^backup_label$' || { log "FAILED: the base backup has no backup_label"; exit 1; }
+fi
+
 log "Reading the file archive end to end"
 files=$(decrypt < "files-$stamp.tar.gz.enc" | tar -tzf - | wc -l)
 log "File archive readable: $files entries"

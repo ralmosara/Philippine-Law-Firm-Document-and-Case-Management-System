@@ -152,7 +152,7 @@ Use strong random values for every password and key (the command in the section 
 
 ### Backups and restore
 
-Every night at `BACKUP_TIME` the `backup` service writes a `pg_dump` of the database and an archive of the uploaded files, each encrypted with AES-256 under `BACKUP_PASSPHRASE`, with checksums. It keeps `BACKUP_KEEP_DAYS` days on the server and, with `RCLONE_REMOTE` set, copies each backup off-site (S3, Backblaze B2, Google Drive, SFTP…; configure the remote with `rclone config` and put `rclone.conf` in `backend/docker/backup/config/`). Once a week it **restores the latest backup into a scratch database** and checks it (schema version, row-level security policies, the file archive read end to end). The health check reports a backup that is late, failed, or not restore-tested within 8 days.
+Every night at `BACKUP_TIME` the `backup` service writes a `pg_dump` of the database, a physical base backup for point-in-time recovery, and an archive of the uploaded files, each encrypted with AES-256 under `BACKUP_PASSPHRASE`, with checksums. It keeps `BACKUP_KEEP_DAYS` days on the server and, with `RCLONE_REMOTE` set, copies each backup off-site (S3, Backblaze B2, Google Drive, SFTP…; configure the remote with `rclone config` and put `rclone.conf` in `backend/docker/backup/config/`). Once a week it **restores the latest backup into a scratch database** and checks it (schema version, row-level security policies, the file archive read end to end). The health check reports a backup that is late, failed, or not restore-tested within 8 days.
 
 ```bash
 docker compose exec backup backup.sh           # back up now
@@ -163,11 +163,24 @@ docker compose run --rm -e CONFIRM=yes restore [STAMP]   # newest by default; fe
 docker compose start app queue queue-heavy scheduler
 ```
 
+#### Point-in-time recovery
+
+Between nightly backups, PostgreSQL archives every change (its write-ahead log, WAL) at least every `ARCHIVE_TIMEOUT` seconds (default 300) while there is activity, and the `backup` service encrypts each segment and copies it off-site within seconds. Together with the nightly base backup this restores the database to **any moment** within `BACKUP_KEEP_DAYS`: after losing the server (at most about five minutes of work lost), or to just before a mistake, such as a wrong trust posting or a bulk delete.
+
+```bash
+docker compose stop app queue queue-heavy scheduler reverb backup db
+docker compose run --rm -e TARGET_TIME='2026-10-03 14:04:00' -e CONFIRM=yes pitr   # local time
+docker compose start db && docker compose logs -f db     # wait for "ready to accept connections"
+docker compose start app queue queue-heavy scheduler reverb backup
+```
+
+The replaced database is kept in the `backups` volume (`pre-pitr-<time>`) until you delete it, so a wrong target time can be retried. Uploaded files are not rolled back. The health check fails if PostgreSQL cannot archive WAL or archived WAL is not being shipped.
+
 **Keep `BACKUP_PASSPHRASE` somewhere other than the server** (a password manager, a sealed envelope in the office safe). Without it the backups cannot be decrypted.
 
 ### Monitoring
 
-- `GET /api/health` answers 200 while everything works and 503 when something is failing: database, cache, Redis, the scheduler and both queue workers (by heartbeat), failed jobs, ClamAV, backups and disk space. Point an uptime monitor (UptimeRobot, Better Stack…) at it; that also catches the whole server being down. With `Authorization: Bearer <HEALTH_TOKEN>` it returns each check's detail.
+- `GET /api/health` answers 200 while everything works and 503 when something is failing: database, cache, Redis, the scheduler and both queue workers (by heartbeat), failed jobs, ClamAV, backups, WAL archiving and disk space. Point an uptime monitor (UptimeRobot, Better Stack…) at it; that also catches the whole server being down. With `Authorization: Bearer <HEALTH_TOKEN>` it returns each check's detail.
 - `OPS_ALERT_EMAIL` receives an email when a health check fails, a job fails for good (a reminder that will not go out), or a trust account fails reconciliation. Each alert is sent at most once an hour.
 - **Error tracking:** set `SENTRY_LARAVEL_DSN` to send exceptions to Sentry. Request bodies, user details and log lines are never sent; stack traces and exception messages are, so keep client data out of exception messages.
 
@@ -263,4 +276,3 @@ CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on
 - Third-party e-signature providers (DocuSign and similar); signing is built in and happens in the client portal.
 - Refunds through PayMongo from inside the app (issue them in the PayMongo dashboard).
 - Official receipts: the billing statement is not a BIR-registered receipt. Issue ORs from your registered system or booklet and record the OR number as the payment reference.
-- Point-in-time recovery: backups are nightly, so up to a day of work can be lost. For less, add PostgreSQL WAL archiving (e.g. pgBackRest) or a managed database.
