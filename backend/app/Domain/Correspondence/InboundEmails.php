@@ -29,9 +29,11 @@ use ZBateson\MailMimeParser\Message\IMessagePart;
  * .eml file and each attachment as a file, virus-scanned and indexed like
  * any upload.
  *
- * Mail from the firm's staff or the matter's client is filed at once. Mail
- * from anyone else waits for a lawyer to accept or reject it, so a leaked
- * address cannot fill a case file with junk.
+ * Mail from the firm's staff or the matter's client is filed at once, when
+ * the receiving server confirms the sender (SPF/DKIM/DMARC; see
+ * SenderVerification). Mail from anyone else, or that cannot be confirmed,
+ * waits for a lawyer to accept or reject it, so a leaked address or a forged
+ * From line cannot fill a case file with junk.
  */
 class InboundEmails
 {
@@ -40,7 +42,11 @@ class InboundEmails
     /** Stored body text is capped; the full message is in the .eml file. */
     private const BODY_LIMIT = 200_000;
 
-    public function __construct(private readonly TenantContext $tenant, private readonly StoreMatterFile $store) {}
+    public function __construct(
+        private readonly TenantContext $tenant,
+        private readonly StoreMatterFile $store,
+        private readonly SenderVerification $verification,
+    ) {}
 
     public static function enabled(): bool
     {
@@ -75,16 +81,19 @@ class InboundEmails
      * one per matter it was addressed to, none when no address matched.
      *
      * @param  list<string>  $envelopeRecipients
+     * @param  string|null  $sendGridDkim  SendGrid's "dkim" field, when it posted one
      * @return list<MatterEmail>
      */
-    public function receive(string $raw, array $envelopeRecipients = []): array
+    public function receive(string $raw, array $envelopeRecipients = [], ?string $sendGridDkim = null): array
     {
         $message = $this->parse($raw);
+        $from = $this->fromEmail($message);
+        $verified = $this->verification->fromSendGrid($sendGridDkim, $from) || $this->verification->fromHeaders($message, $from);
         $recipients = [...$envelopeRecipients, ...$this->addresses($message, ['To', 'Cc', 'Delivered-To', 'X-Original-To', 'X-Forwarded-To', 'Envelope-To'])];
 
         $created = [];
         foreach ($this->mattersAddressed($recipients) as $matter) {
-            $email = $this->tenant->runAs($matter->firm_id, fn () => $this->record($matter, $message, $raw, 'forward', null));
+            $email = $this->tenant->runAs($matter->firm_id, fn () => $this->record($matter, $message, $raw, 'forward', null, $verified));
             if ($email) {
                 $created[] = $email;
             }
@@ -96,7 +105,7 @@ class InboundEmails
     /** An .eml a lawyer uploads to the matter: trusted, since a staff member chose to file it. */
     public function upload(Matter $matter, string $raw, User $by): ?MatterEmail
     {
-        return $this->record($matter, $this->parse($raw), $raw, 'upload', $by);
+        return $this->record($matter, $this->parse($raw), $raw, 'upload', $by, true);
     }
 
     public function accept(MatterEmail $email, User $by): void
@@ -153,7 +162,7 @@ class InboundEmails
         $email->forceFill(['status' => MatterEmail::FILED, 'raw_path' => null])->save();
     }
 
-    private function record(Matter $matter, IMessage $message, string $raw, string $source, ?User $uploader): ?MatterEmail
+    private function record(Matter $matter, IMessage $message, string $raw, string $source, ?User $uploader, bool $verified): ?MatterEmail
     {
         $messageId = $this->clean($message->getHeaderValue('Message-ID'), 255);
         if ($messageId && MatterEmail::where('matter_id', $matter->id)->where('message_id', $messageId)->exists()) {
@@ -161,9 +170,10 @@ class InboundEmails
         }
 
         $fromHeader = $message->getHeader('From');
-        $fromEmail = $fromHeader instanceof AddressHeader ? Str::lower((string) $fromHeader->getEmail()) : null;
-        $sender = $uploader ?? ($fromEmail ? User::where('firm_id', $matter->firm_id)->where('is_active', true)->whereRaw('lower(email) = ?', [$fromEmail])->first() : null);
-        $client = ! $sender && $fromEmail ? Client::where('id', $matter->client_id)->whereRaw('lower(email) = ?', [$fromEmail])->first() : null;
+        $fromEmail = $this->fromEmail($message);
+        // An unconfirmed From line names no one: the email waits for review.
+        $sender = $uploader ?? ($fromEmail && $verified ? User::where('firm_id', $matter->firm_id)->where('is_active', true)->whereRaw('lower(email) = ?', [$fromEmail])->first() : null);
+        $client = ! $sender && $fromEmail && $verified ? Client::where('id', $matter->client_id)->whereRaw('lower(email) = ?', [$fromEmail])->first() : null;
         $trusted = $sender || $client;
 
         $path = "firms/{$matter->firm_id}/inbound/".Str::uuid()->toString().'.eml';
@@ -280,6 +290,13 @@ class InboundEmails
         }
 
         return $tokens === [] ? [] : Matter::withoutGlobalScopes()->whereIn('inbound_email_token', array_unique($tokens))->get()->all();
+    }
+
+    private function fromEmail(IMessage $message): ?string
+    {
+        $header = $message->getHeader('From');
+
+        return $header instanceof AddressHeader && $header->getEmail() ? Str::lower((string) $header->getEmail()) : null;
     }
 
     private function parse(string $raw): IMessage

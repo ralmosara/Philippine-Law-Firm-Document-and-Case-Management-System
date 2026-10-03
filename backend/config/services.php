@@ -67,13 +67,17 @@ return [
     ],
 
     // Email to matter. Point your inbound email provider (SendGrid Inbound
-    // Parse with "raw", Mailgun routes with "store()/forward" of the MIME,
-    // or anything that posts the raw message) at
-    // https://<your-domain>/api/webhooks/inbound-email?secret=<secret>.
+    // Parse with "raw", a Mailgun route forwarding to a .../mime URL, or
+    // anything that posts the raw message) at
+    // https://inbound:<secret>@<your-domain>/api/webhooks/inbound-email
+    // (or send the secret in an X-Inbound-Secret header).
     // Each matter gets its own address: <local>+<matter code>@<domain>.
     'inbound_email' => [
         'address' => env('INBOUND_EMAIL_ADDRESS'),   // e.g. files@inbound.yourfirm.ph
         'secret' => env('INBOUND_EMAIL_SECRET'),
+        // The provider's name in the Authentication-Results headers it adds
+        // (e.g. mx.sendgrid.net); only its SPF/DKIM/DMARC results are trusted.
+        'authserv_id' => env('INBOUND_EMAIL_AUTHSERV_ID'),
         'max_kilobytes' => (int) env('INBOUND_EMAIL_MAX_KILOBYTES', 23 * 1024), // under PHP's 24 MB post limit
     ],
 
