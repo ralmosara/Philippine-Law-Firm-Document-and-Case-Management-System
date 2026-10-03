@@ -28,4 +28,9 @@ return [
     'backup_max_age_hours' => (int) env('BACKUP_MAX_AGE_HOURS', 26),
     'backup_verify_max_age_days' => (int) env('BACKUP_VERIFY_MAX_AGE_DAYS', 8),
 
+    // Point-in-time recovery: PostgreSQL archives WAL and the backup container
+    // ships it. Archived segments waiting longer than this mean shipping stopped.
+    'expect_wal_archiving' => (bool) env('OPS_EXPECT_WAL_ARCHIVING', false),
+    'wal_ship_max_delay_minutes' => (int) env('WAL_SHIP_MAX_DELAY_MINUTES', 15),
+
 ];

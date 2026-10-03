@@ -8,8 +8,10 @@ use Illuminate\Http\Request;
 
 /**
  * Receives mail for matter addresses from the inbound email provider.
- * Unauthenticated by design; each request must carry the shared secret
- * (?secret=, the X-Inbound-Secret header, or the basic-auth password).
+ * Unauthenticated by design; each request must carry the shared secret, as
+ * the basic-auth password (https://inbound:<secret>@your-domain/...) or the
+ * X-Inbound-Secret header. Never in the query string: web server logs
+ * record full URLs.
  *
  * Accepts the raw message as the request body (message/rfc822), or as the
  * "email" field (SendGrid Inbound Parse, "POST the raw, full MIME message")
@@ -22,7 +24,7 @@ class InboundEmailWebhookController extends Controller
         if (! InboundEmails::enabled()) {
             abort(404);
         }
-        $given = $request->header('X-Inbound-Secret') ?? $request->query('secret') ?? $request->getPassword();
+        $given = $request->header('X-Inbound-Secret') ?? $request->getPassword();
         if (! InboundEmails::authorized(is_string($given) ? $given : null)) {
             return response()->json(['message' => 'Invalid secret.'], 401);
         }
@@ -35,7 +37,8 @@ class InboundEmailWebhookController extends Controller
             return response()->json(['message' => 'Message too large.'], 413);
         }
 
-        $created = $emails->receive($raw, $this->envelopeRecipients($request));
+        $dkim = $request->input('dkim'); // SendGrid's DKIM results
+        $created = $emails->receive($raw, $this->envelopeRecipients($request), is_string($dkim) ? $dkim : null);
 
         // 200 even when no matter matched, so the provider does not retry it forever.
         return response()->json(['filed' => count($created)]);

@@ -9,6 +9,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Symfony\Component\Mime\Email;
 use Tests\TestCase;
@@ -112,6 +113,20 @@ class HealthAndAlertsTest extends TestCase
 
         $this->backupStatus(['ok' => false, 'finished_at' => now()->toIso8601String(), 'error' => 'pg_dump failed']);
         $this->getJson('/api/health')->assertStatus(503)->assertJsonPath('checks.backups', 'failing');
+    }
+
+    public function test_point_in_time_recovery_fails_the_check_when_wal_is_not_shipped(): void
+    {
+        config(['ops.expect_wal_archiving' => true]);
+        $fresh = ['ok' => true, 'finished_at' => now()->subHours(2)->toIso8601String(), 'verified_at' => now()->subDays(3)->toIso8601String()];
+
+        $this->backupStatus([...$fresh, 'wal_error' => 'rclone: failed to copy: 403 Forbidden']);
+        $this->getJson('/api/health')->assertStatus(503)->assertJsonPath('checks.point_in_time_recovery', 'failing');
+
+        $this->backupStatus([...$fresh, 'wal_error' => '', 'wal_shipped_at' => now()->toIso8601String()]);
+        $check = $this->getJson('/api/health')->json('checks.point_in_time_recovery');
+        // On PostgreSQL the archiver status is read; other databases have none to read.
+        $this->assertSame(DB::getDriverName() === 'pgsql' ? 'ok' : 'warning', $check);
     }
 
     public function test_the_health_check_command_emails_failures_once_per_window(): void

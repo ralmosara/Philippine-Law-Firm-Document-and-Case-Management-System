@@ -24,6 +24,8 @@ class KnowledgeItem extends Model
         'note' => 'Research note',
     ];
 
+    protected $hidden = ['search_vector'];
+
     protected $fillable = [
         'firm_id', 'kind', 'title', 'citation', 'doctrine', 'body', 'practice_area', 'tags',
         'source_document_id', 'source_matter_id', 'created_by', 'updated_by',

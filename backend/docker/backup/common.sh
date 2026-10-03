@@ -27,13 +27,15 @@ decrypt() { openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:BACKUP_PA
 write_status() { # ok(true|false) error-message
     verified=null
     [ -s "$STATUS_DIR/verified_at" ] && verified="\"$(cat "$STATUS_DIR/verified_at")\""
-    last=null backed_up=null
+    last=null backed_up=null wal=null
     [ -s "$STATUS_DIR/last_backup" ] && last="\"$(cat "$STATUS_DIR/last_backup")\""
     [ -s "$STATUS_DIR/last_backup_at" ] && backed_up="\"$(cat "$STATUS_DIR/last_backup_at")\""
+    [ -s "$STATUS_DIR/wal_shipped_at" ] && wal="\"$(cat "$STATUS_DIR/wal_shipped_at")\""
     error=$(printf '%s' "${2:-}" | tr -d '"\\' | tr '\n' ' ')
+    wal_error=$(cat "$STATUS_DIR/wal_error" 2>/dev/null | tr -d '"\\' | tr '\n' ' ' || true)
     mkdir -p "$STATUS_DIR"
-    printf '{"ok":%s,"finished_at":"%s","last_backup":%s,"backed_up_at":%s,"verified_at":%s,"error":"%s"}\n' \
-        "$1" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$last" "$backed_up" "$verified" "$error" > "$STATUS_DIR/backup.json.tmp"
+    printf '{"ok":%s,"finished_at":"%s","last_backup":%s,"backed_up_at":%s,"verified_at":%s,"wal_shipped_at":%s,"wal_error":"%s","error":"%s"}\n' \
+        "$1" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$last" "$backed_up" "$verified" "$wal" "$wal_error" "$error" > "$STATUS_DIR/backup.json.tmp"
     mv "$STATUS_DIR/backup.json.tmp" "$STATUS_DIR/backup.json"
 }
 

@@ -18,7 +18,10 @@ class KnowledgeSearch
 
     public const MARK_END = '⟧';
 
-    private const DOCUMENT = "to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(citation, '') || ' ' || coalesce(doctrine, '') || ' ' || coalesce(body, ''))";
+    /** Stored, indexed tsvector of title, citation, doctrine and body (PostgreSQL keeps it current). */
+    private const DOCUMENT = 'search_vector';
+
+    private const COLUMNS = ['id', 'firm_id', 'kind', 'title', 'citation', 'doctrine', 'body', 'practice_area', 'tags', 'source_document_id', 'source_matter_id', 'created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at'];
 
     /** @return list<string> */
     public function terms(string $search): array
@@ -45,7 +48,7 @@ class KnowledgeSearch
             $options = 'StartSel='.self::MARK_START.', StopSel='.self::MARK_END.', MaxWords=30, MinWords=12, MaxFragments=2, FragmentDelimiter=" … "';
 
             return $query
-                ->select('knowledge_items.*')
+                ->select(self::COLUMNS)
                 ->selectRaw("ts_headline('simple', coalesce(doctrine, '') || ' ' || coalesce(body, ''), to_tsquery('simple', ?), ?) as snippet", [$tsquery, $options])
                 ->whereRaw(self::DOCUMENT." @@ to_tsquery('simple', ?)", [$tsquery])
                 ->orderByRaw('ts_rank('.self::DOCUMENT.", to_tsquery('simple', ?)) desc", [$tsquery])

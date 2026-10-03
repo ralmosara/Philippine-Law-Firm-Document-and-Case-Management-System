@@ -152,7 +152,7 @@ Use strong random values for every password and key (the command in the section 
 
 ### Backups and restore
 
-Every night at `BACKUP_TIME` the `backup` service writes a `pg_dump` of the database and an archive of the uploaded files, each encrypted with AES-256 under `BACKUP_PASSPHRASE`, with checksums. It keeps `BACKUP_KEEP_DAYS` days on the server and, with `RCLONE_REMOTE` set, copies each backup off-site (S3, Backblaze B2, Google Drive, SFTP…; configure the remote with `rclone config` and put `rclone.conf` in `backend/docker/backup/config/`). Once a week it **restores the latest backup into a scratch database** and checks it (schema version, row-level security policies, the file archive read end to end). The health check reports a backup that is late, failed, or not restore-tested within 8 days.
+Every night at `BACKUP_TIME` the `backup` service writes a `pg_dump` of the database, a physical base backup for point-in-time recovery, and an archive of the uploaded files, each encrypted with AES-256 under `BACKUP_PASSPHRASE`, with checksums. It keeps `BACKUP_KEEP_DAYS` days on the server and, with `RCLONE_REMOTE` set, copies each backup off-site (S3, Backblaze B2, Google Drive, SFTP…; configure the remote with `rclone config` and put `rclone.conf` in `backend/docker/backup/config/`). Once a week it **restores the latest backup into a scratch database** and checks it (schema version, row-level security policies, the file archive read end to end). The health check reports a backup that is late, failed, or not restore-tested within 8 days.
 
 ```bash
 docker compose exec backup backup.sh           # back up now
@@ -163,11 +163,24 @@ docker compose run --rm -e CONFIRM=yes restore [STAMP]   # newest by default; fe
 docker compose start app queue queue-heavy scheduler
 ```
 
+#### Point-in-time recovery
+
+Between nightly backups, PostgreSQL archives every change (its write-ahead log, WAL) at least every `ARCHIVE_TIMEOUT` seconds (default 300) while there is activity, and the `backup` service encrypts each segment and copies it off-site within seconds. Together with the nightly base backup this restores the database to **any moment** within `BACKUP_KEEP_DAYS`: after losing the server (at most about five minutes of work lost), or to just before a mistake, such as a wrong trust posting or a bulk delete.
+
+```bash
+docker compose stop app queue queue-heavy scheduler reverb backup db
+docker compose run --rm -e TARGET_TIME='2026-10-03 14:04:00' -e CONFIRM=yes pitr   # local time
+docker compose start db && docker compose logs -f db     # wait for "ready to accept connections"
+docker compose start app queue queue-heavy scheduler reverb backup
+```
+
+The replaced database is kept in the `backups` volume (`pre-pitr-<time>`) until you delete it, so a wrong target time can be retried. Uploaded files are not rolled back. The health check fails if PostgreSQL cannot archive WAL or archived WAL is not being shipped.
+
 **Keep `BACKUP_PASSPHRASE` somewhere other than the server** (a password manager, a sealed envelope in the office safe). Without it the backups cannot be decrypted.
 
 ### Monitoring
 
-- `GET /api/health` answers 200 while everything works and 503 when something is failing: database, cache, Redis, the scheduler and both queue workers (by heartbeat), failed jobs, ClamAV, backups and disk space. Point an uptime monitor (UptimeRobot, Better Stack…) at it; that also catches the whole server being down. With `Authorization: Bearer <HEALTH_TOKEN>` it returns each check's detail.
+- `GET /api/health` answers 200 while everything works and 503 when something is failing: database, cache, Redis, the scheduler and both queue workers (by heartbeat), failed jobs, ClamAV, backups, WAL archiving and disk space. Point an uptime monitor (UptimeRobot, Better Stack…) at it; that also catches the whole server being down. With `Authorization: Bearer <HEALTH_TOKEN>` it returns each check's detail.
 - `OPS_ALERT_EMAIL` receives an email when a health check fails, a job fails for good (a reminder that will not go out), or a trust account fails reconciliation. Each alert is sent at most once an hour.
 - **Error tracking:** set `SENTRY_LARAVEL_DSN` to send exceptions to Sentry. Request bodies, user details and log lines are never sent; stack traces and exception messages are, so keep client data out of exception messages.
 
@@ -219,13 +232,15 @@ cd frontend && npm run lint && npm run build      # oxlint + strict TypeScript +
 
 CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on SQLite and on PostgreSQL 16, then once more on PostgreSQL as an ordinary (non-superuser) role so row-level security is in force for every test. A test also fails if any table with a `firm_id` column lacks a row-level security policy.
 
+**Load testing.** `php artisan ops:load-test-data --force [--scale=N]` fills one firm of a throwaway copy with years of volume (300 clients, 500 matters, 10,000 deadlines, 50,000 time entries, 3,000 invoices, 20,000 searchable files, 3,000 documents, 100,000 audit entries per unit of scale) in under a minute, without sending anything. Never run it on a live database. At scale 1, every page tested answers in under 250 ms as the app's own role (row-level security in force), and a firm-wide file search in under 0.5 s even when every file matches.
+
 ## Operations checklist
 
 - **Run both queue workers and the scheduler** in production (`queue`, `queue-heavy` and `scheduler` in `docker-compose.yml`). Without them, no reminders are sent; `/api/health` fails within five minutes of one stopping.
 - **Point an uptime monitor at `/api/health` and set `OPS_ALERT_EMAIL`** before real use (see Monitoring).
 - **Keep the holiday calendar current.** Fixed-date holidays and Holy Week are seeded for 2025–2027. Holidays set by annual proclamation (Eid'l Fitr, Eid'l Adha, special days) and court closures must be added under **Firm Settings → Holidays** as they are announced. Deadline computations depend on this.
 - **Have counsel verify the seeded Rules of Court periods** (Firm Settings → Deadline rules) against current rules before relying on them.
-- **Connect as an ordinary database role, never a superuser.** PostgreSQL does not apply row-level security to superusers or `BYPASSRLS` roles, so connecting as one silently turns the second tenancy layer off. `docker-compose.yml` creates the `ph_legal` role for the app (`backend/docker/postgres/10-app-role.sh`) and keeps the superuser for administration. If you use PgBouncer, use session pooling: the tenant is a session setting.
+- **Connect as an ordinary database role, never a superuser.** PostgreSQL does not apply row-level security to superusers or `BYPASSRLS` roles, so connecting as one silently turns the second tenancy layer off. `docker-compose.yml` creates the `ph_legal` role for the app (`backend/docker/postgres/10-app-role.sh`) and keeps the superuser for administration. If you use PgBouncer, use session pooling: the tenant is a session setting. On a database outside `docker-compose.yml`, also run `backend/docker/postgres/admin.sql` once as the administrator; without it, file and knowledge-bank searches cannot use their indexes under row-level security and slow down as files accumulate (the `db-setup` service does this automatically in Docker).
 - **Set `RCLONE_REMOTE` so backups leave the server**, and rehearse a restore once (see Backups and restore). A backup on the same disk does not survive the disk. The trust ledger and the signature evidence live in the database. If uploads go to a bucket (`MATTER_FILES_DISK`), turn on versioning there: the backup covers the local `storage` volume.
 - **Online payments:** set `PAYMONGO_SECRET_KEY`, register a PayMongo webhook for `https://<your-domain>/api/webhooks/paymongo` with the event `checkout_session.payment.paid`, and set `PAYMONGO_WEBHOOK_SECRET` to its secret. Watch the logs for `Online payment received that could not be applied` (logged at `critical`); such payments are also shown on the invoice for refund.
 - **Mail must work in production** (`MAIL_*`): password reset links, portal invitations and e-signature requests are sent by email.
@@ -236,7 +251,7 @@ CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on
 - **Withholding tax:** set the firm's usual rate under **Firm Settings → Firm details** (confirm the rate for your income bracket with your accountant). It is only a suggestion; record what each client actually withheld. **Time & Billing → Form 2307** lists the certificates still to collect, which the firm needs to claim the tax credit.
 - **AI assistant:** set `ANTHROPIC_API_KEY` (model `ANTHROPIC_MODEL`, default `claude-opus-5-5`), then a managing partner turns it on under **Firm Settings → Firm & security** after confirming the data processing agreement and client notices. Questions run on the queue; usage (tokens) is stored per answer.
 - **Online intake:** choose the web address and turn on requests under **Firm Settings → Firm & security**, then link `/consult/<address>` from your website. Requests are rate-limited per IP and protected by a honeypot.
-- **Email to matter:** set `INBOUND_EMAIL_ADDRESS` (e.g. `files@inbound.yourfirm.ph`, on a subdomain whose MX points to your inbound provider) and a long random `INBOUND_EMAIL_SECRET`, then have the provider post each raw message to `https://<your-domain>/api/webhooks/inbound-email?secret=<secret>` (SendGrid Inbound Parse with "POST the raw, full MIME message", or a Mailgun route forwarding to a URL ending in `mime`). Messages up to about 23 MB are accepted. Without the address, emails can still be uploaded as .eml files. The sender check trusts the From address, which can be forged; forged mail can add files to a matter but never shares them with the client.
+- **Email to matter:** set `INBOUND_EMAIL_ADDRESS` (e.g. `files@inbound.yourfirm.ph`, on a subdomain whose MX points to your inbound provider) and a long random `INBOUND_EMAIL_SECRET`, then have the provider post each raw message to `https://inbound:<secret>@<your-domain>/api/webhooks/inbound-email` (SendGrid Inbound Parse with "POST the raw, full MIME message", or a Mailgun route forwarding to a URL ending in `mime`); the secret can also go in an `X-Inbound-Secret` header, never in the query string. Mail is filed without review only when the sender is staff or the client **and** the provider confirms the From address: set `INBOUND_EMAIL_AUTHSERV_ID` to the name your provider writes in its `Authentication-Results` headers (SendGrid's own DKIM results are used automatically). Unconfirmed mail waits for review. Messages up to about 23 MB are accepted. Without the address, emails can still be uploaded as .eml files.
 - **Calendar links** are credentials: if one leaks, the lawyer replaces it under **Profile** (the old link stops working immediately). Deactivating a user also stops their feed.
 - **The app runs in Philippine time** (`APP_TIMEZONE=Asia/Manila`). Keep it that way: "today" decides reglementary periods, reminder days and what counts as a future date.
 - **Notarization still needs personal appearance.** The 2004 Rules on Notarial Practice require the signatory to appear before the notary, so an e-signature cannot replace it; the app keeps the notarial register for the in-person act.
@@ -263,4 +278,3 @@ CI (`.github/workflows/ci.yml`) runs all of the above, with the backend suite on
 - Third-party e-signature providers (DocuSign and similar); signing is built in and happens in the client portal.
 - Refunds through PayMongo from inside the app (issue them in the PayMongo dashboard).
 - Official receipts: the billing statement is not a BIR-registered receipt. Issue ORs from your registered system or booklet and record the OR number as the payment reference.
-- Point-in-time recovery: backups are nightly, so up to a day of work can be lost. For less, add PostgreSQL WAL archiving (e.g. pgBackRest) or a managed database.

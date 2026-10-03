@@ -36,7 +36,7 @@ class EmailToMatterTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
-        config(['services.inbound_email.address' => 'files@inbound.santoslaw.ph', 'services.inbound_email.secret' => 's3cret-value']);
+        config(['services.inbound_email.address' => 'files@inbound.santoslaw.ph', 'services.inbound_email.secret' => 's3cret-value', 'services.inbound_email.authserv_id' => 'mx.inbound.test']);
         $this->firm = Firm::factory()->create();
         $this->lawyer = $this->signIn(Role::Associate, $this->firm, ['email' => 'ana@santoslaw.ph']);
         $client = Client::factory()->for($this->firm)->create(['email' => 'juan@example.com']);
@@ -44,7 +44,8 @@ class EmailToMatterTest extends TestCase
         $this->address = $this->getJson("/api/v1/matters/{$this->matter->id}/emails")->assertOk()->json('address');
     }
 
-    private function mime(string $from, string $to, string $subject = 'Notice of hearing', array $attachments = [], string $id = '<abc123@mail.example.com>'): string
+    /** $auth: the provider's verdict on the sender, as its Authentication-Results header records it (null: none). */
+    private function mime(string $from, string $to, string $subject = 'Notice of hearing', array $attachments = [], string $id = '<abc123@mail.example.com>', ?string $auth = 'mx.inbound.test; dmarc=pass'): string
     {
         $boundary = 'b1_'.md5($subject);
         $parts = "--{$boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nPlease see the attached notice.\r\nHearing on 12 October.\r\n";
@@ -52,13 +53,13 @@ class EmailToMatterTest extends TestCase
             $parts .= "--{$boundary}\r\nContent-Type: application/octet-stream; name=\"{$name}\"\r\nContent-Disposition: attachment; filename=\"{$name}\"\r\nContent-Transfer-Encoding: base64\r\n\r\n".chunk_split(base64_encode($content))."\r\n";
         }
 
-        return "From: {$from}\r\nTo: {$to}\r\nSubject: {$subject}\r\nDate: Mon, 28 Sep 2026 09:15:00 +0800\r\nMessage-ID: {$id}\r\nMIME-Version: 1.0\r\n"
+        return ($auth ? "Authentication-Results: {$auth}\r\n" : '')."From: {$from}\r\nTo: {$to}\r\nSubject: {$subject}\r\nDate: Mon, 28 Sep 2026 09:15:00 +0800\r\nMessage-ID: {$id}\r\nMIME-Version: 1.0\r\n"
             ."Content-Type: multipart/mixed; boundary=\"{$boundary}\"\r\n\r\n{$parts}--{$boundary}--\r\n";
     }
 
     private function deliver(string $raw, string $secret = 's3cret-value')
     {
-        return $this->call('POST', "/api/webhooks/inbound-email?secret={$secret}", [], [], [], ['CONTENT_TYPE' => 'message/rfc822'], $raw);
+        return $this->call('POST', '/api/webhooks/inbound-email', [], [], [], ['CONTENT_TYPE' => 'message/rfc822', 'PHP_AUTH_USER' => 'inbound', 'PHP_AUTH_PW' => $secret], $raw);
     }
 
     public function test_each_matter_has_a_private_address(): void
@@ -121,6 +122,32 @@ class EmailToMatterTest extends TestCase
         $this->assertSame($this->lawyer->name, $this->getJson("/api/v1/matter-emails/{$other->id}")->json('reviewed_by'));
     }
 
+    public function test_a_forged_from_line_does_not_bypass_review(): void
+    {
+        // No verdict from our provider: the From line alone proves nothing.
+        $this->deliver($this->mime('Ana <ana@santoslaw.ph>', $this->address, 'Unverified', [], '<u1@x>', null))->assertOk();
+        // A verdict planted by the sender, under another server's name.
+        $this->deliver($this->mime('Ana <ana@santoslaw.ph>', $this->address, 'Planted', [], '<u2@x>', 'mx.attacker.example; dmarc=pass'))->assertOk();
+        // Our provider says the checks failed.
+        $this->deliver($this->mime('Ana <ana@santoslaw.ph>', $this->address, 'Failed', [], '<u3@x>', 'mx.inbound.test; spf=fail; dkim=fail; dmarc=fail'))->assertOk();
+        // DKIM passed, but for someone else's domain.
+        $this->deliver($this->mime('Ana <ana@santoslaw.ph>', $this->address, 'Misaligned', [], '<u4@x>', 'mx.inbound.test; dkim=pass header.d=bulkmailer.example'))->assertOk();
+
+        foreach (['u1@x', 'u2@x', 'u3@x', 'u4@x'] as $id) {
+            $email = MatterEmail::where('message_id', $id)->sole();
+            $this->assertSame(MatterEmail::REVIEW, $email->status, $id);
+            $this->assertNull($email->sender_user_id, $id);
+        }
+
+        // A DKIM pass for the From domain verifies the sender.
+        $this->deliver($this->mime('Ana <ana@santoslaw.ph>', $this->address, 'Aligned', [], '<v1@x>', 'mx.inbound.test; spf=neutral; dkim=pass header.d=santoslaw.ph'))->assertOk();
+        $this->assertSame(MatterEmail::FILED, MatterEmail::where('message_id', 'v1@x')->sole()->status);
+
+        // SendGrid posts its DKIM results as a field.
+        $this->post('/api/webhooks/inbound-email', ['email' => $this->mime('Ana <ana@santoslaw.ph>', $this->address, 'SendGrid', [], '<v2@x>', null), 'dkim' => '{@santoslaw.ph : pass}'], ['X-Inbound-Secret' => 's3cret-value'])->assertOk();
+        $this->assertSame(MatterEmail::FILED, MatterEmail::where('message_id', 'v2@x')->sole()->status);
+    }
+
     public function test_filing_waits_for_the_virus_scanner_and_resumes(): void
     {
         $down = true;
@@ -157,6 +184,8 @@ class EmailToMatterTest extends TestCase
     public function test_the_webhook_needs_the_secret_and_an_eml_can_be_uploaded(): void
     {
         $this->deliver($this->mime('Ana <ana@santoslaw.ph>', $this->address), 'wrong')->assertStatus(401);
+        // Never in the URL, where web server logs would keep it.
+        $this->call('POST', '/api/webhooks/inbound-email?secret=s3cret-value', [], [], [], ['CONTENT_TYPE' => 'message/rfc822'], $this->mime('Ana <ana@santoslaw.ph>', $this->address))->assertStatus(401);
         $this->assertSame(0, MatterEmail::count());
 
         // SendGrid posts the raw message in the "email" field.
