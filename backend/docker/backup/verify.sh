@@ -38,7 +38,10 @@ fi
 
 if [ -f "base-$stamp.tar.gz.enc" ]; then
     log "Reading the base backup for point-in-time recovery end to end"
-    decrypt < "base-$stamp.tar.gz.enc" | tar -tzf - | grep -q '^backup_label$' || { log "FAILED: the base backup has no backup_label"; exit 1; }
+    # Read the whole archive (grep -q would stop early and break the pipe).
+    listing=$(decrypt < "base-$stamp.tar.gz.enc" | tar -tzf -)
+    printf '%s\n' "$listing" | grep -qx 'backup_label' || { log "FAILED: the base backup has no backup_label"; exit 1; }
+    log "Base backup readable: $(printf '%s\n' "$listing" | wc -l) entries"
 fi
 
 log "Reading the file archive end to end"
