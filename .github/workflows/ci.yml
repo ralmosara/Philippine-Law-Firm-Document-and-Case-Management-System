@@ -48,6 +48,9 @@ jobs:
       - name: Code style (Pint)
         if: matrix.db == 'sqlite'
         run: vendor/bin/pint --test
+      - name: Docker shell scripts parse
+        if: matrix.db == 'sqlite'
+        run: for f in docker/backup/*.sh docker/postgres/*.sh; do sh -n "$f" || exit 1; done
       - name: Tests
         env:
           DB_CONNECTION: ${{ matrix.db }}
@@ -67,6 +70,8 @@ jobs:
           psql -h 127.0.0.1 -U test -d ph_legal_test \
             -c "CREATE ROLE lexapp LOGIN PASSWORD 'lexapp' NOSUPERUSER NOCREATEDB NOCREATEROLE" \
             -c "CREATE DATABASE ph_legal_app OWNER lexapp"
+          # As in production (the db-setup service): superuser-only settings.
+          psql -h 127.0.0.1 -U test -d ph_legal_app -v ON_ERROR_STOP=1 -f docker/postgres/admin.sql
           DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=ph_legal_app \
             DB_USERNAME=lexapp DB_PASSWORD=lexapp php vendor/bin/phpunit
 
