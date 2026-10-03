@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Trust\Exceptions\InsufficientTrustFunds;
+use App\Http\Middleware\Idempotent;
 use App\Http\Middleware\SetTenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -37,7 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             $middleware->trustProxies(at: array_map('trim', explode(',', (string) env('TRUSTED_PROXIES'))));
         }
 
-        $middleware->alias(['tenant' => SetTenantContext::class]);
+        $middleware->alias(['tenant' => SetTenantContext::class, 'idempotent' => Idempotent::class]);
 
         // The API never redirects guests (there is no server-rendered login
         // page); an unauthenticated API call is a 401, whatever it accepts.

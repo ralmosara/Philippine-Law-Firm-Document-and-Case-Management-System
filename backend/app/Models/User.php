@@ -44,9 +44,15 @@ class User extends Authenticatable
         'two_factor_recovery_codes',
     ];
 
+    /** Phone notifications show only their kind on a lock screen until the user asks for details. */
+    protected $attributes = [
+        'push_details' => false,
+    ];
+
     protected function casts(): array
     {
         return [
+            'push_details' => 'boolean',
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password' => 'hashed',

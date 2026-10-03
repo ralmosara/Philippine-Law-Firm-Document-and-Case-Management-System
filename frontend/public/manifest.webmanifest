@@ -1,0 +1,22 @@
+{
+  "name": "Lex PH — Practice Management",
+  "short_name": "Lex PH",
+  "description": "Cases, deadlines, court days, documents, trust and billing for Philippine law firms.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#24344b",
+  "theme_color": "#24344b",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Court day", "short_name": "Court day", "url": "/court-day", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Deadlines", "short_name": "Deadlines", "url": "/calendar", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Tasks", "short_name": "Tasks", "url": "/tasks", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

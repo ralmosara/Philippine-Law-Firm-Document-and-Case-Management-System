@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PleadingController;
 use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ProspectController;
+use App\Http\Controllers\Api\V1\PushController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SignatureRequestController;
 use App\Http\Controllers\Api\V1\TaskController;
@@ -81,6 +82,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('push', [PushController::class, 'show']);
+        Route::post('push/subscriptions', [PushController::class, 'subscribe']);
+        Route::post('push/subscriptions/remove', [PushController::class, 'unsubscribe']);
+        Route::put('push/preferences', [PushController::class, 'preferences']);
+        Route::post('push/test', [PushController::class, 'test'])->middleware('throttle:5,1');
         Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
         Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id');
         Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -184,7 +190,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('document-request-items/{item}/review', [DocumentRequestController::class, 'review']);
         Route::post('document-requests/{documentRequest}/cancel', [DocumentRequestController::class, 'cancel']);
         Route::get('court-day', [CourtDayController::class, 'index']);
-        Route::post('deadlines/{deadline}/hearing-outcome', [CourtDayController::class, 'outcome']);
+        Route::post('deadlines/{deadline}/hearing-outcome', [CourtDayController::class, 'outcome'])->middleware('idempotent');
         Route::get('deadlines', [MatterDeadlineController::class, 'index']);
         Route::post('deadlines/compute', [MatterDeadlineController::class, 'compute']);
         Route::get('deadlines/{deadline}', [MatterDeadlineController::class, 'show']);
@@ -229,7 +235,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('trust-accounts/{trustAccount}/reconcile', [TrustAccountController::class, 'reconcile']);
         Route::post('trust-accounts/{trustAccount}/close', [TrustAccountController::class, 'close']);
 
-        Route::apiResource('time-entries', TimeEntryController::class)->except('show');
+        Route::apiResource('time-entries', TimeEntryController::class)->except('show')->middlewareFor('store', 'idempotent');
         Route::apiResource('expenses', ExpenseController::class)->except('show');
 
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show']);

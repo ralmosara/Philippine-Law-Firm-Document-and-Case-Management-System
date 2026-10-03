@@ -81,6 +81,15 @@ return [
         'max_kilobytes' => (int) env('INBOUND_EMAIL_MAX_KILOBYTES', 23 * 1024), // under PHP's 24 MB post limit
     ],
 
+    // Phone and browser notifications (Web Push). Generate the pair once with
+    // "php artisan ops:vapid-keys"; changing it later means everyone turns
+    // notifications on again.
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT'), // mailto: or https: contact for push services
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
+import { onlineManager, useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form'
 import { useToast } from '@/shared/ui/Toast'
+import { isQueued } from '@/shared/offline/queue'
 import { ApiError } from './axios'
 
 interface Options<TData> {
@@ -30,7 +31,11 @@ export function useApiMutation<TVariables = void, TData = unknown>(fn: (variable
       }
     },
     onSuccess: async (data) => {
-      await Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })))
+      const refresh = Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })))
+      // Offline (or kept for later), the lists cannot refresh until the
+      // connection returns; do not hold the form open waiting for them.
+      if (onlineManager.isOnline() && !isQueued(data)) await refresh
+      else void refresh
       if (success) toast.success(typeof success === 'function' ? success(data) : success)
     },
     onError: (error) => {

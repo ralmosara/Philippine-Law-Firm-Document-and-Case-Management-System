@@ -1,6 +1,8 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { del, get, patch, post, put } from '@/shared/api/axios'
+import { useCurrentSession } from '@/features/auth/session'
 import { useApiMutation } from '@/shared/api/hooks'
+import { isQueued, sendOrQueue } from '@/shared/offline/queue'
 import type { Expense, Invoice, InvoicePayment, InvoiceStatus, Paginated, PaymentMethod, TimeEntry } from '@/shared/api/types'
 
 type WithTotals<T> = Paginated<T> & { totals: { minutes: number; amount_cents: number } }
@@ -34,9 +36,13 @@ export interface TimeEntryInput {
 const timeInvalidate = [['time-entries'], ['matters'], ['dashboard']]
 
 export function useSaveTimeEntry(id?: number) {
-  return useApiMutation((input: TimeEntryInput) => (id ? put<TimeEntry>(`/v1/time-entries/${id}`, input) : post<TimeEntry>('/v1/time-entries', input)), {
+  const userId = useCurrentSession().user.id
+  return useApiMutation(
+    (input: TimeEntryInput) =>
+      id ? put<TimeEntry>(`/v1/time-entries/${id}`, input) : sendOrQueue<TimeEntry>({ url: '/v1/time-entries', body: input, label: `Time: ${input.description ?? ''}`.slice(0, 120), userId }),
+    {
     invalidate: timeInvalidate,
-    success: id ? 'Time entry updated' : 'Time logged',
+    success: (r) => (isQueued(r) ? 'No signal: saved on this device, will send when back online' : id ? 'Time entry updated' : 'Time logged'),
     toastErrors: false,
   })
 }

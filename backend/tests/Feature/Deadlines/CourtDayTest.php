@@ -100,6 +100,22 @@ class CourtDayTest extends TestCase
         $this->postJson("/api/v1/deadlines/{$hearing->id}/hearing-outcome", ['outcome' => 'held'])->assertStatus(422);
     }
 
+    public function test_an_outcome_sent_the_next_day_counts_from_the_hearing_once(): void
+    {
+        $hearing = $this->hearing();
+        // Recorded in court with no signal; the phone sends it the next morning, twice.
+        $this->travelTo(CarbonImmutable::parse('2026-10-06 08:15', 'Asia/Manila'));
+        $outcome = ['outcome' => 'held', 'follow_ups' => [['title' => 'File judicial affidavits', 'days' => 30]], 'minutes' => 60];
+        $key = ['Idempotency-Key' => '5f0c1e2a-9b8d-4c7e-a6f5-3d2c1b0a9e8f'];
+
+        $this->postJson("/api/v1/deadlines/{$hearing->id}/hearing-outcome", $outcome, $key)->assertOk()
+            ->assertJsonPath('follow_ups.0.due_date', '2026-11-04'); // from Oct 5, the hearing, not Oct 6
+        $this->postJson("/api/v1/deadlines/{$hearing->id}/hearing-outcome", $outcome, $key)->assertOk()->assertHeader('Idempotent-Replayed', 'true');
+
+        $this->assertSame(1, MatterDeadline::where('title', 'File judicial affidavits')->count());
+        $this->assertSame('2026-10-05', TimeEntry::sole()->work_date->toDateString());
+    }
+
     public function test_a_reset_hearing_moves_to_its_new_date_and_keeps_its_history(): void
     {
         $hearing = $this->hearing();

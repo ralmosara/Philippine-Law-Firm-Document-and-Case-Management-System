@@ -2,6 +2,7 @@
 
 namespace App\Notifications\Concerns;
 
+use App\Domain\Push\WebPushChannel;
 use App\Models\User;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 
@@ -18,10 +19,19 @@ trait ShowsInApp
     /** @return array{kind: string, title: string, body?: string|null, url: string} */
     abstract protected function inApp(object $notifiable): array;
 
-    /** @param  list<string|class-string>  $channels */
+    /**
+     * Staff also get it on their phones and browsers, where they turned
+     * notifications on (Web Push).
+     *
+     * @param  list<string|class-string>  $channels
+     */
     protected function withInApp(object $notifiable, array $channels): array
     {
-        return $notifiable instanceof User ? [...$channels, 'database', 'broadcast'] : $channels;
+        if (! $notifiable instanceof User) {
+            return $channels;
+        }
+
+        return [...$channels, 'database', 'broadcast', ...(WebPushChannel::wanted($notifiable) ? [WebPushChannel::class] : [])];
     }
 
     public function toArray(object $notifiable): array
