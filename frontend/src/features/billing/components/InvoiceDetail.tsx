@@ -13,6 +13,7 @@ import { useToast } from '@/shared/ui/Toast'
 import { useInvoice, useInvoiceAction, usePaymentLink } from '../api'
 import { InvoiceReminders } from './InvoiceReminders'
 import { PaymentsCard, RecordPaymentDialog } from './InvoicePayments'
+import { InvoiceEInvoiceCard } from '@/features/einvoicing/components/EInvoicing'
 
 export function InvoiceDetail() {
   const id = Number(useParams().id)
@@ -118,6 +119,7 @@ export function InvoiceDetail() {
       </Card>
 
       <PaymentsCard invoice={inv} />
+      <InvoiceEInvoiceCard invoiceId={inv.id} />
       <InvoiceReminders invoice={inv} />
 
       {!!inv.payments?.length && (

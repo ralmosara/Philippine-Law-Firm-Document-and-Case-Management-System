@@ -6,6 +6,7 @@ use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\TimeEntry;
+use App\Domain\EInvoicing\EInvoicing;
 use App\Domain\Matters\Models\Matter;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Domain\Trust\Services\TrustLedgerService;
@@ -166,6 +167,8 @@ class InvoiceGenerator
     {
         $this->transition($invoice, InvoiceStatus::Issued);
         $invoice->forceFill(['issued_at' => now()])->save();
+        // When the firm has e-invoicing on: queue the e-invoice for the BIR.
+        app(EInvoicing::class)->queueFor($invoice);
 
         return $invoice;
     }
@@ -199,6 +202,7 @@ class InvoiceGenerator
             $this->transition($invoice, InvoiceStatus::Void);
             TimeEntry::where('invoice_id', $invoice->id)->update(['invoice_id' => null]);
             Expense::where('invoice_id', $invoice->id)->update(['invoice_id' => null]);
+            app(EInvoicing::class)->cancel($invoice);
 
             return $invoice;
         });

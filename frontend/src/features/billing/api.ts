@@ -65,7 +65,7 @@ export function useInvoice(id: number) {
   return useQuery({ queryKey: ['invoices', id], queryFn: () => get<Invoice>(`/v1/invoices/${id}`) })
 }
 
-const invoiceInvalidate = [['invoices'], ['time-entries'], ['matters'], ['trust'], ['dashboard']]
+const invoiceInvalidate = [['invoices'], ['time-entries'], ['matters'], ['trust'], ['dashboard'], ['e-invoicing']]
 
 export function useGenerateInvoice() {
   return useApiMutation((input: InvoiceDraftInput) => post<Invoice>('/v1/invoices', input), {
