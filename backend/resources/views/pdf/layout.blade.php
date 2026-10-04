@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>{{ $title }}</title>
+{!! \App\Support\Pdf\PdfRenderer::PAGE_NUMBERS_MARKER !!}
 <style>
     @page { margin: 22mm 20mm 20mm 25mm; }
     body { font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; color: #1f2328; line-height: 1.45; }
@@ -16,7 +17,6 @@
     .right { text-align: right; }
     .group td { background: #f1f3f4; font-size: 8pt; font-weight: bold; text-transform: uppercase; color: #5f6368; }
     .footer { position: fixed; bottom: -12mm; left: 0; right: 0; font-size: 7.5pt; color: #80868b; }
-    .footer .page:after { content: counter(page) " of " counter(pages); }
     .body-text { font-family: 'DejaVu Serif', serif; font-size: 11pt; line-height: 1.7; white-space: pre-wrap; }
 </style>
 </head>
@@ -24,7 +24,8 @@
 <div class="footer">
     <table><tr>
         <td style="border:0;padding:0">{{ $firm->name }} · {{ $footer ?? $title }}</td>
-        <td style="border:0;padding:0" class="right">Page <span class="page"></span></td>
+        {{-- "Page n of N" is drawn here by PdfRenderer: Dompdf cannot count pages in CSS. --}}
+        <td style="border:0;padding:0;width:22%"></td>
     </tr></table>
 </div>
 
