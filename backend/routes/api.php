@@ -63,6 +63,8 @@ use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
 use App\Http\Controllers\PublicIntakeController;
 use App\Http\Middleware\SetPortalLocale;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 // For uptime monitors. /up (Laravel's) only proves PHP runs; this checks
@@ -360,6 +362,8 @@ Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->g
         Route::get('me', [ClientAuthController::class, 'me']);
         Route::post('logout', [ClientAuthController::class, 'logout']);
         Route::put('locale', [ClientAuthController::class, 'locale']);
+        // Private channels for the client's live message threads (the staff route is /api/broadcasting/auth).
+        Route::post('broadcasting/auth', fn (Request $request) => Broadcast::auth($request));
         Route::get('matters', [ClientPortalController::class, 'getMatters']);
         Route::get('matters/{matter}', [ClientPortalController::class, 'getMatter'])->whereNumber('matter');
         Route::get('documents/{document}', [ClientPortalController::class, 'getDocument'])->whereNumber('document');

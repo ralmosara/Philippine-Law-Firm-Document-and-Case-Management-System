@@ -2,6 +2,7 @@
 
 namespace App\Domain\Assistant;
 
+use App\Domain\Assistant\Events\AssistantAnswered;
 use App\Domain\Assistant\Jobs\AnswerQuestion;
 use App\Domain\Assistant\Models\AiConversation;
 use App\Domain\Assistant\Models\AiMessage;
@@ -136,5 +137,8 @@ class Assistant
         } catch (\RuntimeException $e) {
             $answer->forceFill(['status' => AiMessage::FAILED, 'error' => Str::limit($e->getMessage(), 490)])->save();
         }
+
+        // The lawyer's open conversation refetches instead of polling.
+        AssistantAnswered::dispatch((int) $conversation->user_id, $conversation->id, (int) $conversation->matter_id);
     }
 }

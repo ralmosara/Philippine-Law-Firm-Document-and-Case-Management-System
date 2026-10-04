@@ -2,12 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, apiClient, get, post, put } from '@/shared/api/axios'
 import { messageForm, type MessageThread } from '@/features/messages/api'
 import { getLocale, setLocale, type Locale } from '@/shared/lib/i18n'
+import { disconnectRealtime, usePrivateChannel } from '@/shared/realtime/echo'
 
 export interface PortalClient {
   id: number
   name: string
   email: string
   locale: Locale
+  /** For live message threads; null means poll. */
+  realtime: { key: string } | null
   firm: { id: number; name: string; email: string | null; phone: string | null; address: string | null }
 }
 
@@ -99,6 +102,7 @@ export function usePortalLogout() {
   return useMutation({
     mutationFn: () => post('/portal/logout'),
     onSettled: () => {
+      disconnectRealtime()
       queryClient.removeQueries({ queryKey: ['portal'] })
       queryClient.setQueryData(portalKey, null)
     },
@@ -166,16 +170,32 @@ export function usePayInvoice() {
   })
 }
 
-export const usePortalThreads = (matterId?: number, enabled = true) =>
-  useQuery({
+/** The client's inbox: live when the server offers a WebSocket, otherwise polled. */
+export function usePortalThreads(matterId?: number, enabled = true) {
+  const session = usePortalSession().data
+  const queryClient = useQueryClient()
+  usePrivateChannel(session?.realtime, '/portal/broadcasting/auth', enabled && session ? `portal-client.${session.id}` : null, {
+    // The inbox lists only; an open thread listens on its own channel.
+    '.thread.updated': () => void queryClient.invalidateQueries({ queryKey: ['portal', 'messages'], predicate: (q) => q.queryKey[2] !== 'thread' }, { cancelRefetch: false }),
+  })
+  return useQuery({
     queryKey: ['portal', 'messages', matterId ?? null],
     enabled,
     queryFn: () => get<{ data: MessageThread[]; unread: number }>('/portal/message-threads', { matter_id: matterId }),
-    refetchInterval: 60_000,
+    refetchInterval: session?.realtime ? 5 * 60_000 : 60_000,
   })
+}
 
-export const usePortalThread = (id: number) =>
-  useQuery({ queryKey: ['portal', 'messages', 'thread', id], queryFn: () => get<MessageThread>(`/portal/message-threads/${id}`), refetchInterval: 15_000 })
+export function usePortalThread(id: number) {
+  const session = usePortalSession().data
+  const queryClient = useQueryClient()
+  usePrivateChannel(session?.realtime, '/portal/broadcasting/auth', `message-thread.${id}`, {
+    '.thread.updated': (payload) => {
+      if ((payload as { change?: string }).change === 'message') void queryClient.invalidateQueries({ queryKey: ['portal', 'messages', 'thread', id] }, { cancelRefetch: false })
+    },
+  })
+  return useQuery({ queryKey: ['portal', 'messages', 'thread', id], queryFn: () => get<MessageThread>(`/portal/message-threads/${id}`), refetchInterval: session?.realtime ? 2 * 60_000 : 15_000 })
+}
 
 export function usePortalStartThread() {
   const queryClient = useQueryClient()

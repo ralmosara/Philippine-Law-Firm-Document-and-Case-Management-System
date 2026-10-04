@@ -5,6 +5,7 @@ namespace App\Domain\Messaging\Services;
 use App\Domain\Documents\Actions\StoreMatterFile;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
+use App\Domain\Messaging\Events\MessageThreadUpdated;
 use App\Domain\Messaging\Models\Message;
 use App\Domain\Messaging\Models\MessageThread;
 use App\Domain\Messaging\Notifications\NewMessage;
@@ -70,6 +71,9 @@ class Messaging
             return [$message, $firstUnread];
         });
 
+        // Open screens on both sides refetch (after the commit; no text is broadcast).
+        MessageThreadUpdated::dispatch($thread, 'message');
+
         if ($firstUnread) {
             $this->alertRecipients($thread->fresh(['matter.responsibleLawyer', 'client']), $sender);
         }
@@ -80,7 +84,14 @@ class Messaging
     public function markRead(MessageThread $thread, string $side): void
     {
         $latest = (int) Message::where('thread_id', $thread->id)->max('id');
-        $thread->forceFill([$side === 'client' ? 'client_last_read_id' : 'staff_last_read_id' => $latest])->save();
+        $column = $side === 'client' ? 'client_last_read_id' : 'staff_last_read_id';
+        // Only a real change is announced: every view marks the thread read, and
+        // announcing those would have two open screens refetching each other.
+        if ((int) $thread->{$column} === $latest) {
+            return;
+        }
+        $thread->forceFill([$column => $latest])->save();
+        MessageThreadUpdated::dispatch($thread, 'read');
     }
 
     private function alertRecipients(MessageThread $thread, User|Client $sender): void
