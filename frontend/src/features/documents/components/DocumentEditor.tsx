@@ -5,15 +5,15 @@ import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import { useAbilities } from '@/features/auth/session'
 import { SaveToKnowledgeDialog } from '@/features/knowledge/components/KnowledgeDialogs'
 import { DocumentStatusBadge } from '@/features/matters/components/StatusBadge'
-import type { DocumentStatus, DocumentVersion } from '@/shared/api/types'
+import type { DocumentStatus } from '@/shared/api/types'
 import { dateTime } from '@/shared/lib/format'
 import { Button, DownloadButton } from '@/shared/ui/Button'
-import { ConfirmDialog, Dialog } from '@/shared/ui/Dialog'
+import { ConfirmDialog } from '@/shared/ui/Dialog'
 import { ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Input } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader } from '@/shared/ui/Layout'
 import { useDeleteDocument, useDocument, useDocumentStatus, useDocumentVersions, useSaveVersion, useUpdateDocument } from '../api'
-import { DocumentDiffViewer } from './DocumentDiffViewer'
+import { CompareDialog } from './DocumentDiffViewer'
 import { SignaturePanel } from './SignaturePanel'
 
 const NEXT_STATUS: Record<DocumentStatus, { status: DocumentStatus; label: string }[]> = {
@@ -47,7 +47,7 @@ export function DocumentEditor() {
 
   const [content, setContent] = useState('')
   const [summary, setSummary] = useState('')
-  const [compare, setCompare] = useState<[DocumentVersion, DocumentVersion] | null>(null)
+  const [compare, setCompare] = useState<[string, string] | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [keeping, setKeeping] = useState(false)
 
@@ -156,7 +156,17 @@ export function DocumentEditor() {
           </Card>
 
           <Card>
-            <CardHeader title="Version history" />
+            <CardHeader
+              title="Version history"
+              actions={versions.data?.[0] ? (
+                <Button variant="text" size="sm" icon={<GitCompare className="size-4" />} onClick={() => {
+                  const [latest, previous] = versions.data ?? []
+                  if (latest) setCompare([`v:${(previous ?? latest).version_number}`, `v:${latest.version_number}`])
+                }}>
+                  Compare…
+                </Button>
+              ) : undefined}
+            />
             {versions.isPending ? (
               <PageLoader />
             ) : (
@@ -168,7 +178,7 @@ export function DocumentEditor() {
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-medium">Version {v.version_number}</p>
                         {previous && (
-                          <Button variant="text" size="sm" icon={<GitCompare className="size-4" />} onClick={() => setCompare([previous, v])}>
+                          <Button variant="text" size="sm" icon={<GitCompare className="size-4" />} onClick={() => setCompare([`v:${previous.version_number}`, `v:${v.version_number}`])}>
                             Compare
                           </Button>
                         )}
@@ -184,9 +194,7 @@ export function DocumentEditor() {
         </div>
       </div>
 
-      <Dialog open={compare !== null} onClose={() => setCompare(null)} title={compare ? `Changes in version ${compare[1].version_number}` : ''} size="xl">
-        {compare && <DocumentDiffViewer before={compare[0]} after={compare[1]} />}
-      </Dialog>
+      <CompareDialog documentId={id} initial={compare} onClose={() => setCompare(null)} />
 
       <ConfirmDialog
         open={confirmDelete}

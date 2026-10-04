@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\CourtDayController;
 use App\Http\Controllers\Api\V1\DeadlineRuleController;
 use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\Api\V1\DisbursementController;
+use App\Http\Controllers\Api\V1\DocumentCompareController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\DocumentRequestController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
@@ -227,6 +228,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::patch('exhibits/{exhibit}', [ExhibitController::class, 'update']);
         Route::delete('exhibits/{exhibit}', [ExhibitController::class, 'destroy']);
         Route::get('documents/{document}/versions', [DocumentController::class, 'versions']);
+        Route::get('documents/{document}/compare', [DocumentCompareController::class, 'show']);
+        Route::get('documents/{document}/compare/sources', [DocumentCompareController::class, 'sources']);
+        Route::get('documents/{document}/compare/pdf', [DocumentCompareController::class, 'pdf']);
         Route::post('documents/{document}/versions', [DocumentController::class, 'saveVersion']);
         Route::post('documents/{document}/status', [DocumentController::class, 'transition']);
         Route::get('documents/{document}/signature-requests', [SignatureRequestController::class, 'index']);
