@@ -8,6 +8,7 @@ import { Card, CardHeader, DescriptionList, PageHeader } from '@/shared/ui/Layou
 import { useChangePassword } from '../api'
 import { CalendarSubscription } from './CalendarSubscription'
 import { CounselCredentials } from './CounselCredentials'
+import { PhoneNotifications } from './PhoneNotifications'
 import { TwoFactorSettings } from './TwoFactorSettings'
 
 export function ProfilePage() {
@@ -68,6 +69,9 @@ export function ProfilePage() {
             <CounselCredentials />
           </div>
         )}
+        <div className="lg:col-span-2">
+          <PhoneNotifications />
+        </div>
         <div className="lg:col-span-2">
           <TwoFactorSettings />
         </div>

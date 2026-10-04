@@ -8,6 +8,7 @@ use App\Enums\Role;
 use App\Models\Traits\Auditable;
 use App\Models\Traits\HasTenantScope;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -17,7 +18,7 @@ use Laravel\Sanctum\HasApiTokens;
 /**
  * A firm staff member (lawyer, paralegal or administrative staff).
  */
-class User extends Authenticatable
+class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use Auditable, HasApiTokens, HasFactory, HasTenantScope, Notifiable;
@@ -44,9 +45,15 @@ class User extends Authenticatable
         'two_factor_recovery_codes',
     ];
 
+    /** Phone notifications show only their kind on a lock screen until the user asks for details. */
+    protected $attributes = [
+        'push_details' => false,
+    ];
+
     protected function casts(): array
     {
         return [
+            'push_details' => 'boolean',
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
@@ -80,5 +87,14 @@ class User extends Authenticatable
     public function routeNotificationForSms(): ?string
     {
         return $this->mobile_number;
+    }
+
+    /**
+     * The staff app is in English. Without this, an email a client's portal
+     * action sends to staff would follow that request's (Filipino) locale.
+     */
+    public function preferredLocale(): string
+    {
+        return 'en';
     }
 }

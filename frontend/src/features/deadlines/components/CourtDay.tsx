@@ -2,10 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Clock, Gavel, MapPin, Phone, Plus, Trash2, Users } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, get, post } from '@/shared/api/axios'
+import { useCurrentSession } from '@/features/auth/session'
+import { ApiError, get } from '@/shared/api/axios'
 import { useApiMutation } from '@/shared/api/hooks'
 import { isoDate, longDate, parseDate, today } from '@/shared/lib/format'
 import { useUrlState } from '@/shared/lib/hooks'
+import { isQueued, sendOrQueue } from '@/shared/offline/queue'
 import { Button, IconButton } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
@@ -133,9 +135,15 @@ function OutcomeDialog({ hearing, onClose }: { hearing: Hearing; onClose: () => 
   const [nextTime, setNextTime] = useState(hearing.time ?? '')
   const [minutes, setMinutes] = useState('')
   const [followUps, setFollowUps] = useState<FollowUp[]>([])
+  const userId = useCurrentSession().user.id
+  // In a courtroom there is often no signal: the outcome is kept on the phone and sent later.
   const save = useApiMutation(
-    (input: object) => post<{ follow_ups: { title: string; due_date: string }[] }>(`/v1/deadlines/${hearing.id}/hearing-outcome`, input),
-    { invalidate: [['deadlines'], ['tasks'], ['time-entries'], ['matters']], success: 'Hearing recorded', toastErrors: false },
+    (input: object) => sendOrQueue<{ follow_ups: { title: string; due_date: string }[] }>({ url: `/v1/deadlines/${hearing.id}/hearing-outcome`, body: input, label: `Hearing: ${hearing.title}, ${hearing.matter.reference}`, userId }),
+    {
+      invalidate: [['deadlines'], ['tasks'], ['time-entries'], ['matters']],
+      success: (r) => (isQueued(r) ? 'No signal: saved on this phone, will send when back online' : 'Hearing recorded'),
+      toastErrors: false,
+    },
   )
   const error = save.error ? ApiError.from(save.error) : null
 

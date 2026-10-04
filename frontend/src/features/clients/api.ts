@@ -46,7 +46,7 @@ export function useDeleteClient() {
 }
 
 export function usePortalAccess(id: number) {
-  return useApiMutation((input: { portal_enabled: boolean; password?: string; send_invite?: boolean }) => put<Client>(`/v1/clients/${id}/portal-access`, input), {
+  return useApiMutation((input: { portal_enabled: boolean; password?: string; send_invite?: boolean; locale?: 'en' | 'fil' }) => put<Client>(`/v1/clients/${id}/portal-access`, input), {
     invalidate: [['clients']],
     success: (c) => (!c.portal_enabled ? 'Portal access revoked' : c.portal_password_set ? 'Portal access saved' : `Invitation emailed to ${c.email}`),
     toastErrors: false,

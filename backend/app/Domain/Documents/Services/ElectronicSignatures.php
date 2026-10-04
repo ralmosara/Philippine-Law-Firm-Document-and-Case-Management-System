@@ -87,7 +87,7 @@ class ElectronicSignatures
 
             // The content must be byte-for-byte what the request was made for.
             if ($content === null || ! hash_equals($request->content_sha256, hash('sha256', $content))) {
-                throw ValidationException::withMessages(['document' => 'This document has changed since signing was requested. Please contact your lawyer.']);
+                throw ValidationException::withMessages(['document' => __('This document has changed since signing was requested. Please contact your lawyer.')]);
             }
 
             $request->forceFill([
@@ -142,11 +142,11 @@ class ElectronicSignatures
         }
 
         if ($locked->status !== SignatureStatus::Pending) {
-            throw ValidationException::withMessages(['status' => "This signature request is already {$locked->status->value}."]);
+            throw ValidationException::withMessages(['status' => __('This signature request is already :status.', ['status' => __($locked->status->value)])]);
         }
 
         if (! $allowExpired && $locked->isExpired()) {
-            throw ValidationException::withMessages(['status' => 'This signature request has expired. Please ask your lawyer to send it again.']);
+            throw ValidationException::withMessages(['status' => __('This signature request has expired. Please ask your lawyer to send it again.')]);
         }
 
         return $locked;

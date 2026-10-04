@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Payments\OnlinePayments;
+use App\Domain\Budgets\MatterBudgets;
 use App\Domain\Deadlines\Enums\DeadlineKind;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
 use App\Domain\Documents\Models\Document;
@@ -44,7 +45,7 @@ class ClientPortalController extends Controller
         return response()->json(['data' => $matters]);
     }
 
-    public function getMatter(Request $request, int $matter): JsonResponse
+    public function getMatter(Request $request, int $matter, MatterBudgets $budgets): JsonResponse
     {
         $model = $this->client($request)->matters()
             ->with([
@@ -53,16 +54,28 @@ class ClientPortalController extends Controller
                 'statusEvents',
                 'documents' => fn ($q) => $q->where('shared_with_client', true)->latest('updated_at'),
                 'files' => fn ($q) => $q->select(FileSearch::COLUMNS)->where('shared_with_client', true)->latest(),
+                'budget',
             ])
             ->findOrFail($matter);
+
+        // The budget, when the firm chose to share it: the total and how much is used, not the detail.
+        $budget = $model->budget?->shared_with_client ? $model->budget->setRelation('matter', $model) : null;
+        $usage = $budget ? $budgets->usage($budget) : null;
 
         return response()->json([
             ...$this->matterSummary($model),
             'court' => $model->court,
             'court_branch' => $model->court_branch,
             'description' => $model->description,
+            'budget' => $budget ? [
+                'basis' => $budget->basis,
+                'total' => $budget->total,
+                'used' => $usage['used'],
+                'percent' => $usage['percent'],
+                'includes_expenses' => $budget->include_expenses,
+            ] : null,
             'timeline' => $model->statusEvents->map(fn ($event) => [
-                'status' => $event->to_status->label(),
+                'status' => __($event->to_status->label()),
                 'date' => $event->created_at?->toDateString(),
             ]),
             'documents' => $model->documents->map(fn (Document $document) => [
@@ -128,12 +141,12 @@ class ClientPortalController extends Controller
             'signature_image' => ['required_if:method,drawn', 'nullable', 'string', 'max:400000', 'regex:/^data:image\/png;base64,[A-Za-z0-9+\/]+=*$/'],
             'consent' => ['accepted'],
         ], [
-            'consent.accepted' => 'Please confirm that you agree to sign electronically.',
-            'signature_image.regex' => 'The signature could not be read. Please draw it again.',
+            'consent.accepted' => __('Please confirm that you agree to sign electronically.'),
+            'signature_image.regex' => __('The signature could not be read. Please draw it again.'),
         ]);
 
         if ($validated['method'] === 'drawn' && ! $this->isPng($validated['signature_image'])) {
-            throw ValidationException::withMessages(['signature_image' => 'The signature could not be read. Please draw it again.']);
+            throw ValidationException::withMessages(['signature_image' => __('The signature could not be read. Please draw it again.')]);
         }
 
         $signature = $signatures->sign(
@@ -313,10 +326,11 @@ class ClientPortalController extends Controller
             'id' => $matter->id,
             'reference' => $matter->reference,
             'title' => $matter->title,
-            'case_type' => $matter->case_type,
+            // Case types are free text; the common ones have a Filipino name.
+            'case_type' => __($matter->case_type),
             'case_number' => $matter->case_number,
             'status' => $matter->status->value,
-            'status_label' => $matter->status->label(),
+            'status_label' => __($matter->status->label()),
             'progress' => $matter->status->progress(),
             'opened_at' => $matter->opened_at?->toDateString(),
             'lawyer' => $matter->responsibleLawyer ? ['name' => $matter->responsibleLawyer->name, 'email' => $matter->responsibleLawyer->email] : null,

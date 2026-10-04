@@ -6,10 +6,12 @@ use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Services\ClientPasswordResets;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Support\Localization\PortalLocale;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -35,7 +37,7 @@ class ClientAuthController extends Controller
             ->first(fn (Client $candidate) => Hash::check($credentials['password'], $candidate->password));
 
         if ($client === null) {
-            throw ValidationException::withMessages(['email' => 'These credentials do not match our records.']);
+            throw ValidationException::withMessages(['email' => __('These credentials do not match our records.')]);
         }
 
         Auth::guard('client')->login($client);
@@ -64,7 +66,18 @@ class ClientAuthController extends Controller
             $request->session()->regenerateToken();
         }
 
-        return response()->json(['message' => 'Signed out.']);
+        return response()->json(['message' => __('Signed out.')]);
+    }
+
+    /** The portal's language for this client, also used for the firm's emails to them. */
+    public function locale(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['locale' => ['required', Rule::in(array_keys(PortalLocale::LOCALES))]]);
+        $client = $request->user('client');
+        $client->forceFill(['locale' => $validated['locale']])->save();
+        app()->setLocale($validated['locale']);
+
+        return response()->json(['client' => $this->profile($client)]);
     }
 
     /**
@@ -78,7 +91,7 @@ class ClientAuthController extends Controller
         $resets->sendResetLinks($validated['email']);
 
         return response()->json([
-            'message' => 'If a portal account exists for that email, a password reset link is on its way.',
+            'message' => __('If a portal account exists for that email, a password reset link is on its way.'),
         ]);
     }
 
@@ -91,10 +104,10 @@ class ClientAuthController extends Controller
         ]);
 
         if (! $resets->reset($validated['client'], $validated['token'], $validated['password'])) {
-            throw ValidationException::withMessages(['token' => 'This link is invalid or has expired. Please request a new one.']);
+            throw ValidationException::withMessages(['token' => __('This link is invalid or has expired. Please request a new one.')]);
         }
 
-        return response()->json(['message' => 'Your password is set. You can now sign in.']);
+        return response()->json(['message' => __('Your password is set. You can now sign in.')]);
     }
 
     private function profile(Client $client): array
@@ -103,6 +116,7 @@ class ClientAuthController extends Controller
             'id' => $client->id,
             'name' => $client->name,
             'email' => $client->email,
+            'locale' => PortalLocale::normalize($client->locale),
             'firm' => $client->firm()->withoutGlobalScopes()->first(['id', 'name', 'email', 'phone', 'address']),
         ];
     }

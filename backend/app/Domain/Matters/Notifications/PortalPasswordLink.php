@@ -34,16 +34,16 @@ class PortalPasswordLink extends Notification implements ShouldQueue
     {
         if ($this->invite) {
             return (new MailMessage)
-                ->subject("Your {$this->firmName} client portal")
-                ->line("{$this->firmName} has opened a client portal account for you. There you can follow your matters, read and sign documents, and pay invoices.")
-                ->action('Set your password', $this->url())
-                ->line('This link works for 7 days.');
+                ->subject(__('Your :firm client portal', ['firm' => $this->firmName]))
+                ->line(__(':firm has opened a client portal account for you. There you can follow your matters, read and sign documents, and pay invoices.', ['firm' => $this->firmName]))
+                ->action(__('Set your password'), $this->url())
+                ->line(__('This link works for 7 days.'));
         }
 
         return (new MailMessage)
-            ->subject("Reset your {$this->firmName} portal password")
-            ->line("Someone asked to reset the password for your {$this->firmName} client portal account.")
-            ->action('Choose a new password', $this->url())
-            ->line('This link works for '.ClientPasswordResets::EXPIRE_MINUTES.' minutes. If you did not ask for this, ignore this email; your password stays the same.');
+            ->subject(__('Reset your :firm portal password', ['firm' => $this->firmName]))
+            ->line(__('Someone asked to reset the password for your :firm client portal account.', ['firm' => $this->firmName]))
+            ->action(__('Choose a new password'), $this->url())
+            ->line(__('This link works for :minutes minutes. If you did not ask for this, ignore this email; your password stays the same.', ['minutes' => ClientPasswordResets::EXPIRE_MINUTES]));
     }
 }

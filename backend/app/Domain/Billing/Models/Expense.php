@@ -4,6 +4,7 @@ namespace App\Domain\Billing\Models;
 
 use App\Casts\DateOnly;
 use App\Domain\Billing\Enums\ExpenseCategory;
+use App\Domain\Budgets\CheckMatterBudget;
 use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Matters\Models\Matter;
 use App\Models\Traits\Auditable;
@@ -35,6 +36,13 @@ class Expense extends Model
             'receipt_file_id' => 'integer',
             'disbursement_request_id' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // A matter with a budget is re-checked (alerts at 80% and 100%).
+        static::saved(fn (Expense $expense) => CheckMatterBudget::after($expense));
+        static::deleted(fn (Expense $expense) => CheckMatterBudget::after($expense));
     }
 
     public function isInvoiced(): bool

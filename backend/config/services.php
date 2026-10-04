@@ -81,6 +81,33 @@ return [
         'max_kilobytes' => (int) env('INBOUND_EMAIL_MAX_KILOBYTES', 23 * 1024), // under PHP's 24 MB post limit
     ],
 
+    // Phone and browser notifications (Web Push). Generate the pair once with
+    // "php artisan ops:vapid-keys"; changing it later means everyone turns
+    // notifications on again.
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT'), // mailto: or https: contact for push services
+    ],
+
+    // Electronic filing packages: the largest single PDF courts accept by
+    // e-mail or portal (check your court's current rule).
+    // Electronic invoicing (BIR EIS). "record" keeps each e-invoice on file and
+    // sends nothing (until a provider is chosen); "http" posts it, signed, to a
+    // provider's HTTPS endpoint. deadline_days: how soon an e-invoice must reach
+    // the BIR after the invoice is issued (check the current BIR regulations).
+    'einvoicing' => [
+        'driver' => env('EINVOICE_DRIVER', 'record'),
+        'endpoint' => env('EINVOICE_ENDPOINT'),
+        'token' => env('EINVOICE_TOKEN'),
+        'secret' => env('EINVOICE_SECRET'),
+        'deadline_days' => (int) env('EINVOICE_DEADLINE_DAYS', 3),
+    ],
+
+    'efiling' => [
+        'max_mb' => (int) env('EFILING_MAX_MB', 25),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

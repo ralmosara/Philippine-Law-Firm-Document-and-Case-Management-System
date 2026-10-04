@@ -1,4 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
+import { noteNetworkFailure } from '@/shared/offline/connectivity'
+import { getLocale } from '@/shared/lib/i18n'
 
 /**
  * HTTP client for the Laravel API. Authentication is Sanctum's cookie-based
@@ -29,6 +31,8 @@ export function ensureCsrfCookie(): Promise<unknown> {
 const SAFE_METHODS = new Set(['get', 'head', 'options'])
 
 apiClient.interceptors.request.use(async (config) => {
+  // The portal's language, for messages the server writes (validation errors, labels).
+  config.headers.set('X-Locale', getLocale())
   if (!SAFE_METHODS.has((config.method ?? 'get').toLowerCase())) {
     await ensureCsrfCookie()
   }
@@ -37,6 +41,9 @@ apiClient.interceptors.request.use(async (config) => {
 
 apiClient.interceptors.response.use(undefined, async (error: AxiosError) => {
   const config = error.config as (AxiosRequestConfig & { _retried?: boolean }) | undefined
+
+  // No answer at all: the server cannot be reached right now.
+  if (!error.response && error.code !== 'ERR_CANCELED') noteNetworkFailure()
 
   // 419: the CSRF token expired (e.g. a long-idle tab). Refresh it and retry once.
   if (error.response?.status === 419 && config && !config._retried) {

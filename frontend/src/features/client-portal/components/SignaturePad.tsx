@@ -1,6 +1,7 @@
 import { Eraser } from 'lucide-react'
 import { useCallback, useEffect, useRef, type PointerEvent } from 'react'
 import { Button } from '@/shared/ui/Button'
+import { t } from '@/shared/lib/i18n'
 
 /**
  * Draw-your-signature pad (mouse, pen or finger). Reports a PNG data URL
@@ -85,7 +86,7 @@ export function SignaturePad({ onChange, label }: { onChange: (dataUrl: string |
         <span aria-hidden="true" className="pointer-events-none absolute right-4 bottom-8 left-4 border-b border-dashed border-gray-300" />
       </div>
       <div className="mt-2 flex justify-end">
-        <Button variant="text" size="sm" icon={<Eraser className="size-4" />} onClick={clear}>Clear</Button>
+        <Button variant="text" size="sm" icon={<Eraser className="size-4" />} onClick={clear}>{t('Clear')}</Button>
       </div>
     </div>
   )

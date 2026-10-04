@@ -1,6 +1,7 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { ApiError, get, post } from '@/shared/api/axios'
+import { clearSavedScreens } from '@/shared/offline/saved'
 import type { Abilities, Lookups, Session, User } from '@/shared/api/types'
 
 export const sessionKey = ['session'] as const
@@ -72,6 +73,7 @@ export function useResetPassword(scope: ResetScope = 'staff') {
 }
 
 async function startSession(queryClient: QueryClient) {
+  await clearSavedScreens()
   queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'session' })
   await queryClient.invalidateQueries({ queryKey: sessionKey })
 }
@@ -81,6 +83,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => post('/v1/auth/logout'),
     onSettled: () => {
+      void clearSavedScreens()
       queryClient.clear()
       queryClient.setQueryData(sessionKey, null)
     },

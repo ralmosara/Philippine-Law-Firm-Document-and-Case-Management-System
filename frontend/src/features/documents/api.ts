@@ -155,3 +155,42 @@ export function useFileSearch(params: { search: string; matter_id?: number; page
     placeholderData: keepPreviousData,
   })
 }
+
+export interface CompareSide {
+  kind: 'version' | 'file'
+  ref: string
+  label: string
+  detail: string
+  content: string
+}
+
+export interface Comparison {
+  base: CompareSide
+  other: CompareSide
+  segments: { type: 'equal' | 'insert' | 'delete'; text: string }[]
+  inserted_words: number
+  deleted_words: number
+}
+
+export interface CompareSources {
+  versions: { value: string; label: string; detail: string; summary: string | null }[]
+  files: { value: string; label: string; detail: string }[]
+}
+
+/** What a document can be compared with: its versions, and matter files whose text could be read. */
+export function useCompareSources(id: number, enabled: boolean) {
+  return useQuery({ queryKey: ['documents', id, 'compare-sources'], queryFn: () => get<CompareSources>(`/v1/documents/${id}/compare/sources`), enabled })
+}
+
+/** A side is "v:{version number}" or "f:{matter file id}". */
+export function useComparison(id: number, base: string | null, other: string | null) {
+  return useQuery({
+    queryKey: ['documents', id, 'compare', base, other],
+    queryFn: () => get<Comparison>(`/v1/documents/${id}/compare`, { base, other }),
+    enabled: !!base && !!other && base !== other,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export const comparePdfUrl = (id: number, base: string, other: string) =>
+  `/api/v1/documents/${id}/compare/pdf?${new URLSearchParams({ base, other })}`

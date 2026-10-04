@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '@/shared/ui/Button'
 import { Field, FormError, Input } from '@/shared/ui/Form'
 import { useForgotPassword, useResetPassword } from '../session'
 import { AuthLayout } from './AuthLayout'
+import { t } from '@/shared/lib/i18n'
 
 /** The same screens serve staff (`/login`) and the client portal (`/portal/login`). */
 interface Props {
@@ -15,7 +16,7 @@ interface Props {
 const paths = (portal: boolean) => (portal ? { login: '/portal/login', forgot: '/portal/forgot-password' } : { login: '/login', forgot: '/forgot-password' })
 
 function BackToSignIn({ portal }: { portal: boolean }) {
-  return <Link to={paths(portal).login} className="font-medium text-primary hover:underline">Back to sign in</Link>
+  return <Link to={paths(portal).login} className="font-medium text-primary hover:underline">{t('Back to sign in')}</Link>
 }
 
 export function ForgotPasswordPage({ portal = false }: Props) {
@@ -35,13 +36,13 @@ export function ForgotPasswordPage({ portal = false }: Props) {
 
   if (request.isSuccess) {
     return (
-      <AuthLayout title="Check your email" footer={<BackToSignIn portal={portal} />}>
+      <AuthLayout title={t('Check your email')} footer={<BackToSignIn portal={portal} />}>
         <div className="flex flex-col items-center gap-4 text-center text-sm text-on-surface-variant">
           <MailCheck className="size-10 text-primary" aria-hidden="true" />
           <p role="status">{request.data.message}</p>
           <p>
-            The link expires in 60 minutes. Check your spam folder if it doesn’t arrive.
-            {portal && ' If you are a client of more than one firm, you get a separate email for each.'}
+            {t('The link expires in 60 minutes. Check your spam folder if it doesn’t arrive.')}
+            {portal && ` ${t('If you are a client of more than one firm, you get a separate email for each.')}`}
           </p>
         </div>
       </AuthLayout>
@@ -50,16 +51,16 @@ export function ForgotPasswordPage({ portal = false }: Props) {
 
   return (
     <AuthLayout
-      title={portal ? 'Reset your portal password' : 'Reset your password'}
-      subtitle="We’ll email you a link to choose a new one."
+      title={portal ? t('Reset your portal password') : 'Reset your password'}
+      subtitle={t('We’ll email you a link to choose a new one.')}
       footer={<BackToSignIn portal={portal} />}
     >
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <FormError message={error ? (error.field('email') ?? error.message) : undefined} />
-        <Field label={portal ? 'Email' : 'Work email'}>
+        <Field label={portal ? t('Email') : 'Work email'}>
           {(a) => <Input {...a} type="email" autoComplete="username" autoFocus required value={email} onChange={(e) => setEmail(e.target.value)} />}
         </Field>
-        <Button type="submit" loading={request.isPending} disabled={!email} className="w-full">Send reset link</Button>
+        <Button type="submit" loading={request.isPending} disabled={!email} className="w-full">{t('Send reset link')}</Button>
       </form>
     </AuthLayout>
   )
@@ -80,7 +81,7 @@ export function ResetPasswordPage({ portal = false }: Props) {
     e.preventDefault()
     setError(null)
     if (form.password !== form.password_confirmation) {
-      setError(new ApiError(422, 'The passwords do not match.', { password_confirmation: ['The passwords do not match.'] }))
+      setError(new ApiError(422, t('The passwords do not match.'), { password_confirmation: [t('The passwords do not match.')] }))
       return
     }
     try {
@@ -92,18 +93,18 @@ export function ResetPasswordPage({ portal = false }: Props) {
 
   if (!token || (portal ? !client : !email)) {
     return (
-      <AuthLayout title="Link incomplete" footer={<BackToSignIn portal={portal} />}>
-        <p className="text-center text-sm text-on-surface-variant">Open the link from your email again, or request a new one.</p>
-        <ButtonLink to={forgot} className="mt-6 w-full">Request a new link</ButtonLink>
+      <AuthLayout title={t('Link incomplete')} footer={<BackToSignIn portal={portal} />}>
+        <p className="text-center text-sm text-on-surface-variant">{t('Open the link from your email again, or request a new one.')}</p>
+        <ButtonLink to={forgot} className="mt-6 w-full">{t('Request a new link')}</ButtonLink>
       </AuthLayout>
     )
   }
 
   if (reset.isSuccess) {
     return (
-      <AuthLayout title={invite ? 'You’re all set' : 'Password changed'}>
+      <AuthLayout title={invite ? t('You’re all set') : t('Password changed')}>
         <p role="status" className="text-center text-sm text-on-surface-variant">{reset.data.message}{!portal && ' You were signed out everywhere else.'}</p>
-        <ButtonLink to={login} className="mt-6 w-full">Sign in</ButtonLink>
+        <ButtonLink to={login} className="mt-6 w-full">{t('Sign in')}</ButtonLink>
       </AuthLayout>
     )
   }
@@ -112,20 +113,20 @@ export function ResetPasswordPage({ portal = false }: Props) {
 
   return (
     <AuthLayout
-      title={invite ? 'Welcome! Choose your password' : 'Choose a new password'}
-      subtitle={portal ? (invite ? 'You’ll use it to sign in to your client portal.' : undefined) : email}
+      title={invite ? t('Welcome! Choose your password') : t('Choose a new password')}
+      subtitle={portal ? (invite ? t('You’ll use it to sign in to your client portal.') : undefined) : email}
       footer={<BackToSignIn portal={portal} />}
     >
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <FormError message={linkProblem ?? (error && !Object.keys(error.errors).length ? error.message : undefined)} />
-        {linkProblem && <ButtonLink to={forgot} variant="tonal" className="w-full">Request a new link</ButtonLink>}
-        <Field label="New password" required error={error?.field('password')} hint="At least 12 characters, with upper- and lower-case letters and a number.">
+        {linkProblem && <ButtonLink to={forgot} variant="tonal" className="w-full">{t('Request a new link')}</ButtonLink>}
+        <Field label={t('New password')} required error={error?.field('password')} hint={t('At least 12 characters, with upper- and lower-case letters and a number.')}>
           {(a) => <Input {...a} type="password" autoComplete="new-password" autoFocus required value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />}
         </Field>
-        <Field label="Confirm new password" required error={error?.field('password_confirmation')}>
+        <Field label={t('Confirm new password')} required error={error?.field('password_confirmation')}>
           {(a) => <Input {...a} type="password" autoComplete="new-password" required value={form.password_confirmation} onChange={(e) => setForm((f) => ({ ...f, password_confirmation: e.target.value }))} />}
         </Field>
-        <Button type="submit" loading={reset.isPending} disabled={!form.password} className="w-full">{invite ? 'Set password' : 'Change password'}</Button>
+        <Button type="submit" loading={reset.isPending} disabled={!form.password} className="w-full">{invite ? t('Set password') : t('Change password')}</Button>
       </form>
     </AuthLayout>
   )

@@ -12,6 +12,7 @@
         "laravel/reverb": "^1.12",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
+        "minishlink/web-push": "^9.0",
         "pragmarx/google2fa": "^8.0",
         "sentry/sentry-laravel": "^4.28",
         "smalot/pdfparser": "^2.12",

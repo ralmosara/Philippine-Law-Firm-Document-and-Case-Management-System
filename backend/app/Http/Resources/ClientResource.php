@@ -22,6 +22,7 @@ class ClientResource extends JsonResource
             'notes' => $this->notes,
             'aliases' => $this->aliases,
             'portal_enabled' => $this->portal_enabled,
+            'portal_locale' => $this->locale ?? 'en',
             // False until an invited client chooses their password.
             'portal_password_set' => isset($this->resource->getAttributes()['password']),
             'last_portal_login_at' => $this->last_portal_login_at?->toIso8601String(),

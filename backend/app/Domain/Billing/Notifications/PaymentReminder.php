@@ -7,6 +7,7 @@ use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Payments\OnlinePayments;
 use App\Domain\Matters\Models\Firm;
 use App\Http\Controllers\Api\V1\InvoiceController;
+use App\Support\Localization\PortalLocale;
 use App\Support\Pdf\PdfRenderer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,29 +31,29 @@ class PaymentReminder extends Notification implements ShouldQueue
         $invoice = $this->invoice->fresh();
         $firm = Firm::findOrFail($invoice->firm_id);
         $balance = '₱'.number_format($invoice->balanceDue() / 100, 2);
-        $due = $invoice->due_at?->format('F j, Y');
+        $due = PortalLocale::date($invoice->due_at);
 
-        $message = (new MailMessage)->greeting("Dear {$notifiable->name},");
+        $message = (new MailMessage)->greeting(__('Dear :name,', ['name' => $notifiable->name]));
         match ($this->stage) {
             InvoiceReminder::DUE_SOON => $message
-                ->subject("Billing statement {$invoice->number} is due on {$due}")
-                ->line("This is a friendly reminder that {$balance} on billing statement {$invoice->number} is due on {$due}."),
+                ->subject(__('Billing statement :number is due on :due', ['number' => $invoice->number, 'due' => $due]))
+                ->line(__('This is a friendly reminder that :balance on billing statement :number is due on :due.', ['balance' => $balance, 'number' => $invoice->number, 'due' => $due])),
             InvoiceReminder::OVERDUE_30 => $message
-                ->subject("Second reminder: billing statement {$invoice->number} is past due")
-                ->line("Our records show {$balance} on billing statement {$invoice->number}, due on {$due}, is still unpaid.")
-                ->line('If there is a problem with this statement, please reply so we can sort it out.'),
+                ->subject(__('Second reminder: billing statement :number is past due', ['number' => $invoice->number]))
+                ->line(__('Our records show :balance on billing statement :number, due on :due, is still unpaid.', ['balance' => $balance, 'number' => $invoice->number, 'due' => $due]))
+                ->line(__('If there is a problem with this statement, please reply so we can sort it out.')),
             default => $message
-                ->subject("Reminder: billing statement {$invoice->number} is past due")
-                ->line("Our records show {$balance} on billing statement {$invoice->number}, due on {$due}, is still unpaid."),
+                ->subject(__('Reminder: billing statement :number is past due', ['number' => $invoice->number]))
+                ->line(__('Our records show :balance on billing statement :number, due on :due, is still unpaid.', ['balance' => $balance, 'number' => $invoice->number, 'due' => $due])),
         };
 
         if ($notifiable->portal_enabled) {
-            $message->action(app(OnlinePayments::class)->canPay($invoice) ? 'View and pay online' : 'View in the client portal', rtrim(config('app.frontend_url'), '/').'/portal');
+            $message->action(app(OnlinePayments::class)->canPay($invoice) ? __('View and pay online') : __('View in the client portal'), rtrim(config('app.frontend_url'), '/').'/portal');
         }
 
         return $message
-            ->line('If you have already paid, thank you, and please disregard this message; you may reply with your proof of payment so we can update our records.')
-            ->salutation("Sincerely,\n{$firm->name}")
+            ->line(__('If you have already paid, thank you, and please disregard this message; you may reply with your proof of payment so we can update our records.'))
+            ->salutation(__('Sincerely,')."\n{$firm->name}")
             ->attachData(app(PdfRenderer::class)->render('pdf.invoice', InvoiceController::pdfData($invoice)), "billing-statement-{$invoice->number}.pdf", ['mime' => 'application/pdf']);
     }
 }

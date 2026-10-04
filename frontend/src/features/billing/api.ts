@@ -1,6 +1,8 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { del, get, patch, post, put } from '@/shared/api/axios'
+import { useCurrentSession } from '@/features/auth/session'
 import { useApiMutation } from '@/shared/api/hooks'
+import { isQueued, sendOrQueue } from '@/shared/offline/queue'
 import type { Expense, Invoice, InvoicePayment, InvoiceStatus, Paginated, PaymentMethod, TimeEntry } from '@/shared/api/types'
 
 type WithTotals<T> = Paginated<T> & { totals: { minutes: number; amount_cents: number } }
@@ -31,12 +33,16 @@ export interface TimeEntryInput {
   rate_cents?: number
 }
 
-const timeInvalidate = [['time-entries'], ['matters'], ['dashboard']]
+const timeInvalidate = [['time-entries'], ['matters'], ['dashboard'], ['budget']]
 
 export function useSaveTimeEntry(id?: number) {
-  return useApiMutation((input: TimeEntryInput) => (id ? put<TimeEntry>(`/v1/time-entries/${id}`, input) : post<TimeEntry>('/v1/time-entries', input)), {
+  const userId = useCurrentSession().user.id
+  return useApiMutation(
+    (input: TimeEntryInput) =>
+      id ? put<TimeEntry>(`/v1/time-entries/${id}`, input) : sendOrQueue<TimeEntry>({ url: '/v1/time-entries', body: input, label: `Time: ${input.description ?? ''}`.slice(0, 120), userId }),
+    {
     invalidate: timeInvalidate,
-    success: id ? 'Time entry updated' : 'Time logged',
+    success: (r) => (isQueued(r) ? 'No signal: saved on this device, will send when back online' : id ? 'Time entry updated' : 'Time logged'),
     toastErrors: false,
   })
 }
@@ -59,7 +65,7 @@ export function useInvoice(id: number) {
   return useQuery({ queryKey: ['invoices', id], queryFn: () => get<Invoice>(`/v1/invoices/${id}`) })
 }
 
-const invoiceInvalidate = [['invoices'], ['time-entries'], ['matters'], ['trust'], ['dashboard']]
+const invoiceInvalidate = [['invoices'], ['time-entries'], ['matters'], ['trust'], ['dashboard'], ['e-invoicing']]
 
 export function useGenerateInvoice() {
   return useApiMutation((input: InvoiceDraftInput) => post<Invoice>('/v1/invoices', input), {
@@ -190,14 +196,14 @@ export interface ExpenseInput {
 
 export function useSaveExpense(id?: number) {
   return useApiMutation((input: ExpenseInput) => (id ? patch<Expense>(`/v1/expenses/${id}`, input) : post<Expense>('/v1/expenses', input)), {
-    invalidate: [['expenses'], ['matters']],
+    invalidate: [['expenses'], ['matters'], ['budget']],
     success: id ? 'Expense updated' : 'Expense recorded',
     toastErrors: false,
   })
 }
 
 export function useDeleteExpense() {
-  return useApiMutation((id: number) => del(`/v1/expenses/${id}`), { invalidate: [['expenses'], ['matters']], success: 'Expense deleted' })
+  return useApiMutation((id: number) => del(`/v1/expenses/${id}`), { invalidate: [['expenses'], ['matters'], ['budget']], success: 'Expense deleted' })
 }
 
 /** Omitted id lists bill everything unbilled; an empty list bills none of that kind. */

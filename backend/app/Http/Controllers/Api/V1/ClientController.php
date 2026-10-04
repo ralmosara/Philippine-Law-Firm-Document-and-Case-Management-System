@@ -13,6 +13,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use App\Support\Localization\PortalLocale;
 
 class ClientController extends Controller
 {
@@ -89,6 +90,8 @@ class ClientController extends Controller
         $validated = $request->validate([
             'portal_enabled' => ['required', 'boolean'],
             'send_invite' => ['boolean'],
+            // The portal's language for this client, and of the invitation and later emails.
+            'locale' => ['sometimes', Rule::in(array_keys(PortalLocale::LOCALES))],
             'password' => [
                 Rule::requiredIf(fn () => $request->boolean('portal_enabled') && ! $request->boolean('send_invite') && $client->password === null),
                 'nullable', Password::defaults(),
@@ -100,6 +103,9 @@ class ClientController extends Controller
         }
 
         $client->portal_enabled = $validated['portal_enabled'];
+        if (isset($validated['locale'])) {
+            $client->locale = $validated['locale'];
+        }
         if (! empty($validated['password'])) {
             $client->password = $validated['password'];
         }

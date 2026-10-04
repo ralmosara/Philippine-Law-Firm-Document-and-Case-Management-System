@@ -7,6 +7,7 @@ import { useCurrentSession, useLogout } from '@/features/auth/session'
 import { useUnreadMessages } from '@/features/messages/api'
 import { useOpenIntakeCount } from '@/features/intake/api'
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
+import { OfflineStatus } from '@/shared/offline/OfflineStatus'
 import type { Abilities } from '@/shared/api/types'
 import { Avatar } from '@/shared/ui/Feedback'
 
@@ -111,6 +112,7 @@ export function AppShell() {
           </NavLink>
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-1">
+            <OfflineStatus userId={user.id} />
             <NotificationBell userId={user.id} />
             <UserMenu name={user.name} role={user.role_label} email={user.email} />
           </div>

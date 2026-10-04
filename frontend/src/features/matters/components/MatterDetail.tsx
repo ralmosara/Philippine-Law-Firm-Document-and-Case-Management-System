@@ -9,6 +9,7 @@ import { ExpensesPanel } from '@/features/billing/components/ExpensesPanel'
 import { DeadlineForm } from '@/features/deadlines/components/DeadlineForm'
 import { DeadlineList } from '@/features/deadlines/components/DeadlineList'
 import { useDocuments } from '@/features/documents/api'
+import { EFilingCard } from '@/features/efiling/components/EFilingCard'
 import { EvidencePanel } from '@/features/evidence/components/EvidencePanel'
 import { MatterEmailsCard } from '@/features/correspondence/components/MatterEmailsCard'
 import { MatterDisbursementsCard } from '@/features/disbursements/components/MatterDisbursementsCard'
@@ -138,6 +139,7 @@ export function MatterDetail() {
 function MatterDocuments({ matterId, onNew, onPleading, canCreate }: { matterId: number; onNew: () => void; onPleading: () => void; canCreate: boolean }) {
   const documents = useDocuments({ matter_id: matterId })
   return (
+    <div className="flex flex-col gap-6">
     <Card>
       <CardHeader
         title="Documents"
@@ -150,6 +152,8 @@ function MatterDocuments({ matterId, onNew, onPleading, canCreate }: { matterId:
       />
       {documents.isPending ? <PageLoader /> : documents.isError ? <ErrorState error={documents.error} /> : <DocumentsTable documents={documents.data.data} showMatter={false} />}
     </Card>
+    <EFilingCard matterId={matterId} canEdit={canCreate} />
+    </div>
   )
 }
 

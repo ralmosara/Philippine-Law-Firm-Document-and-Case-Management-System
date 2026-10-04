@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Button, IconButton } from './Button'
 import { Field, Textarea } from './Form'
+import { t } from '@/shared/lib/i18n'
 
 interface DialogProps {
   open: boolean
@@ -48,7 +49,7 @@ export function Dialog({ open, onClose, title, description, children, footer, si
             <h2 id="dialog-title" className="text-base font-semibold">
               {title}
             </h2>
-            <IconButton label="Close" onClick={onClose} className="!text-on-nav hover:!bg-nav-hover">
+            <IconButton label={t('Close')} onClick={onClose} className="!text-on-nav hover:!bg-nav-hover">
               <X className="size-4" />
             </IconButton>
           </div>
@@ -75,7 +76,7 @@ interface ConfirmProps {
   reasonRequired?: boolean
 }
 
-export function ConfirmDialog({ open, onClose, onConfirm, title, description, confirmLabel = 'Confirm', destructive, loading, reasonLabel, reasonRequired }: ConfirmProps) {
+export function ConfirmDialog({ open, onClose, onConfirm, title, description, confirmLabel, destructive, loading, reasonLabel, reasonRequired }: ConfirmProps) {
   const [reason, setReason] = useState('')
 
   const submit = (e: FormEvent) => {
@@ -94,10 +95,10 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, description, co
         )}
         <div className="flex justify-end gap-2">
           <Button variant="text" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button type="submit" variant={destructive ? 'danger' : 'filled'} loading={loading} disabled={reasonRequired && !reason.trim()}>
-            {confirmLabel}
+            {confirmLabel ?? t('Confirm')}
           </Button>
         </div>
       </form>

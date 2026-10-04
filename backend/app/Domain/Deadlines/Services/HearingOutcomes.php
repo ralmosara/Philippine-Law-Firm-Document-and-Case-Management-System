@@ -82,14 +82,17 @@ class HearingOutcomes
                     }
             }
 
-            // "Parties are given 30 days to file memoranda": counted from today,
-            // moved to the next working day under Rule 22 if it falls on a holiday.
+            // "Parties are given 30 days to file memoranda": an order given in open
+            // court runs from the hearing, not from when someone records it (a phone
+            // may send this a day later, when it finds a signal). Moved to the next
+            // working day under Rule 22 if it falls on a holiday.
+            $orderedOn = CarbonImmutable::parse($hearing->due_date)->min(CarbonImmutable::today());
             $followUps = [];
             foreach ($data['follow_ups'] ?? [] as $item) {
                 $followUps[] = $this->scheduler->scheduleManual($matter, $by, [
                     'kind' => DeadlineKind::tryFrom($item['kind'] ?? 'filing') ?? DeadlineKind::Filing,
                     'title' => $item['title'],
-                    'due_date' => $this->calculator->calculate(CarbonImmutable::today(), (int) $item['days'])->toDateString(),
+                    'due_date' => $this->calculator->calculate($orderedOn, (int) $item['days'])->toDateString(),
                     'assigned_to' => $hearing->assigned_to,
                     'notes' => "Ordered at the hearing of {$heardOn}.",
                 ]);
@@ -101,7 +104,7 @@ class HearingOutcomes
                     'firm_id' => $matter->firm_id,
                     'matter_id' => $matter->id,
                     'user_id' => $by->id,
-                    'work_date' => now()->toDateString(),
+                    'work_date' => $orderedOn->toDateString(),
                     'minutes' => (int) $data['minutes'],
                     'description' => 'Appearance: '.$hearing->title.($notes ? " ({$notes})" : ''),
                     'is_billable' => true,

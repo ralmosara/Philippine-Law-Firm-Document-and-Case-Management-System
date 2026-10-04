@@ -6,12 +6,15 @@ use App\Domain\Business\Pipeline;
 use App\Domain\Corporate\CorporateSecretarial;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
 use App\Domain\Documents\Requests\DocumentRequests;
+use App\Domain\EInvoicing\EInvoicing;
+use App\Domain\Matters\Models\Firm;
 use App\Domain\Tax\TaxFilingReminders;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Domain\Trust\Services\TrustLedgerService;
 use App\Jobs\QueueHeartbeat;
 use App\Support\Ops\OpsAlert;
 use App\Support\Ops\SystemHealth;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -109,3 +112,12 @@ Artisan::command('ops:health-check', function (SystemHealth $health) {
 // Run by the scheduler, so it cannot report the scheduler itself stopping:
 // point an external uptime monitor at /api/health for that.
 Schedule::command('ops:health-check')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+
+Artisan::command('einvoices:flag-overdue', function (EInvoicing $eInvoicing, TenantContext $tenant) {
+    $total = 0;
+    Firm::query()->where('einvoicing_enabled', true)->each(function (Firm $firm) use ($eInvoicing, $tenant, &$total) {
+        $total += $tenant->runAs($firm->id, fn () => $eInvoicing->flagOverdue($firm));
+    });
+    $this->info("Flagged {$total} e-invoice(s) due to reach the BIR and not yet sent.");
+})->purpose('Tell finance staff about e-invoices due to reach the BIR that have not been sent');
+Schedule::command('einvoices:flag-overdue')->dailyAt('08:30')->withoutOverlapping()->onOneServer();

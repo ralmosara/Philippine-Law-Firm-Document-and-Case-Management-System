@@ -44,11 +44,11 @@ class OnlinePayments
     public function startCheckout(Invoice $invoice, string $returnUrl): Payment
     {
         if (! $this->isEnabled()) {
-            abort(503, 'Online payment is not available. Please contact the firm.');
+            abort(503, __('Online payment is not available. Please contact the firm.'));
         }
 
         if (! $this->canPay($invoice)) {
-            throw ValidationException::withMessages(['invoice' => 'This invoice cannot be paid online.']);
+            throw ValidationException::withMessages(['invoice' => __('This invoice cannot be paid online.')]);
         }
 
         $separator = str_contains($returnUrl, '?') ? '&' : '?';
@@ -61,7 +61,7 @@ class OnlinePayments
             );
         } catch (RequestException $e) {
             Log::error('PayMongo checkout could not be created', ['invoice_id' => $invoice->id, 'status' => $e->response->status()]);
-            abort(502, 'The payment provider is not responding. Please try again in a few minutes.');
+            abort(502, __('The payment provider is not responding. Please try again in a few minutes.'));
         }
 
         return Payment::create([

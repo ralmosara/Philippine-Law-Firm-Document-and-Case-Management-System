@@ -3,6 +3,7 @@
 namespace App\Domain\Billing\Models;
 
 use App\Casts\DateOnly;
+use App\Domain\Budgets\CheckMatterBudget;
 use App\Domain\Matters\Models\Matter;
 use App\Models\Traits\HasTenantScope;
 use App\Models\User;
@@ -39,6 +40,10 @@ class TimeEntry extends Model
                 ? static::amountFor($entry->minutes, $entry->rate_cents)
                 : 0;
         });
+
+        // A matter with a budget is re-checked (alerts at 80% and 100%).
+        static::saved(fn (TimeEntry $entry) => CheckMatterBudget::after($entry));
+        static::deleted(fn (TimeEntry $entry) => CheckMatterBudget::after($entry));
     }
 
     /**

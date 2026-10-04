@@ -1,12 +1,13 @@
 import { ArrowLeft, Download, FileDown, FileText, Paperclip } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { date, fileSize } from '@/shared/lib/format'
+import { date, duration, fileSize, money } from '@/shared/lib/format'
 import { DownloadButton } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
 import { EmptyState, ErrorState, PageLoader, ProgressBar } from '@/shared/ui/Feedback'
 import { Card, CardHeader, DescriptionList, PageHeader } from '@/shared/ui/Layout'
 import { portalFileUrl, usePortalDocument, usePortalMatter } from '../api'
+import { t } from '@/shared/lib/i18n'
 
 /** A client's view of one matter: stage, hearings, history and shared documents. */
 export function CaseStatusView() {
@@ -21,26 +22,41 @@ export function CaseStatusView() {
   return (
     <>
       <PageHeader
-        back={<Link to="/portal" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"><ArrowLeft className="size-4" /> All matters</Link>}
+        back={<Link to="/portal" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"><ArrowLeft className="size-4" /> {t('All matters')}</Link>}
         title={m.title}
         description={`${m.case_type}${m.case_number ? ` · ${m.case_number}` : ''}`}
       />
 
       <Card className="mb-6 p-5">
-        <div className="mb-2 flex justify-between text-sm"><span>Current stage: <strong>{m.status_label}</strong></span><span className="text-on-surface-variant">{m.progress}%</span></div>
-        <ProgressBar value={m.progress} label="Case progress" tone={m.status === 'closed' ? 'success' : 'primary'} />
+        <div className="mb-2 flex justify-between text-sm"><span>{t('Current stage:')} <strong>{m.status_label}</strong></span><span className="text-on-surface-variant">{m.progress}%</span></div>
+        <ProgressBar value={m.progress} label={t('Case progress')} tone={m.status === 'closed' ? 'success' : 'primary'} />
       </Card>
+
+      {m.budget && (
+        <Card className="mb-6 p-5">
+          <div className="mb-2 flex flex-wrap justify-between gap-2 text-sm">
+            <span>
+              {t('Budget:')} <strong>{t('{used} of {total} used', { used: m.budget.basis === 'hours' ? duration(m.budget.used) : money(m.budget.used), total: m.budget.basis === 'hours' ? duration(m.budget.total) : money(m.budget.total) })}</strong>
+            </span>
+            <span className="text-on-surface-variant">{m.budget.percent}%</span>
+          </div>
+          <ProgressBar value={m.budget.percent} label={t('Budget used')} tone={m.budget.percent >= 100 ? 'danger' : m.budget.percent >= 80 ? 'warning' : 'primary'} />
+          <p className="mt-2 text-xs text-on-surface-variant">
+            {m.budget.basis === 'hours' ? t('Hours of work on your matter, as agreed with your lawyer.') : m.budget.includes_expenses ? t('Professional fees and expenses, as agreed with your lawyer.') : t('Professional fees, as agreed with your lawyer.')}
+          </p>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Details" />
+          <CardHeader title={t('Details')} />
           <div className="p-5">
             <DescriptionList
               items={[
-                { label: 'Court', value: [m.court, m.court_branch].filter(Boolean).join(', ') || null },
-                { label: 'Your lawyer', value: m.lawyer ? <a href={`mailto:${m.lawyer.email}`} className="text-primary hover:underline">{m.lawyer.name}</a> : null },
-                { label: 'Opened', value: date(m.opened_at) },
-                { label: 'Next hearing', value: m.next_hearing ? `${date(m.next_hearing.date)}${m.next_hearing.time ? `, ${m.next_hearing.time}` : ''}${m.next_hearing.location ? ` — ${m.next_hearing.location}` : ''}` : 'None scheduled' },
+                { label: t('Court'), value: [m.court, m.court_branch].filter(Boolean).join(', ') || null },
+                { label: t('Your lawyer'), value: m.lawyer ? <a href={`mailto:${m.lawyer.email}`} className="text-primary hover:underline">{m.lawyer.name}</a> : null },
+                { label: t('Opened'), value: date(m.opened_at) },
+                { label: t('Next hearing'), value: m.next_hearing ? `${date(m.next_hearing.date)}${m.next_hearing.time ? `, ${m.next_hearing.time}` : ''}${m.next_hearing.location ? ` — ${m.next_hearing.location}` : ''}` : t('None scheduled') },
               ]}
             />
             {m.description && <p className="mt-4 text-sm whitespace-pre-line text-on-surface-variant">{m.description}</p>}
@@ -48,7 +64,7 @@ export function CaseStatusView() {
         </Card>
 
         <Card>
-          <CardHeader title="Progress so far" />
+          <CardHeader title={t('Progress so far')} />
           <ol className="px-5 py-4">
             {m.timeline.map((t, i) => (
               <li key={i} className="relative flex gap-4 pb-5 last:pb-0">
@@ -61,8 +77,8 @@ export function CaseStatusView() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader title="Shared documents" />
-          {m.documents.length === 0 ? <EmptyState icon={<FileText className="size-6" />} title="No documents shared yet" /> : (
+          <CardHeader title={t('Shared documents')} />
+          {m.documents.length === 0 ? <EmptyState icon={<FileText className="size-6" />} title={t('No documents shared yet')} /> : (
             <ul className="divide-y divide-outline-variant">
               {m.documents.map((d) => (
                 <li key={d.id} className="flex items-center hover:bg-surface-container">
@@ -80,7 +96,7 @@ export function CaseStatusView() {
 
         {m.files.length > 0 && (
           <Card className="lg:col-span-2">
-            <CardHeader title="Files" description="Copies the firm has shared with you." />
+            <CardHeader title={t('Files')} description={t('Copies the firm has shared with you.')} />
             <ul className="divide-y divide-outline-variant">
               {m.files.map((f) => (
                 <li key={f.id}>
@@ -108,7 +124,7 @@ export function CaseStatusView() {
 function DocumentDialog({ id, onClose }: { id: number | null; onClose: () => void }) {
   const doc = usePortalDocument(id)
   return (
-    <Dialog open={id !== null} onClose={onClose} title={doc.data?.title ?? 'Document'} size="xl">
+    <Dialog open={id !== null} onClose={onClose} title={doc.data?.title ?? t('Document')} size="xl">
       {doc.isPending ? <PageLoader /> : doc.isError ? <ErrorState error={doc.error} /> : (
         <pre className="font-serif text-[15px] leading-7 whitespace-pre-wrap">{doc.data?.content}</pre>
       )}

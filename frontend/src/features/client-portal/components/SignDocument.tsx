@@ -10,6 +10,7 @@ import { Checkbox, Field, FormError, Input } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader, Tabs } from '@/shared/ui/Layout'
 import { useDeclineSignature, usePortalSession, usePortalSignatureRequest, useSignDocument } from '../api'
 import { SignaturePad } from './SignaturePad'
+import { t } from '@/shared/lib/i18n'
 
 type Method = 'drawn' | 'typed'
 
@@ -33,7 +34,7 @@ export function SignDocument() {
   const r = request.data
   const signerName = name || session.data?.name || ''
 
-  const back = <Link to="/portal" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"><ArrowLeft className="size-4" /> Back to your matters</Link>
+  const back = <Link to="/portal" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"><ArrowLeft className="size-4" /> {t('Back to your matters')}</Link>
 
   if (sign.isSuccess || r.status !== 'pending') {
     const done = sign.isSuccess || r.status === 'signed'
@@ -43,12 +44,12 @@ export function SignDocument() {
         <Card className="flex flex-col items-center gap-3 p-10 text-center">
           {done && <CheckCircle2 className="size-12 text-success" aria-hidden="true" />}
           <p role="status" className="text-lg font-semibold">
-            {done ? 'Signed. Thank you.' : r.status === 'declined' ? 'You declined to sign this document.' : `This request is ${r.status}.`}
+            {done ? t('Signed. Thank you.') : r.status === 'declined' ? t('You declined to sign this document.') : r.status === 'expired' ? t('This request has expired.') : t('This request was cancelled.')}
           </p>
           <p className="max-w-md text-sm text-on-surface-variant">
-            {done ? 'Your lawyer has been notified. A copy stays available under your matter.' : 'Please contact your lawyer if you have questions.'}
+            {done ? t('Your lawyer has been notified. A copy stays available under your matter.') : t('Please contact your lawyer if you have questions.')}
           </p>
-          <ButtonLink to="/portal" variant="tonal" className="mt-2">Done</ButtonLink>
+          <ButtonLink to="/portal" variant="tonal" className="mt-2">{t('Done')}</ButtonLink>
         </Card>
       </>
     )
@@ -72,50 +73,50 @@ export function SignDocument() {
     <>
       <PageHeader
         back={back}
-        title={`Review and sign: ${r.document.title}`}
-        description={[r.matter?.title, r.requested_by && `Requested by ${r.requested_by}`, r.expires_at && `Please respond by ${dateTime(r.expires_at)}`].filter(Boolean).join(' · ')}
+        title={t('Review and sign: {title}', { title: r.document.title })}
+        description={[r.matter?.title, r.requested_by && t('Requested by {name}', { name: r.requested_by }), r.expires_at && t('Please respond by {date}', { date: dateTime(r.expires_at) })].filter(Boolean).join(' · ')}
       />
 
       {r.message && <p className="mb-6 rounded-[3px] bg-primary-container p-4 text-sm text-on-primary-container">“{r.message}”</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_22rem]">
         <Card>
-          <CardHeader title="Document" description="Read the whole document before signing." />
-          <pre tabIndex={0} aria-label="Document text" className="max-h-[70vh] overflow-y-auto p-6 font-serif text-[15px] leading-7 whitespace-pre-wrap sm:px-10">{r.content}</pre>
-          <p className="border-t border-outline-variant px-5 py-3 font-mono text-[11px] break-all text-on-surface-variant">Document fingerprint (SHA-256): {r.content_sha256}</p>
+          <CardHeader title={t('Document')} description={t('Read the whole document before signing.')} />
+          <pre tabIndex={0} aria-label={t('Document text')} className="max-h-[70vh] overflow-y-auto p-6 font-serif text-[15px] leading-7 whitespace-pre-wrap sm:px-10">{r.content}</pre>
+          <p className="border-t border-outline-variant px-5 py-3 font-mono text-[11px] break-all text-on-surface-variant">{t('Document fingerprint (SHA-256):')} {r.content_sha256}</p>
         </Card>
 
         <Card as="div" className="self-start">
-          <CardHeader title="Your signature" />
+          <CardHeader title={t('Your signature')} />
           <form onSubmit={submit} className="flex flex-col gap-4 p-5">
             <FormError message={errorMessage} />
-            <Field label="Full name of the person signing" hint="Signing for a company? Enter your own name; your lawyer has your authority on file.">
+            <Field label={t('Full name of the person signing')} hint={t('Signing for a company? Enter your own name; your lawyer has your authority on file.')}>
               {(a) => <Input {...a} autoComplete="name" value={signerName} onChange={(e) => setName(e.target.value)} maxLength={255} />}
             </Field>
 
             <Tabs<Method>
-              label="How to sign"
+              label={t('How to sign')}
               value={method}
               onChange={(next) => { setMethod(next); setImage(null) }}
-              tabs={[{ value: 'drawn', label: 'Draw' }, { value: 'typed', label: 'Type' }]}
+              tabs={[{ value: 'drawn', label: t('Draw') }, { value: 'typed', label: t('Type') }]}
             />
             {method === 'drawn' ? (
-              <SignaturePad label="Signature drawing area" onChange={setImage} />
+              <SignaturePad label={t('Signature drawing area')} onChange={setImage} />
             ) : (
-              <div className="rounded-[3px] border border-outline bg-white px-4 py-6 text-center font-serif text-3xl text-black italic" aria-label="Typed signature preview">
-                {signerName || 'Your name'}
+              <div className="rounded-[3px] border border-outline bg-white px-4 py-6 text-center font-serif text-3xl text-black italic" aria-label={t('Typed signature preview')}>
+                {signerName || t('Your name')}
               </div>
             )}
 
             <Checkbox
-              label="I have read this document, and I agree to sign it electronically. My electronic signature has the same effect as my handwritten signature."
+              label={t('I have read this document, and I agree to sign it electronically. My electronic signature has the same effect as my handwritten signature.')}
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
             />
 
-            <Button type="submit" loading={sign.isPending} disabled={!ready} className="w-full">Sign document</Button>
-            <Button variant="text" onClick={() => setDeclining(true)}>Decline to sign</Button>
-            <p className="text-xs text-on-surface-variant">We record the time, your IP address and browser with your signature, as evidence under the E-Commerce Act (RA 8792).</p>
+            <Button type="submit" loading={sign.isPending} disabled={!ready} className="w-full">{t('Sign document')}</Button>
+            <Button variant="text" onClick={() => setDeclining(true)}>{t('Decline to sign')}</Button>
+            <p className="text-xs text-on-surface-variant">{t('We record the time, your IP address and browser with your signature, as evidence under the E-Commerce Act (RA 8792).')}</p>
           </form>
         </Card>
       </div>
@@ -123,11 +124,11 @@ export function SignDocument() {
       <ConfirmDialog
         open={declining}
         onClose={() => setDeclining(false)}
-        title="Decline to sign?"
-        description="Your lawyer will be told. You can tell them why below."
-        confirmLabel="Decline"
+        title={t('Decline to sign?')}
+        description={t('Your lawyer will be told. You can tell them why below.')}
+        confirmLabel={t('Decline')}
         destructive
-        reasonLabel="Reason (optional)"
+        reasonLabel={t('Reason (optional)')}
         loading={decline.isPending}
         onConfirm={(reason) => decline.mutate(reason, { onSuccess: () => setDeclining(false) })}
       />

@@ -11,6 +11,7 @@ import { Button } from '@/shared/ui/Button'
 import { EmptyState, PageLoader } from '@/shared/ui/Feedback'
 import { Card, CardHeader, Table, Td, Th, Tr } from '@/shared/ui/Layout'
 import { InvoiceStatusBadge } from './StatusBadge'
+import { BudgetCard } from '@/features/budgets/components/BudgetCard'
 
 export function MatterBillingPanel({ matter }: { matter: Matter }) {
   const abilities = useAbilities()
@@ -22,6 +23,7 @@ export function MatterBillingPanel({ matter }: { matter: Matter }) {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <BudgetCard matterId={matter.id} />
       {abilities.practice_law && (
         <Card>
           <CardHeader

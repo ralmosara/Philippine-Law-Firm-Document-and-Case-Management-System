@@ -4,8 +4,10 @@ FROM php:8.4-fpm-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git unzip libpq-dev libzip-dev libicu-dev \
-       tesseract-ocr tesseract-ocr-eng tesseract-ocr-fil poppler-utils \
-    && docker-php-ext-install pdo_pgsql pgsql bcmath intl pcntl zip opcache \
+       tesseract-ocr tesseract-ocr-eng tesseract-ocr-fil poppler-utils ghostscript \
+       libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    && docker-php-ext-configure gd --with-jpeg --with-freetype \
+    && docker-php-ext-install pdo_pgsql pgsql bcmath intl pcntl zip opcache gd \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apt-get clean && rm -rf /var/lib/apt/lists/*

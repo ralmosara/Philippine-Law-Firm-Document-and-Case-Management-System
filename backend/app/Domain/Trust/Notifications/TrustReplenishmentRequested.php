@@ -27,15 +27,15 @@ class TrustReplenishmentRequested extends Notification implements ShouldQueue
         $peso = fn (int $cents) => '₱'.number_format($cents / 100, 2);
 
         $message = (new MailMessage)
-            ->subject("Request to replenish your deposit with {$firm->name}")
-            ->greeting("Dear {$notifiable->name},")
-            ->line("The funds you deposited with us for expenses and fees (account {$this->account->account_number}) now stand at {$peso($this->account->balance_cents)}, below the agreed minimum of {$peso((int) $this->account->minimum_balance_cents)}.")
-            ->line("To keep your matter moving without delay, please deposit {$peso($this->shortfallCents)}. Reply to this e-mail or call us for our bank details.");
+            ->subject(__('Request to replenish your deposit with :firm', ['firm' => $firm->name]))
+            ->greeting(__('Dear :name,', ['name' => $notifiable->name]))
+            ->line(__('The funds you deposited with us for expenses and fees (account :account) now stand at :balance, below the agreed minimum of :minimum.', ['account' => $this->account->account_number, 'balance' => $peso($this->account->balance_cents), 'minimum' => $peso((int) $this->account->minimum_balance_cents)]))
+            ->line(__('To keep your matter moving without delay, please deposit :amount. Reply to this e-mail or call us for our bank details.', ['amount' => $peso($this->shortfallCents)]));
 
         if ($notifiable->portal_enabled) {
-            $message->action('See the account in the client portal', rtrim(config('app.frontend_url'), '/').'/portal');
+            $message->action(__('See the account in the client portal'), rtrim(config('app.frontend_url'), '/').'/portal');
         }
 
-        return $message->salutation("Sincerely,\n{$firm->name}");
+        return $message->salutation(__('Sincerely,')."\n{$firm->name}");
     }
 }

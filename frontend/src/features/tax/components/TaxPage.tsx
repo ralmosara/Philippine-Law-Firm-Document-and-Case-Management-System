@@ -12,6 +12,7 @@ import { Dialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Field, FormError, Input, Select } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader, StatCard, Table, Tabs, Td, Th } from '@/shared/ui/Layout'
+import { EInvoicingTab } from '@/features/einvoicing/components/EInvoicing'
 
 interface SawtRow {
   payor_tin: string | null
@@ -51,7 +52,7 @@ interface Filing {
   filed_by: string | null
 }
 
-type Tab = 'quarter' | 'calendar' | 'setup'
+type Tab = 'quarter' | 'calendar' | 'einvoicing' | 'setup'
 const thisYear = new Date().getFullYear()
 const thisQuarter = Math.floor(new Date().getMonth() / 3) + 1
 
@@ -66,9 +67,10 @@ export function TaxPage() {
         <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
         Figures come from the invoices and payments recorded here, and deadlines are those commonly applied to eBIRForms filers. Have your accountant confirm them before filing; eFPS filers have staggered dates.
       </p>
-      <Tabs<Tab> label="Tax sections" value={tab as Tab} onChange={setTab} tabs={[{ value: 'quarter', label: 'Quarter & SAWT' }, { value: 'calendar', label: 'Filing calendar' }, { value: 'setup', label: 'Setup' }]} />
+      <Tabs<Tab> label="Tax sections" value={tab as Tab} onChange={setTab} tabs={[{ value: 'quarter', label: 'Quarter & SAWT' }, { value: 'calendar', label: 'Filing calendar' }, { value: 'einvoicing', label: 'E-invoicing' }, { value: 'setup', label: 'Setup' }]} />
       {tab === 'quarter' && <QuarterTab />}
       {tab === 'calendar' && <CalendarTab />}
+      {tab === 'einvoicing' && <EInvoicingTab />}
       {tab === 'setup' && <SetupTab />}
     </>
   )

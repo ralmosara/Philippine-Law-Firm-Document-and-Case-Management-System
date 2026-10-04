@@ -14,9 +14,12 @@ use App\Http\Controllers\Api\V1\CourtDayController;
 use App\Http\Controllers\Api\V1\DeadlineRuleController;
 use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\Api\V1\DisbursementController;
+use App\Http\Controllers\Api\V1\DocumentCompareController;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\DocumentRequestController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
+use App\Http\Controllers\Api\V1\EFilingController;
+use App\Http\Controllers\Api\V1\EInvoiceController;
 use App\Http\Controllers\Api\V1\ExhibitController;
 use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\FirmController;
@@ -27,6 +30,7 @@ use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoicePaymentController;
 use App\Http\Controllers\Api\V1\KnowledgeController;
 use App\Http\Controllers\Api\V1\LookupController;
+use App\Http\Controllers\Api\V1\MatterBudgetController;
 use App\Http\Controllers\Api\V1\MatterController;
 use App\Http\Controllers\Api\V1\MatterDeadlineController;
 use App\Http\Controllers\Api\V1\MatterEmailController;
@@ -39,6 +43,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PleadingController;
 use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ProspectController;
+use App\Http\Controllers\Api\V1\PushController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SignatureRequestController;
 use App\Http\Controllers\Api\V1\TaskController;
@@ -56,6 +61,7 @@ use App\Http\Controllers\PortalDocumentRequestController;
 use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
 use App\Http\Controllers\PublicIntakeController;
+use App\Http\Middleware\SetPortalLocale;
 use Illuminate\Support\Facades\Route;
 
 // For uptime monitors. /up (Laravel's) only proves PHP runs; this checks
@@ -81,6 +87,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('push', [PushController::class, 'show']);
+        Route::post('push/subscriptions', [PushController::class, 'subscribe']);
+        Route::post('push/subscriptions/remove', [PushController::class, 'unsubscribe']);
+        Route::put('push/preferences', [PushController::class, 'preferences']);
+        Route::post('push/test', [PushController::class, 'test'])->middleware('throttle:5,1');
         Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
         Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id');
         Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -184,7 +195,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('document-request-items/{item}/review', [DocumentRequestController::class, 'review']);
         Route::post('document-requests/{documentRequest}/cancel', [DocumentRequestController::class, 'cancel']);
         Route::get('court-day', [CourtDayController::class, 'index']);
-        Route::post('deadlines/{deadline}/hearing-outcome', [CourtDayController::class, 'outcome']);
+        Route::post('deadlines/{deadline}/hearing-outcome', [CourtDayController::class, 'outcome'])->middleware('idempotent');
         Route::get('deadlines', [MatterDeadlineController::class, 'index']);
         Route::post('deadlines/compute', [MatterDeadlineController::class, 'compute']);
         Route::get('deadlines/{deadline}', [MatterDeadlineController::class, 'show']);
@@ -204,6 +215,14 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('pleadings/options', [PleadingController::class, 'options']);
         Route::post('matters/{matter}/pleadings/preview', [PleadingController::class, 'preview']);
         Route::post('matters/{matter}/pleadings', [PleadingController::class, 'store']);
+        Route::get('matters/{matter}/e-filings', [EFilingController::class, 'index']);
+        Route::get('matters/{matter}/budget', [MatterBudgetController::class, 'show']);
+        Route::put('matters/{matter}/budget', [MatterBudgetController::class, 'update']);
+        Route::delete('matters/{matter}/budget', [MatterBudgetController::class, 'destroy']);
+        Route::get('matters/{matter}/e-filings/sources', [EFilingController::class, 'sources']);
+        Route::post('matters/{matter}/e-filings', [EFilingController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('e-filings/{eFiling}/filed', [EFilingController::class, 'filed']);
+        Route::post('e-filings/{eFiling}/acknowledged', [EFilingController::class, 'acknowledged']);
         Route::get('matters/{matter}/exhibits', [ExhibitController::class, 'index']);
         Route::get('matters/{matter}/exhibits.csv', [ExhibitController::class, 'csv']);
         Route::get('matters/{matter}/exhibits/next-marking', [ExhibitController::class, 'nextMarking']);
@@ -214,6 +233,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::patch('exhibits/{exhibit}', [ExhibitController::class, 'update']);
         Route::delete('exhibits/{exhibit}', [ExhibitController::class, 'destroy']);
         Route::get('documents/{document}/versions', [DocumentController::class, 'versions']);
+        Route::get('documents/{document}/compare', [DocumentCompareController::class, 'show']);
+        Route::get('documents/{document}/compare/sources', [DocumentCompareController::class, 'sources']);
+        Route::get('documents/{document}/compare/pdf', [DocumentCompareController::class, 'pdf']);
         Route::post('documents/{document}/versions', [DocumentController::class, 'saveVersion']);
         Route::post('documents/{document}/status', [DocumentController::class, 'transition']);
         Route::get('documents/{document}/signature-requests', [SignatureRequestController::class, 'index']);
@@ -229,7 +251,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('trust-accounts/{trustAccount}/reconcile', [TrustAccountController::class, 'reconcile']);
         Route::post('trust-accounts/{trustAccount}/close', [TrustAccountController::class, 'close']);
 
-        Route::apiResource('time-entries', TimeEntryController::class)->except('show');
+        Route::apiResource('time-entries', TimeEntryController::class)->except('show')->middlewareFor('store', 'idempotent');
         Route::apiResource('expenses', ExpenseController::class)->except('show');
 
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show']);
@@ -238,6 +260,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('reports/{report}', [ReportController::class, 'show'])->whereIn('report', ['aged-receivables', 'collections', 'matter-profitability']);
         Route::post('invoices/{invoice}/pay', [InvoiceController::class, 'pay']);
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void']);
+        Route::get('invoices/{invoice}/e-invoices', [EInvoiceController::class, 'forInvoice']);
+        Route::get('e-invoicing', [EInvoiceController::class, 'index']);
+        Route::put('e-invoicing/settings', [EInvoiceController::class, 'updateSettings']);
+        Route::get('e-invoices/{eInvoice}/payload', [EInvoiceController::class, 'payload']);
+        Route::post('e-invoices/{eInvoice}/retry', [EInvoiceController::class, 'retry']);
         Route::post('invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink']);
         Route::get('privacy/summary', [PrivacyController::class, 'summary']);
         Route::get('privacy/settings', [PrivacyController::class, 'settings']);
@@ -312,7 +339,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 | A separate session guard (`client`) and a read-only surface.
 */
 
-Route::prefix('portal')->middleware('throttle:api')->group(function () {
+Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->group(function () {
     Route::middleware('throttle:login')->group(function () {
         Route::post('login', [ClientAuthController::class, 'login']);
         Route::post('forgot-password', [ClientAuthController::class, 'forgotPassword']);
@@ -322,6 +349,7 @@ Route::prefix('portal')->middleware('throttle:api')->group(function () {
     Route::middleware(['auth:client', 'tenant:client'])->group(function () {
         Route::get('me', [ClientAuthController::class, 'me']);
         Route::post('logout', [ClientAuthController::class, 'logout']);
+        Route::put('locale', [ClientAuthController::class, 'locale']);
         Route::get('matters', [ClientPortalController::class, 'getMatters']);
         Route::get('matters/{matter}', [ClientPortalController::class, 'getMatter'])->whereNumber('matter');
         Route::get('documents/{document}', [ClientPortalController::class, 'getDocument'])->whereNumber('document');

@@ -28,12 +28,12 @@ class DocumentReturned extends Notification implements ShouldQueue
         $firm = Firm::findOrFail($this->request->firm_id);
 
         return (new MailMessage)
-            ->subject("Please upload again: {$item->label}")
-            ->greeting("Dear {$notifiable->name},")
-            ->line("Thank you for uploading \"{$item->label}\". Unfortunately we cannot use it:")
+            ->subject(__('Please upload again: :item', ['item' => $item->label]))
+            ->greeting(__('Dear :name,', ['name' => $notifiable->name]))
+            ->line(__('Thank you for uploading ":item". Unfortunately we cannot use it:', ['item' => $item->label]))
             ->line('"'.$item->review_note.'"')
-            ->line('Please upload a new copy.')
-            ->action('Upload in the client portal', rtrim(config('app.frontend_url'), '/')."/portal/requests/{$this->request->id}")
-            ->salutation("Sincerely,\n{$firm->name}");
+            ->line(__('Please upload a new copy.'))
+            ->action(__('Upload in the client portal'), rtrim(config('app.frontend_url'), '/')."/portal/requests/{$this->request->id}")
+            ->salutation(__('Sincerely,')."\n{$firm->name}");
     }
 }

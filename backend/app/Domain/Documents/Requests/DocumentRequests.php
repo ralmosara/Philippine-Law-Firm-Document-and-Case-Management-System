@@ -74,7 +74,7 @@ class DocumentRequests
             abort(404);
         }
         if ($request->status !== DocumentRequest::OPEN || ! $item->awaitingClient()) {
-            throw ValidationException::withMessages(['file' => 'This item is not waiting for a document.']);
+            throw ValidationException::withMessages(['file' => __('This item is not waiting for a document.')]);
         }
 
         $matter = Matter::findOrFail($request->matter_id);
