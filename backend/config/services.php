@@ -93,7 +93,7 @@ return [
     // Electronic filing packages: the largest single PDF courts accept by
     // e-mail or portal (check your court's current rule).
     'efiling' => [
-        'max_megabytes' => (int) env('EFILING_MAX_MB', 25),
+        'max_mb' => (int) env('EFILING_MAX_MB', 25),
     ],
 
     'resend' => [
