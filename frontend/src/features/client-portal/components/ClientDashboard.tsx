@@ -72,6 +72,34 @@ export function ClientDashboard() {
           <CardHeader title={t('Invoices')} description={invoices.data?.data.some((i) => i.can_pay_online) ? t('Pay by card, GCash, Maya or QR Ph through PayMongo.') : undefined} />
           {pay.isError && <div className="px-5 pt-3"><FormError message={ApiError.from(pay.error).message} /></div>}
           {invoices.isPending ? <PageLoader /> : !invoices.data?.data.length ? <EmptyState icon={<ReceiptText className="size-6" />} title={t('No invoices')} /> : (
+            <>
+            {/* Phones: one card per invoice, so the amount and the Pay button are never cut off. */}
+            <ul className="divide-y divide-outline-variant sm:hidden">
+              {invoices.data.data.map((i) => (
+                <li key={i.id} className="flex flex-col gap-2 px-4 py-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium">{i.number} <a href={`/api/portal/invoices/${i.id}/pdf`} download className="ml-1 text-xs font-normal text-primary hover:underline">PDF</a></p>
+                      {i.matter && <p className="text-xs text-on-surface-variant">{i.matter.title}</p>}
+                    </div>
+                    <p className="shrink-0 text-right font-medium tabular-nums">{money(i.total_cents)}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      {i.status === 'paid' ? <Badge tone="success">{t('Paid')}</Badge> : i.is_overdue ? <Badge tone="danger">{t('Overdue')}</Badge> : i.status === 'partially_paid' ? <Badge tone="primary">{t('Partly paid')}</Badge> : <Badge tone="warning">{t('Unpaid')}</Badge>}
+                      <span className="text-xs text-on-surface-variant">{t('Due')} {date(i.due_at)}</span>
+                    </span>
+                    {i.status === 'partially_paid' && <span className="text-xs text-on-surface-variant">{t('Balance')} {money(i.balance_cents)}</span>}
+                  </div>
+                  {i.can_pay_online && (
+                    <Button icon={<CreditCard className="size-4" />} className="h-11 w-full" loading={pay.isPending && pay.variables === i.id} disabled={pay.isPending} onClick={() => pay.mutate(i.id)}>
+                      {i.status === 'partially_paid' ? t('Pay {amount}', { amount: money(i.balance_cents) }) : t('Pay')}
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div className="hidden sm:block">
             <Table caption={t('Invoices')} compact>
               <thead><tr><Th>{t('Number')}</Th><Th>{t('Due')}</Th><Th>{t('Status')}</Th><Th align="right">{t('Amount')}</Th></tr></thead>
               <tbody>
@@ -95,6 +123,8 @@ export function ClientDashboard() {
                 ))}
               </tbody>
             </Table>
+            </div>
+            </>
           )}
         </Card>
 

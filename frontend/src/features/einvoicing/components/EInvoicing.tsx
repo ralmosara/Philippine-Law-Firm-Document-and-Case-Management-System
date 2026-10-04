@@ -98,7 +98,7 @@ export function EInvoicingTab() {
               {data.map((row) => (
                 <tr key={row.id}>
                   <Td>
-                    {row.invoice ? <Link to={`/invoices/${row.invoice.id}`} className="font-medium text-primary hover:underline">{row.invoice.number}</Link> : '—'}
+                    {row.invoice ? <Link to={`/billing/invoices/${row.invoice.id}`} className="font-medium text-primary hover:underline">{row.invoice.number}</Link> : '—'}
                     <div className="text-xs text-on-surface-variant">{row.invoice?.client}{row.invoice && ` · ${money(row.invoice.total_cents)}`}</div>
                   </Td>
                   <Td><StatusBadge row={row} />{row.error && <div className="mt-1 max-w-xs text-xs text-danger">{row.error}</div>}</Td>

@@ -2,23 +2,56 @@
 
 namespace App\Domain\Documents\Search;
 
+use Illuminate\Support\Facades\Process;
+use RuntimeException;
 use Smalot\PdfParser\Config as PdfConfig;
 use Smalot\PdfParser\Parser as PdfParser;
+use Symfony\Component\Process\ExecutableFinder;
+use ZBateson\MailMimeParser\Header\AddressHeader;
+use ZBateson\MailMimeParser\Header\HeaderConsts;
+use ZBateson\MailMimeParser\MailMimeParser;
 use ZipArchive;
 
 /**
  * Pulls searchable text out of uploaded files. Returns null for formats it
- * cannot read (scanned images need OCR; legacy binary .doc/.xls/.msg need
- * external converters), which the caller records as "unsupported".
+ * cannot read (scanned images need OCR), which the caller records as
+ * "unsupported".
+ *
+ * The old binary Office formats (.doc, .xls, .ppt) are read with catdoc,
+ * and Outlook .msg files are converted to email with msgconvert, when those
+ * tools are installed (they are in the Docker image); emails are read as
+ * their headers and text, not the raw MIME with its encoded attachments.
  */
 class FileTextExtractor
 {
     /** Stored text is capped; beyond this, search sees the first part only. */
     public const MAX_CHARACTERS = 1_000_000;
 
+    /** Legacy formats and the command-line tool each needs. */
+    public const LEGACY_TOOLS = ['doc' => 'catdoc', 'xls' => 'xls2csv', 'ppt' => 'catppt', 'msg' => 'msgconvert'];
+
+    /** @var array<string, bool> */
+    private static array $found = [];
+
     public function supports(string $extension): bool
     {
-        return in_array(strtolower($extension), ['pdf', 'docx', 'pptx', 'xlsx', 'odt', 'ods', 'rtf', 'txt', 'csv', 'eml'], true);
+        $extension = strtolower($extension);
+        if (isset(self::LEGACY_TOOLS[$extension])) {
+            return $this->hasTool(self::LEGACY_TOOLS[$extension]);
+        }
+
+        return in_array($extension, ['pdf', 'docx', 'pptx', 'xlsx', 'odt', 'ods', 'rtf', 'txt', 'csv', 'eml'], true);
+    }
+
+    /** Is a converter installed? (services.text_extraction.tools can say so, e.g. in tests.) */
+    public function hasTool(string $tool): bool
+    {
+        $configured = config("services.text_extraction.tools.{$tool}");
+        if ($configured !== null) {
+            return (bool) $configured;
+        }
+
+        return self::$found[$tool] ??= (new ExecutableFinder)->find($tool) !== null;
     }
 
     public function extract(string $path, string $extension): ?string
@@ -30,11 +63,65 @@ class FileTextExtractor
             'xlsx' => $this->zipXml($path, ['xl/sharedStrings.xml']),
             'odt', 'ods' => $this->zipXml($path, ['content.xml']),
             'rtf' => $this->rtf((string) file_get_contents($path)),
-            'txt', 'csv', 'eml' => (string) file_get_contents($path),
+            'txt', 'csv' => (string) file_get_contents($path),
+            'eml' => $this->email((string) file_get_contents($path)),
+            // -d utf-8: output encoding; catdoc -w: keep paragraphs on one line.
+            'doc' => $this->run(['catdoc', '-d', 'utf-8', '-w', $path]),
+            'xls' => $this->run(['xls2csv', '-d', 'utf-8', $path]),
+            'ppt' => $this->run(['catppt', '-d', 'utf-8', $path]),
+            'msg' => $this->outlook($path),
             default => null,
         };
 
         return $text === null ? null : $this->normalize($text);
+    }
+
+    /** An email as a person reads it: who, when, the subject and the text (attachments are filed and searched on their own). */
+    private function email(string $raw): string
+    {
+        $message = (new MailMimeParser)->parse($raw, false);
+        $lines = [];
+        foreach ([HeaderConsts::SUBJECT, HeaderConsts::FROM, HeaderConsts::TO, HeaderConsts::CC, HeaderConsts::DATE] as $name) {
+            $header = $message->getHeader($name);
+            // Every address with its decoded name ("Ana Reyes <ana@example.ph>"), not only the first.
+            $value = $header instanceof AddressHeader
+                ? implode(', ', array_map(fn ($a) => trim($a->getName() !== '' ? "{$a->getName()} <{$a->getEmail()}>" : $a->getEmail()), $header->getAddresses()))
+                : trim((string) $header?->getValue());
+            if ($value !== '') {
+                $lines[] = "{$name}: {$value}";
+            }
+        }
+        $body = $message->getTextContent() ?? html_entity_decode(strip_tags((string) $message->getHtmlContent()), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return implode("\n", $lines)."\n\n".$body;
+    }
+
+    /** Outlook .msg → .eml (msgconvert), then read as an email. */
+    private function outlook(string $path): string
+    {
+        $eml = tempnam(sys_get_temp_dir(), 'msg').'.eml';
+        try {
+            $this->run(['msgconvert', '--outfile', $eml, $path]);
+            if (! is_file($eml) || filesize($eml) === 0) {
+                throw new RuntimeException('The Outlook message could not be converted.');
+            }
+
+            return $this->email((string) file_get_contents($eml));
+        } finally {
+            @unlink($eml);
+            @unlink(substr($eml, 0, -4));
+        }
+    }
+
+    /** @param  list<string>  $command */
+    private function run(array $command): string
+    {
+        $result = Process::timeout(120)->run($command);
+        if (! $result->successful()) {
+            throw new RuntimeException("{$command[0]} could not read the file: ".mb_substr(trim($result->errorOutput()), 0, 300));
+        }
+
+        return $result->output();
     }
 
     private function pdf(string $path): string
@@ -52,7 +139,7 @@ class FileTextExtractor
         $zip = new ZipArchive;
 
         if ($zip->open($path, ZipArchive::RDONLY) !== true) {
-            throw new \RuntimeException('Not a valid Office/OpenDocument file.');
+            throw new RuntimeException('Not a valid Office/OpenDocument file.');
         }
 
         try {

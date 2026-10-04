@@ -7,6 +7,7 @@ use App\Domain\Matters\Services\ClientPasswordResets;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Support\Localization\PortalLocale;
+use App\Support\Realtime\Realtime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -117,6 +118,8 @@ class ClientAuthController extends Controller
             'name' => $client->name,
             'email' => $client->email,
             'locale' => PortalLocale::normalize($client->locale),
+            // For live message threads; null means the portal polls.
+            'realtime' => Realtime::config(),
             'firm' => $client->firm()->withoutGlobalScopes()->first(['id', 'name', 'email', 'phone', 'address']),
         ];
     }

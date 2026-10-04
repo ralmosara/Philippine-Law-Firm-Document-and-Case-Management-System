@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotarialEntryController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PleadingController;
+use App\Http\Controllers\Api\V1\PrescriptionController;
 use App\Http\Controllers\Api\V1\PrivacyController;
 use App\Http\Controllers\Api\V1\ProspectController;
 use App\Http\Controllers\Api\V1\PushController;
@@ -62,6 +63,8 @@ use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
 use App\Http\Controllers\PublicIntakeController;
 use App\Http\Middleware\SetPortalLocale;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 // For uptime monitors. /up (Laravel's) only proves PHP runs; this checks
@@ -217,6 +220,15 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('matters/{matter}/pleadings', [PleadingController::class, 'store']);
         Route::get('matters/{matter}/e-filings', [EFilingController::class, 'index']);
         Route::get('matters/{matter}/budget', [MatterBudgetController::class, 'show']);
+        Route::get('prescription-periods', [PrescriptionController::class, 'periods']);
+        Route::post('prescription-periods/preview', [PrescriptionController::class, 'preview']);
+        Route::get('prescriptions', [PrescriptionController::class, 'index']);
+        Route::get('matters/{matter}/prescriptions', [PrescriptionController::class, 'forMatter']);
+        Route::post('matters/{matter}/prescriptions', [PrescriptionController::class, 'store']);
+        Route::put('prescriptions/{prescription}', [PrescriptionController::class, 'update']);
+        Route::delete('prescriptions/{prescription}', [PrescriptionController::class, 'destroy']);
+        Route::post('prescriptions/{prescription}/interruptions', [PrescriptionController::class, 'interrupt']);
+        Route::post('prescriptions/{prescription}/filed', [PrescriptionController::class, 'filed']);
         Route::put('matters/{matter}/budget', [MatterBudgetController::class, 'update']);
         Route::delete('matters/{matter}/budget', [MatterBudgetController::class, 'destroy']);
         Route::get('matters/{matter}/e-filings/sources', [EFilingController::class, 'sources']);
@@ -350,6 +362,8 @@ Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->g
         Route::get('me', [ClientAuthController::class, 'me']);
         Route::post('logout', [ClientAuthController::class, 'logout']);
         Route::put('locale', [ClientAuthController::class, 'locale']);
+        // Private channels for the client's live message threads (the staff route is /api/broadcasting/auth).
+        Route::post('broadcasting/auth', fn (Request $request) => Broadcast::auth($request));
         Route::get('matters', [ClientPortalController::class, 'getMatters']);
         Route::get('matters/{matter}', [ClientPortalController::class, 'getMatter'])->whereNumber('matter');
         Route::get('documents/{document}', [ClientPortalController::class, 'getDocument'])->whereNumber('document');

@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { apiClient, get, post } from '@/shared/api/axios'
+import { get, post } from '@/shared/api/axios'
 import { useApiMutation } from '@/shared/api/hooks'
 import { useToast } from '@/shared/ui/Toast'
+import { usePrivateChannel } from '@/shared/realtime/echo'
 
 export interface AppNotification {
   id: string
@@ -38,6 +38,7 @@ const AFFECTS: Record<string, string[][]> = {
   prospect: [['prospects']],
   document_uploaded: [['document-requests'], ['files']],
   budget: [['budget']],
+  prescription: [['prescriptions']],
 }
 
 export function useNotifications() {
@@ -65,52 +66,18 @@ export function useMarkAllRead() {
 export function useLiveNotifications(userId: number, realtime: { key: string } | null | undefined) {
   const queryClient = useQueryClient()
   const toast = useToast()
-  const key = realtime?.key
 
-  useEffect(() => {
-    if (!key) return
-    let disposed = false
-    let leave: (() => void) | undefined
+  usePrivateChannel(realtime, '/broadcasting/auth', `App.Models.User.${userId}`, {
+    notification: (payload) => {
+      const n = payload as AppNotification
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      for (const queryKey of AFFECTS[n.kind] ?? []) void queryClient.invalidateQueries({ queryKey })
+      toast.info(n.title)
+    },
+  })
+}
 
-    void (async () => {
-      const [{ default: Echo }, { default: Pusher }] = await Promise.all([import('laravel-echo'), import('pusher-js')])
-      if (disposed) return
-      const secure = window.location.protocol === 'https:'
-      const port = Number(window.location.port) || (secure ? 443 : 80)
-      const echo = new Echo({
-        broadcaster: 'reverb',
-        key,
-        Pusher,
-        wsHost: window.location.hostname,
-        wsPort: port,
-        wssPort: port,
-        forceTLS: secure,
-        enabledTransports: ['ws', 'wss'],
-        // Authorize through the API client, so Sanctum's cookie and XSRF header go along.
-        authorizer: (channel: { name: string }) => ({
-          authorize: (socketId: string, callback: (error: Error | null, data: { auth: string } | null) => void) => {
-            apiClient.post<{ auth: string }>('/broadcasting/auth', { socket_id: socketId, channel_name: channel.name })
-              .then((response) => callback(null, response.data))
-              .catch((error: Error) => callback(error, null))
-          },
-        }),
-      })
-
-      const channel = `App.Models.User.${userId}`
-      echo.private(channel).notification((n: AppNotification) => {
-        void queryClient.invalidateQueries({ queryKey: ['notifications'] })
-        for (const queryKey of AFFECTS[n.kind] ?? []) void queryClient.invalidateQueries({ queryKey })
-        toast.info(n.title)
-      })
-      leave = () => {
-        echo.leave(channel)
-        echo.disconnect()
-      }
-    })()
-
-    return () => {
-      disposed = true
-      leave?.()
-    }
-  }, [key, userId, queryClient, toast])
+/** The WebSocket key, from the bell's (cached) query; null when the server offers none. */
+export function useRealtime() {
+  return useNotifications().data?.realtime ?? null
 }

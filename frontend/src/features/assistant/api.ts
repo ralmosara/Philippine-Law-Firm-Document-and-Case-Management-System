@@ -1,6 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { get, post } from '@/shared/api/axios'
 import { useApiMutation } from '@/shared/api/hooks'
+import { useSession } from '@/features/auth/session'
+import { useRealtime } from '@/features/notifications/api'
+import { usePrivateChannel } from '@/shared/realtime/echo'
 
 export interface AiMessage {
   id: number
@@ -28,14 +31,26 @@ export const useAssistantConversations = (matterId: number, enabled: boolean) =>
     enabled,
   })
 
-/** Polls every 2 seconds while an answer is being written. */
-export const useAssistantConversation = (id: number | null) =>
-  useQuery({
+/**
+ * While an answer is being written: it arrives live over the WebSocket
+ * (checked every 10 seconds as a fallback), or without one, every 2 seconds.
+ */
+export function useAssistantConversation(id: number | null) {
+  const realtime = useRealtime()
+  const queryClient = useQueryClient()
+  const userId = useSession().data?.user.id ?? null
+  usePrivateChannel(realtime, '/broadcasting/auth', id && userId ? `App.Models.User.${userId}` : null, {
+    '.assistant.answered': (payload) => {
+      if ((payload as { conversation_id?: number }).conversation_id === id) void queryClient.invalidateQueries({ queryKey: ['assistant', 'conversation', id] }, { cancelRefetch: false })
+    },
+  })
+  return useQuery({
     queryKey: ['assistant', 'conversation', id],
     queryFn: () => get<AiConversation>(`/v1/assistant/conversations/${id}`),
     enabled: id !== null,
-    refetchInterval: (query) => (query.state.data?.messages.some((m) => m.status === 'pending') ? 2000 : false),
+    refetchInterval: (query) => (query.state.data?.messages.some((m) => m.status === 'pending') ? (realtime ? 10_000 : 2000) : false),
   })
+}
 
 export function useAsk(matterId: number) {
   return useApiMutation((input: { question: string; conversation_id?: number }) => post<AiConversation>(`/v1/matters/${matterId}/assistant`, input), {

@@ -1,7 +1,10 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient, get } from '@/shared/api/axios'
 import { useApiMutation } from '@/shared/api/hooks'
+import { useSession } from '@/features/auth/session'
 import type { MatterRef, Paginated } from '@/shared/api/types'
+import { useRealtime } from '@/features/notifications/api'
+import { usePrivateChannel } from '@/shared/realtime/echo'
 
 export interface ChatMessage {
   id: number
@@ -33,29 +36,54 @@ export function messageForm(fields: Record<string, string | number | undefined>,
 }
 
 export function useThreads(params: { matter_id?: number; page?: number }) {
+  const realtime = useLiveInbox()
   return useQuery({
     queryKey: ['messages', 'threads', params],
     queryFn: () => get<Paginated<MessageThread>>('/v1/message-threads', { ...params }),
     placeholderData: keepPreviousData,
-    refetchInterval: 30_000,
+    // Live over the WebSocket when there is one; otherwise poll.
+    refetchInterval: realtime ? 5 * 60_000 : 30_000,
   })
 }
 
-/** Open conversations refresh every 15 seconds. */
+/** Any thread in the firm changed: refresh the inbox and unread counts (several screens may listen; refreshes in flight are shared, not restarted). */
+function useLiveInbox() {
+  const realtime = useRealtime()
+  const queryClient = useQueryClient()
+  const firmId = useSession().data?.firm.id ?? null
+  usePrivateChannel(realtime, '/broadcasting/auth', firmId ? `firm.${firmId}.messages` : null, {
+    '.thread.updated': () => {
+      void queryClient.invalidateQueries({ queryKey: ['messages', 'threads'] }, { cancelRefetch: false })
+      void queryClient.invalidateQueries({ queryKey: ['messages', 'unread'] }, { cancelRefetch: false })
+    },
+  })
+  return realtime
+}
+
+/** An open conversation: new messages arrive live (or, without a WebSocket, every 15 seconds). */
 export function useThread(id: number | null) {
+  const realtime = useRealtime()
+  const queryClient = useQueryClient()
+  usePrivateChannel(realtime, '/broadcasting/auth', id ? `message-thread.${id}` : null, {
+    '.thread.updated': (payload) => {
+      // Our own read receipts change nothing on screen.
+      if ((payload as { change?: string }).change === 'message') void queryClient.invalidateQueries({ queryKey: ['messages', 'thread', id] }, { cancelRefetch: false })
+    },
+  })
   return useQuery({
     queryKey: ['messages', 'thread', id],
     queryFn: () => get<MessageThread>(`/v1/message-threads/${id}`),
     enabled: id !== null,
-    refetchInterval: 15_000,
+    refetchInterval: realtime ? 2 * 60_000 : 15_000,
   })
 }
 
 export function useUnreadMessages() {
+  const realtime = useLiveInbox()
   return useQuery({
     queryKey: ['messages', 'unread'],
     queryFn: async () => (await get<{ count: number }>('/v1/message-threads/unread-count')).count,
-    refetchInterval: 60_000,
+    refetchInterval: realtime ? 5 * 60_000 : 60_000,
   })
 }
 

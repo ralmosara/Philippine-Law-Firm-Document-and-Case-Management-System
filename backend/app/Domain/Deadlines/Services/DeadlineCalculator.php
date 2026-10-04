@@ -66,6 +66,24 @@ class DeadlineCalculator
         return new DeadlineComputation($due, $nominal, $adjustments);
     }
 
+    /**
+     * A period that ends on a given day (e.g. counted in years or months):
+     * moved past a Saturday, Sunday or holiday under Rule 22, with the reasons.
+     */
+    public function rollForward(CarbonInterface $nominalLastDay): DeadlineComputation
+    {
+        $nominal = CarbonImmutable::parse($nominalLastDay->format('Y-m-d'));
+        $due = $nominal;
+        $adjustments = [];
+
+        while (($reason = $this->nonWorkingReason($due)) !== null) {
+            $adjustments[] = ['date' => $due->toDateString(), 'reason' => $reason];
+            $due = $due->addDay();
+        }
+
+        return new DeadlineComputation($due, $nominal, $adjustments);
+    }
+
     public function isWorkingDay(CarbonInterface $date): bool
     {
         return $this->nonWorkingReason($date) === null;

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Support\Realtime\Realtime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -22,7 +23,7 @@ class NotificationController extends Controller
                 'read_at' => $n->read_at?->toIso8601String(),
                 'created_at' => $n->created_at?->toIso8601String(),
             ]),
-            'realtime' => $this->realtime(),
+            'realtime' => Realtime::config(),
         ]);
     }
 
@@ -38,18 +39,5 @@ class NotificationController extends Controller
         $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
         return response()->json(['unread' => 0]);
-    }
-
-    /**
-     * How the browser reaches the WebSocket server, when there is one: the
-     * same origin, path /app (proxied to Reverb). Null means poll instead.
-     */
-    private function realtime(): ?array
-    {
-        if (config('broadcasting.default') !== 'reverb' || blank(config('broadcasting.connections.reverb.key'))) {
-            return null;
-        }
-
-        return ['key' => config('broadcasting.connections.reverb.key')];
     }
 }

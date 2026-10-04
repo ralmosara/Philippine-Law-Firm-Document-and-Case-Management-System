@@ -30,6 +30,7 @@ import { MatterBillingPanel } from './MatterBillingPanel'
 import { MatterForm } from './MatterForm'
 import { MatterHistory, MatterOverview, StatusMenu } from './MatterOverview'
 import { MatterStatusBadge } from './StatusBadge'
+import { PrescriptionCard } from '@/features/prescription/components/Prescription'
 
 type Tab = 'overview' | 'deadlines' | 'documents' | 'files' | 'evidence' | 'messages' | 'assistant' | 'time' | 'billing' | 'history'
 
@@ -91,6 +92,8 @@ export function MatterDetail() {
       {tab === 'overview' && <MatterOverview matter={m} upcoming={pendingDeadlines.slice(0, 3)} onShowDeadlines={() => setTab('deadlines')} />}
 
       {tab === 'deadlines' && (
+        <>
+        <PrescriptionCard matterId={id} />
         <Card>
           <CardHeader
             title="Deadlines & hearings"
@@ -104,6 +107,7 @@ export function MatterDetail() {
           />
           {deadlines.isPending ? <PageLoader /> : <DeadlineList deadlines={deadlines.data ?? []} emptyText="No deadlines on this matter yet." />}
         </Card>
+        </>
       )}
 
       {tab === 'documents' && <MatterDocuments matterId={id} onNew={() => setDialog('document')} onPleading={() => setDialog('pleading')} canCreate={abilities.work_matters} />}

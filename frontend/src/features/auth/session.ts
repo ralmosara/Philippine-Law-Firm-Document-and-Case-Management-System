@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { ApiError, get, post } from '@/shared/api/axios'
 import { clearSavedScreens } from '@/shared/offline/saved'
 import type { Abilities, Lookups, Session, User } from '@/shared/api/types'
+import { disconnectRealtime } from '@/shared/realtime/echo'
 
 export const sessionKey = ['session'] as const
 
@@ -84,6 +85,7 @@ export function useLogout() {
     mutationFn: () => post('/v1/auth/logout'),
     onSettled: () => {
       void clearSavedScreens()
+      disconnectRealtime()
       queryClient.clear()
       queryClient.setQueryData(sessionKey, null)
     },

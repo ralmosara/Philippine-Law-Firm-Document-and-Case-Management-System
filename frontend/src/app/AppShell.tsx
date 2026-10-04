@@ -66,6 +66,7 @@ const GROUPS: NavGroup[] = [
     label: 'Compliance',
     items: [
       { to: '/compliance', label: 'Conflicts, MCLE & notarial' },
+      { to: '/prescription', label: 'Prescription', ability: 'work_matters' },
       { to: '/privacy', label: 'Data privacy', ability: 'manage_firm' },
     ],
   },
