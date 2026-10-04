@@ -5,8 +5,8 @@
 <meta charset="utf-8">
 <style>
     @page { margin: 36pt; }
-    body { margin: 0; }
-    img { display: block; margin: 0 auto; max-width: 100%; max-height: 100%; }
+    body { margin: 0; text-align: center; }
+    img { max-width: 100%; max-height: 100%; }
 </style>
 </head>
 <body><img src="{{ $src }}" alt=""></body>
