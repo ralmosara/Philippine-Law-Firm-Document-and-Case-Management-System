@@ -9,11 +9,13 @@ import { Button, ButtonLink } from '@/shared/ui/Button'
 import { Badge, ErrorState, PageLoader, ProgressBar } from '@/shared/ui/Feedback'
 import { Card, CardHeader, PageHeader } from '@/shared/ui/Layout'
 import { useToast } from '@/shared/ui/Toast'
+import { t } from '@/shared/lib/i18n'
 
 type PortalRequest = DocumentRequestData & { matter: string | null }
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.heic,.doc,.docx,.xls,.xlsx,.tif,.tiff'
 
+// Labels are English keys, translated where shown.
 const CLIENT_STATUS: Record<DocumentRequestItem['status'], { label: string; tone: 'neutral' | 'warning' | 'success' | 'danger' | 'primary' }> = {
   pending: { label: 'Needed', tone: 'warning' },
   uploaded: { label: 'Received, being checked', tone: 'primary' },
@@ -29,7 +31,7 @@ export function DocumentRequestsBanner() {
 
   return (
     <Card className="mb-6">
-      <CardHeader title={<span className="flex items-center gap-2"><ClipboardList className="size-5 text-primary" aria-hidden /> Documents we need from you</span>} />
+      <CardHeader title={<span className="flex items-center gap-2"><ClipboardList className="size-5 text-primary" aria-hidden /> {t('Documents we need from you')}</span>} />
       <ul className="divide-y divide-outline-variant">
         {open.map((r) => {
           const needed = r.items.filter((i) => i.required && (i.status === 'pending' || i.status === 'rejected')).length
@@ -37,9 +39,9 @@ export function DocumentRequestsBanner() {
             <li key={r.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{r.title}</p>
-                <p className="text-sm text-on-surface-variant">{r.matter}{r.due_on && ` · needed by ${date(r.due_on)}`}{needed > 0 ? ` · ${needed} still needed` : ' · all uploaded'}</p>
+                <p className="text-sm text-on-surface-variant">{r.matter}{r.due_on && ` · ${t('needed by {date}', { date: date(r.due_on) })}`}{needed > 0 ? ` · ${t('{count} still needed', { count: needed })}` : ` · ${t('all uploaded')}`}</p>
               </div>
-              <ButtonLink to={`/portal/requests/${r.id}`} size="sm" icon={<Upload className="size-4" />}>{needed > 0 ? 'Upload' : 'View'}</ButtonLink>
+              <ButtonLink to={`/portal/requests/${r.id}`} size="sm" icon={<Upload className="size-4" />}>{needed > 0 ? t('Upload') : t('View')}</ButtonLink>
             </li>
           )
         })}
@@ -60,19 +62,19 @@ export function PortalDocumentRequest() {
   return (
     <>
       <PageHeader
-        back={<Link to="/portal" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"><ArrowLeft className="size-4" /> Home</Link>}
+        back={<Link to="/portal" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"><ArrowLeft className="size-4" /> {t('Home')}</Link>}
         title={r.title}
-        description={`${r.matter ?? ''}${r.due_on ? ` · needed by ${date(r.due_on)}` : ''}`}
+        description={`${r.matter ?? ''}${r.due_on ? ` · ${t('needed by {date}', { date: date(r.due_on) })}` : ''}`}
       />
       {r.message && <p className="mb-4 rounded-[3px] bg-surface-container p-4 text-sm whitespace-pre-line">{r.message}</p>}
-      <div className="mb-4 max-w-md"><ProgressBar value={r.progress.total ? (r.progress.done / r.progress.total) * 100 : 0} label={`${r.progress.done} of ${r.progress.total} done`} tone={r.status === 'completed' ? 'success' : 'primary'} /></div>
-      {r.status === 'completed' && <p className="mb-4 flex items-center gap-2 rounded-[3px] bg-success-container p-4 text-sm text-on-success-container"><CheckCircle2 className="size-5" aria-hidden /> Thank you, we have everything we asked for.</p>}
+      <div className="mb-4 max-w-md"><ProgressBar value={r.progress.total ? (r.progress.done / r.progress.total) * 100 : 0} label={t('{done} of {total} done', { done: r.progress.done, total: r.progress.total })} tone={r.status === 'completed' ? 'success' : 'primary'} /></div>
+      {r.status === 'completed' && <p className="mb-4 flex items-center gap-2 rounded-[3px] bg-success-container p-4 text-sm text-on-success-container"><CheckCircle2 className="size-5" aria-hidden /> {t('Thank you, we have everything we asked for.')}</p>}
       <Card>
         <ul className="divide-y divide-outline-variant">
           {r.items.map((item) => <ItemRow key={item.id} item={item} open={r.status === 'open'} overdue={!!r.due_on && r.due_on < today()} />)}
         </ul>
       </Card>
-      <p className="mt-4 text-xs text-on-surface-variant">Files are checked for viruses and kept confidential with your matter. Clear phone photos are fine unless we asked for an original.</p>
+      <p className="mt-4 text-xs text-on-surface-variant">{t('Files are checked for viruses and kept confidential with your matter. Clear phone photos are fine unless we asked for an original.')}</p>
     </>
   )
 }
@@ -95,7 +97,7 @@ function ItemRow({ item, open, overdue }: { item: DocumentRequestItem; open: boo
       body.append('file', file)
       await apiClient.post(`/portal/document-request-items/${item.id}/upload`, body)
       await queryClient.invalidateQueries({ queryKey: ['portal', 'document-requests'] })
-      toast.success(`${item.label}: received. Thank you.`)
+      toast.success(t('{item}: received. Thank you.', { item: item.label }))
     } catch (err) {
       setError(ApiError.from(err).message)
     } finally {
@@ -109,19 +111,19 @@ function ItemRow({ item, open, overdue }: { item: DocumentRequestItem; open: boo
     <li className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-2 font-medium">
-          {item.label}{!item.required && <span className="text-sm font-normal text-on-surface-variant">(if available)</span>}
-          <Badge tone={item.status === 'pending' && overdue ? 'danger' : status.tone}>{status.label}</Badge>
+          {item.label}{!item.required && <span className="text-sm font-normal text-on-surface-variant">{t('(if available)')}</span>}
+          <Badge tone={item.status === 'pending' && overdue ? 'danger' : status.tone}>{t(status.label)}</Badge>
         </p>
         {item.description && <p className="text-sm text-on-surface-variant">{item.description}</p>}
         {item.status === 'rejected' && item.review_note && <p className="mt-1 text-sm text-danger">{item.review_note}</p>}
-        {item.file && item.status !== 'rejected' && <p className="text-xs text-on-surface-variant">Sent: {item.file.name}</p>}
+        {item.file && item.status !== 'rejected' && <p className="text-xs text-on-surface-variant">{t('Sent:')} {item.file.name}</p>}
         {error && <p role="alert" className="mt-1 text-sm text-danger">{error}</p>}
       </div>
       {canUpload && (
         <>
           <input ref={input} id={inputId} type="file" accept={ACCEPT} className="sr-only" onChange={(e) => void upload(e.target.files?.[0])} />
-          <Button size="sm" icon={<Upload className="size-4" />} loading={uploading} onClick={() => input.current?.click()} aria-label={`Upload ${item.label}`} className="h-11 sm:h-auto">
-            {item.status === 'rejected' ? 'Upload again' : 'Upload'}
+          <Button size="sm" icon={<Upload className="size-4" />} loading={uploading} onClick={() => input.current?.click()} aria-label={t('Upload {item}', { item: item.label })} className="h-11 sm:h-auto">
+            {item.status === 'rejected' ? t('Upload again') : t('Upload')}
           </Button>
         </>
       )}

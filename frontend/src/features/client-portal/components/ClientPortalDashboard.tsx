@@ -4,6 +4,8 @@ import { Button, ButtonLink } from '@/shared/ui/Button'
 import { ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { usePortalLogout, usePortalSession, usePortalThreads } from '../api'
 import { PrivacyConsentGate } from './PortalPrivacy'
+import { t } from '@/shared/lib/i18n'
+import { LanguageSwitcher } from '../i18n'
 
 /** Shell for the client portal: a separate, read-only surface with its own session. */
 export function ClientPortalDashboard() {
@@ -24,17 +26,18 @@ export function ClientPortalDashboard() {
           <span className="flex size-9 items-center justify-center rounded-[3px] bg-primary text-on-primary"><Scale className="size-5" aria-hidden="true" /></span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{client.firm.name}</p>
-            <p className="truncate text-xs opacity-75">Client portal · {client.name}</p>
+            <p className="truncate text-xs opacity-75">{t('Client portal')} · {client.name}</p>
           </div>
-          <ButtonLink to="/portal/messages" variant="text" className="!text-on-nav hover:!bg-nav-hover hover:no-underline" icon={<MessagesSquare className="size-4" />} aria-label={unread > 0 ? `Messages, ${unread} unread` : 'Messages'}>
-            <span className="hidden sm:inline" aria-hidden="true">Messages</span>
+          <LanguageSwitcher signedIn className="hidden sm:inline" />
+          <ButtonLink to="/portal/messages" variant="text" className="!text-on-nav hover:!bg-nav-hover hover:no-underline" icon={<MessagesSquare className="size-4" />} aria-label={unread > 0 ? t('Messages, {count} unread', { count: unread }) : t('Messages')}>
+            <span className="hidden sm:inline" aria-hidden="true">{t('Messages')}</span>
             {unread > 0 && <span className="rounded-full bg-primary px-2 text-xs font-semibold text-on-primary" aria-hidden="true">{unread}</span>}
           </ButtonLink>
-          <ButtonLink to="/portal/privacy" variant="text" className="!text-on-nav hover:!bg-nav-hover hover:no-underline" icon={<ShieldCheck className="size-4" />} aria-label="My data">
-            <span className="hidden sm:inline" aria-hidden="true">My data</span>
+          <ButtonLink to="/portal/privacy" variant="text" className="!text-on-nav hover:!bg-nav-hover hover:no-underline" icon={<ShieldCheck className="size-4" />} aria-label={t('My data')}>
+            <span className="hidden sm:inline" aria-hidden="true">{t('My data')}</span>
           </ButtonLink>
-          <Button variant="text" className="!text-on-nav hover:!bg-nav-hover hover:no-underline" icon={<LogOut className="size-4" />} aria-label="Sign out" onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/portal/login', { replace: true }) })}>
-            <span className="hidden sm:inline" aria-hidden="true">Sign out</span>
+          <Button variant="text" className="!text-on-nav hover:!bg-nav-hover hover:no-underline" icon={<LogOut className="size-4" />} aria-label={t('Sign out')} onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/portal/login', { replace: true }) })}>
+            <span className="hidden sm:inline" aria-hidden="true">{t('Sign out')}</span>
           </Button>
         </div>
       </header>
@@ -44,7 +47,8 @@ export function ClientPortalDashboard() {
         </PrivacyConsentGate>
       </main>
       <footer className="mx-auto max-w-5xl px-4 pb-8 text-xs text-on-surface-variant">
-        Questions? Contact {client.firm.name}{client.firm.phone && ` at ${client.firm.phone}`}{client.firm.email && ` or ${client.firm.email}`}. Information here is confidential and privileged.
+        <LanguageSwitcher signedIn className="mb-3 block sm:hidden" />
+        {t('Questions? Contact {firm}', { firm: client.firm.name })}{client.firm.phone && ` ${t('at {phone}', { phone: client.firm.phone })}`}{client.firm.email && ` ${t('or {email}', { email: client.firm.email })}`}. {t('Information here is confidential and privileged.')}
       </footer>
     </div>
   )

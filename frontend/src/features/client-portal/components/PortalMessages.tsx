@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { Card, PageHeader } from '@/shared/ui/Layout'
 import { portalFileUrl, usePortalMatters, usePortalReply, usePortalStartThread, usePortalThread, usePortalThreads } from '../api'
+import { t } from '@/shared/lib/i18n'
 
 /** The client's secure inbox with their lawyers. */
 export function PortalMessages() {
@@ -22,15 +23,15 @@ export function PortalMessages() {
   return (
     <>
       <PageHeader
-        back={<Link to="/portal" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"><ArrowLeft className="size-4" /> Your matters</Link>}
-        title="Messages"
-        description="A private channel with your lawyers. Messages stay here, not in your email."
-        actions={<Button icon={<MessageSquarePlus className="size-4" />} onClick={() => setComposing(true)}>New message</Button>}
+        back={<Link to="/portal" className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"><ArrowLeft className="size-4" /> {t('Your matters')}</Link>}
+        title={t('Messages')}
+        description={t('A private channel with your lawyers. Messages stay here, not in your email.')}
+        actions={<Button icon={<MessageSquarePlus className="size-4" />} onClick={() => setComposing(true)}>{t('New message')}</Button>}
       />
       <Card className="grid h-[calc(100dvh-16rem)] min-h-[28rem] grid-cols-1 overflow-hidden md:grid-cols-[18rem_1fr]">
         <div className={clsx('min-h-0 overflow-y-auto border-outline-variant md:border-r', threadId && 'hidden md:block')}>
           {threads.isPending ? <PageLoader /> : threads.isError ? <ErrorState error={threads.error} /> : threads.data.data.length === 0 ? (
-            <EmptyState icon={<MessagesSquare className="size-6" />} title="No messages yet" description="Ask your lawyer a question about your matter." />
+            <EmptyState icon={<MessagesSquare className="size-6" />} title={t('No messages yet')} description={t('Ask your lawyer a question about your matter.')} />
           ) : (
             <ul className="divide-y divide-outline-variant">
               {threads.data.data.map((t) => (
@@ -48,7 +49,7 @@ export function PortalMessages() {
           )}
         </div>
         <div className={clsx('flex min-h-0 flex-col', !threadId && 'hidden md:flex')}>
-          {threadId ? <ClientConversation id={threadId} /> : <EmptyState icon={<MessagesSquare className="size-6" />} title="Choose a conversation" />}
+          {threadId ? <ClientConversation id={threadId} /> : <EmptyState icon={<MessagesSquare className="size-6" />} title={t('Choose a conversation')} />}
         </div>
       </Card>
       {composing && <NewPortalThread onClose={() => setComposing(false)} />}
@@ -66,7 +67,7 @@ function ClientConversation({ id }: { id: number }) {
   return (
     <>
       <div className="flex items-center gap-2 border-b border-outline-variant px-4 py-3">
-        <Link to="/portal/messages" className="md:hidden" aria-label="Back to messages"><ArrowLeft className="size-5" /></Link>
+        <Link to="/portal/messages" className="md:hidden" aria-label={t('Back to messages')}><ArrowLeft className="size-5" /></Link>
         <div className="min-w-0">
           <p className="truncate font-semibold">{thread.data.subject}</p>
           <p className="truncate text-xs text-on-surface-variant">{thread.data.matter?.title}</p>
@@ -77,7 +78,7 @@ function ClientConversation({ id }: { id: number }) {
         onSend={(body, file) => reply.mutateAsync({ body, file })}
         sending={reply.isPending}
         downloadUrl={portalFileUrl}
-        otherSideLabel="Your lawyer"
+        otherSideLabel={t('Your lawyer')}
       />
     </>
   )
@@ -104,24 +105,24 @@ function NewPortalThread({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Dialog open onClose={onClose} title="New message" footer={<><Button variant="text" onClick={onClose}>Cancel</Button><Button type="submit" form="portal-thread" loading={start.isPending}>Send</Button></>}>
+    <Dialog open onClose={onClose} title={t('New message')} footer={<><Button variant="text" onClick={onClose}>{t('Cancel')}</Button><Button type="submit" form="portal-thread" loading={start.isPending}>{t('Send')}</Button></>}>
       <form id="portal-thread" onSubmit={submit} className="flex flex-col gap-4">
         <FormError message={error && !Object.keys(error.errors).length ? error.message : error?.field('file')} />
-        <Field label="About which matter?" required error={error?.field('matter_id')}>
+        <Field label={t('About which matter?')} required error={error?.field('matter_id')}>
           {(a) => (
             <Select {...a} required value={form.matter_id} onChange={(e) => setForm((f) => ({ ...f, matter_id: e.target.value }))}>
-              <option value="">Choose…</option>
+              <option value="">{t('Choose…')}</option>
               {matters.data?.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
             </Select>
           )}
         </Field>
-        <Field label="Subject" required error={error?.field('subject')}>
+        <Field label={t('Subject')} required error={error?.field('subject')}>
           {(a) => <Input {...a} required maxLength={255} value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} />}
         </Field>
-        <Field label="Message" required error={error?.field('body')}>
+        <Field label={t('Message')} required error={error?.field('body')}>
           {(a) => <Textarea {...a} required rows={6} maxLength={10000} value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} />}
         </Field>
-        <Field label="Attachment" hint="Optional: a document or photo for your lawyer (up to 20 MB).">
+        <Field label={t('Attachment')} hint={t('Optional: a document or photo for your lawyer (up to 20 MB).')}>
           {(a) => <input {...a} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="text-sm" />}
         </Field>
       </form>

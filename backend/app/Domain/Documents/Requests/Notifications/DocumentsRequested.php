@@ -4,6 +4,7 @@ namespace App\Domain\Documents\Requests\Notifications;
 
 use App\Domain\Documents\Requests\DocumentRequest;
 use App\Domain\Matters\Models\Firm;
+use App\Support\Localization\PortalLocale;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -26,22 +27,22 @@ class DocumentsRequested extends Notification implements ShouldQueue
         $request = $this->request->fresh('items');
         $firm = Firm::findOrFail($request->firm_id);
         $message = (new MailMessage)
-            ->subject("Documents needed: {$request->title}")
-            ->greeting("Dear {$notifiable->name},")
-            ->line("{$firm->name} needs the following documents for your matter:");
+            ->subject(__('Documents needed: :title', ['title' => $request->title]))
+            ->greeting(__('Dear :name,', ['name' => $notifiable->name]))
+            ->line(__(':firm needs the following documents for your matter:', ['firm' => $firm->name]));
 
         foreach ($request->items as $item) {
-            $message->line('• '.$item->label.($item->required ? '' : ' (if available)'));
+            $message->line('• '.$item->label.($item->required ? '' : ' '.__('(if available)')));
         }
         if ($request->message) {
             $message->line('"'.$request->message.'"');
         }
         if ($request->due_on) {
-            $message->line('Please upload them by '.$request->due_on->format('F j, Y').'.');
+            $message->line(__('Please upload them by :date.', ['date' => PortalLocale::date($request->due_on)]));
         }
 
         return $message
-            ->action('Upload in the client portal', rtrim(config('app.frontend_url'), '/')."/portal/requests/{$request->id}")
-            ->salutation("Sincerely,\n{$firm->name}");
+            ->action(__('Upload in the client portal'), rtrim(config('app.frontend_url'), '/')."/portal/requests/{$request->id}")
+            ->salutation(__('Sincerely,')."\n{$firm->name}");
     }
 }

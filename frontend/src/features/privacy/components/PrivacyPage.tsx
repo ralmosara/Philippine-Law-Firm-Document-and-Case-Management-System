@@ -366,13 +366,13 @@ function NoticePanel() {
 
 function NoticeForm({ initial }: { initial: NonNullable<ReturnType<typeof usePrivacySettings>['data']> }) {
   const save = useSavePrivacySettings()
-  const [form, setForm] = useState({ dpo_name: initial.dpo_name ?? '', dpo_email: initial.dpo_email ?? '', privacy_notice: initial.privacy_notice ?? '', retention_years: initial.retention_years })
+  const [form, setForm] = useState({ dpo_name: initial.dpo_name ?? '', dpo_email: initial.dpo_email ?? '', privacy_notice: initial.privacy_notice ?? '', privacy_notice_fil: initial.privacy_notice_fil ?? '', retention_years: initial.retention_years })
   const [custom, setCustom] = useState(!!initial.privacy_notice)
   const error = save.error ? ApiError.from(save.error) : null
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    save.mutate({ dpo_name: form.dpo_name || null, dpo_email: form.dpo_email || null, privacy_notice: custom ? form.privacy_notice || null : null, retention_years: form.retention_years })
+    save.mutate({ dpo_name: form.dpo_name || null, dpo_email: form.dpo_email || null, privacy_notice: custom ? form.privacy_notice || null : null, privacy_notice_fil: form.privacy_notice_fil.trim() || null, retention_years: form.retention_years })
   }
 
   return (
@@ -394,6 +394,16 @@ function NoticeForm({ initial }: { initial: NonNullable<ReturnType<typeof usePri
           <Field label="Privacy notice" error={error?.field('privacy_notice')}>{(a) => <Textarea {...a} rows={14} value={form.privacy_notice} onChange={(e) => setForm({ ...form, privacy_notice: e.target.value })} />}</Field>
         ) : (
           <div className="rounded-[3px] bg-surface-container p-4 text-sm whitespace-pre-line">{initial.default_notice}</div>
+        )}
+        <Field
+          label="Filipino version"
+          error={error?.field('privacy_notice_fil')}
+          hint={custom ? 'For clients who use the portal in Filipino. Leave empty to show them your English notice.' : 'For clients who use the portal in Filipino. Leave empty to show them the built-in Filipino translation.'}
+        >
+          {(a) => <Textarea {...a} rows={form.privacy_notice_fil ? 14 : 3} value={form.privacy_notice_fil} onChange={(e) => setForm({ ...form, privacy_notice_fil: e.target.value })} />}
+        </Field>
+        {!form.privacy_notice_fil && (
+          <Button variant="text" size="sm" className="self-start" onClick={() => setForm({ ...form, privacy_notice_fil: initial.default_notice_fil })}>Start from the built-in Filipino notice</Button>
         )}
         <FormError message={error && !Object.keys(error.errors).length ? error.message : null} />
         <Button type="submit" loading={save.isPending} className="self-start">Save</Button>

@@ -6,6 +6,8 @@ import { Button } from '@/shared/ui/Button'
 import { PageLoader } from '@/shared/ui/Feedback'
 import { Field, FormError, Input } from '@/shared/ui/Form'
 import { usePortalLogin, usePortalSession } from '../api'
+import { t } from '@/shared/lib/i18n'
+import { LanguageSwitcher } from '../i18n'
 
 export function ClientLogin() {
   const session = usePortalSession()
@@ -38,20 +40,21 @@ export function ClientLogin() {
             <span className="mb-4 flex size-12 items-center justify-center rounded-[3px] bg-primary-container text-on-primary-container">
               <Scale className="size-6" aria-hidden="true" />
             </span>
-            <h1 className="text-2xl font-semibold tracking-tight">Client portal</h1>
-            <p className="mt-1 text-sm text-on-surface-variant">Follow your cases, documents and account with your law firm.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('Client portal')}</h1>
+            <p className="mt-1 text-sm text-on-surface-variant">{t('Follow your cases, documents and account with your law firm.')}</p>
           </div>
           <form onSubmit={submit} className="flex flex-col gap-5">
             <FormError message={error} />
-            <Field label="Email">{(a) => <Input {...a} type="email" autoComplete="username" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>
-            <Field label="Password">{(a) => <Input {...a} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
-            <Link to="/portal/forgot-password" className="self-end text-sm font-medium text-primary hover:underline">Forgot password?</Link>
-            <Button type="submit" loading={login.isPending} className="w-full">Sign in</Button>
+            <Field label={t('Email')}>{(a) => <Input {...a} type="email" autoComplete="username" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>
+            <Field label={t('Password')}>{(a) => <Input {...a} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
+            <Link to="/portal/forgot-password" className="self-end text-sm font-medium text-primary hover:underline">{t('Forgot password?')}</Link>
+            <Button type="submit" loading={login.isPending} className="w-full">{t('Sign in')}</Button>
           </form>
-          <p className="mt-6 text-center text-xs text-on-surface-variant">No account? Your lawyer can give you portal access.</p>
+          <p className="mt-6 text-center text-xs text-on-surface-variant">{t('No account? Your lawyer can give you portal access.')}</p>
         </div>
-        <p className="mt-6 text-center text-sm text-on-surface-variant">
-          Firm staff? <Link to="/login" className="font-medium text-primary hover:underline">Sign in here</Link>
+        <div className="mt-6 flex justify-center text-on-surface-variant"><LanguageSwitcher signedIn={false} /></div>
+        <p className="mt-4 text-center text-sm text-on-surface-variant">
+          {t('Firm staff?')} <Link to="/login" className="font-medium text-primary hover:underline">{t('Sign in here')}</Link>
         </p>
       </div>
     </main>

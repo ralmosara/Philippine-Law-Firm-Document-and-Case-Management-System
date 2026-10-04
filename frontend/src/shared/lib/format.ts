@@ -1,3 +1,4 @@
+import { intlLocale } from './i18n'
 const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' })
 const pesoCompact = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', notation: 'compact', maximumFractionDigits: 1 })
 
@@ -36,21 +37,34 @@ export function today(): string {
   return isoDate(new Date())
 }
 
-const dateFormat = new Intl.DateTimeFormat('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
-const longDateFormat = new Intl.DateTimeFormat('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-const dateTimeFormat = new Intl.DateTimeFormat('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+// Dates follow the portal language (English or Filipino month names); the staff app is always English.
+const formats = new Map<string, Intl.DateTimeFormat>()
+function formatter(kind: 'date' | 'long' | 'dateTime'): Intl.DateTimeFormat {
+  const locale = intlLocale()
+  const key = `${locale}:${kind}`
+  let f = formats.get(key)
+  if (!f) {
+    const options: Intl.DateTimeFormatOptions =
+      kind === 'date' ? { month: 'short', day: 'numeric', year: 'numeric' }
+        : kind === 'long' ? { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }
+          : { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }
+    f = new Intl.DateTimeFormat(locale, options)
+    formats.set(key, f)
+  }
+  return f
+}
 
 export function date(value: string | null | undefined): string {
   if (!value) return '—'
-  return dateFormat.format(value.length <= 10 ? parseDate(value) : new Date(value))
+  return formatter('date').format(value.length <= 10 ? parseDate(value) : new Date(value))
 }
 
 export function longDate(value: string): string {
-  return longDateFormat.format(parseDate(value))
+  return formatter('long').format(parseDate(value))
 }
 
 export function dateTime(value: string | null | undefined): string {
-  return value ? dateTimeFormat.format(new Date(value)) : '—'
+  return value ? formatter('dateTime').format(new Date(value)) : '—'
 }
 
 /** "2h 30m" from minutes. */

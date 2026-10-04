@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { AlertCircle, Inbox } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ApiError } from '@/shared/api/axios'
+import { t } from '@/shared/lib/i18n'
 
 export function Spinner({ className }: { className?: string }) {
   return (
@@ -12,11 +13,11 @@ export function Spinner({ className }: { className?: string }) {
   )
 }
 
-export function PageLoader({ label = 'Loading…' }: { label?: string }) {
+export function PageLoader({ label }: { label?: string }) {
   return (
     <div role="status" className="flex min-h-48 items-center justify-center gap-3 text-sm text-on-surface-variant">
       <Spinner />
-      {label}
+      {label ?? t('Loading…')}
     </div>
   )
 }
@@ -29,7 +30,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
       <p className="text-sm text-on-danger-container">{message}</p>
       {onRetry && (
         <button type="button" onClick={onRetry} className="text-sm font-medium text-primary hover:underline">
-          Try again
+          {t('Try again')}
         </button>
       )}
     </div>

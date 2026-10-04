@@ -8,6 +8,7 @@ import { Button } from '@/shared/ui/Button'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Field, FormError, Select, Textarea } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader } from '@/shared/ui/Layout'
+import { t } from '@/shared/lib/i18n'
 
 export interface PortalPrivacy {
   notice: string
@@ -43,13 +44,13 @@ export function PrivacyConsentGate({ firmName, children }: { firmName: string; c
   return (
     <Card className="mx-auto max-w-2xl">
       <CardHeader
-        title={<span className="flex items-center gap-2"><ShieldCheck className="size-5 text-primary" aria-hidden /> How {firmName} handles your information</span>}
-        description={privacy.data.accepted_version ? 'Our privacy notice has changed. Please read the new version.' : 'Before you continue, please read our privacy notice.'}
+        title={<span className="flex items-center gap-2"><ShieldCheck className="size-5 text-primary" aria-hidden /> {t('How {firm} handles your information', { firm: firmName })}</span>}
+        description={privacy.data.accepted_version ? t('Our privacy notice has changed. Please read the new version.') : t('Before you continue, please read our privacy notice.')}
       />
-      <div className="max-h-[50vh] overflow-y-auto p-5 text-sm whitespace-pre-line" tabIndex={0} aria-label="Privacy notice">{privacy.data.notice}</div>
+      <div className="max-h-[50vh] overflow-y-auto p-5 text-sm whitespace-pre-line" tabIndex={0} aria-label={t('Privacy notice')}>{privacy.data.notice}</div>
       <div className="flex flex-col gap-3 border-t border-outline-variant p-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-on-surface-variant">Questions? Contact {privacy.data.dpo.name ?? 'our Data Protection Officer'}{privacy.data.dpo.email && ` at ${privacy.data.dpo.email}`}.</p>
-        <Button loading={accept.isPending} onClick={() => accept.mutate()}>I have read this notice</Button>
+        <p className="text-xs text-on-surface-variant">{t('Questions? Contact {firm}', { firm: privacy.data.dpo.name ?? t('our Data Protection Officer') })}{privacy.data.dpo.email && ` ${t('at {phone}', { phone: privacy.data.dpo.email })}`}.</p>
+        <Button loading={accept.isPending} onClick={() => accept.mutate()}>{t('I have read this notice')}</Button>
       </div>
     </Card>
   )
@@ -62,7 +63,7 @@ export function PortalPrivacyPage() {
   const [details, setDetails] = useState('')
   const send = useApiMutation((input: { type: string; details?: string }) => post<PortalPrivacy>('/portal/privacy/requests', input), {
     invalidate: [['portal', 'privacy']],
-    success: 'Request sent. We will answer within 15 days.',
+    success: () => t('Request sent. We will answer within 15 days.'),
     toastErrors: false,
   })
   const error = send.error ? ApiError.from(send.error) : null
@@ -78,39 +79,39 @@ export function PortalPrivacyPage() {
 
   return (
     <>
-      <PageHeader title="My data" description="Under the Data Privacy Act you may see, correct or delete the information we hold about you, object to how we use it, or get a copy to take elsewhere." />
+      <PageHeader title={t('My data')} description={t('Under the Data Privacy Act you may see, correct or delete the information we hold about you, object to how we use it, or get a copy to take elsewhere.')} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Make a request" />
+          <CardHeader title={t('Make a request')} />
           <form onSubmit={submit} className="flex flex-col gap-4 p-5">
-            <Field label="I would like to">
+            <Field label={t('I would like to')}>
               {(a) => (
                 <Select {...a} value={type} onChange={(e) => setType(e.target.value)}>
                   {p.request_types.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </Select>
               )}
             </Field>
-            <Field label="Details" error={error?.field('details')} hint={type === 'erasure' ? 'We may need to keep some records while a case is open or the law requires it; we will explain.' : undefined}>
-              {(a) => <Textarea {...a} rows={4} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={type === 'correction' ? 'What should we correct?' : 'Anything we should know (optional)'} />}
+            <Field label={t('Details')} error={error?.field('details')} hint={type === 'erasure' ? t('We may need to keep some records while a case is open or the law requires it; we will explain.') : undefined}>
+              {(a) => <Textarea {...a} rows={4} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={type === 'correction' ? t('What should we correct?') : t('Anything we should know (optional)')} />}
             </Field>
             <FormError message={error && !Object.keys(error.errors).length ? error.message : null} />
-            <Button type="submit" loading={send.isPending} className="self-start">Send request</Button>
+            <Button type="submit" loading={send.isPending} className="self-start">{t('Send request')}</Button>
           </form>
         </Card>
 
         <Card>
-          <CardHeader title="Your requests" />
-          {p.requests.length === 0 ? <EmptyState title="No requests yet" /> : (
+          <CardHeader title={t('Your requests')} />
+          {p.requests.length === 0 ? <EmptyState title={t('No requests yet')} /> : (
             <ul className="divide-y divide-outline-variant">
               {p.requests.map((r) => (
                 <li key={r.id} className="p-5 text-sm">
                   <p className="flex flex-wrap items-center gap-2 font-medium">
                     {r.type_label}
-                    {r.status === 'open' ? <Badge tone="warning">Answer by {date(r.due_on)}</Badge> : r.status === 'completed' ? <Badge tone="success">Done</Badge> : <Badge>Declined</Badge>}
+                    {r.status === 'open' ? <Badge tone="warning">{t('Answer by {date}', { date: date(r.due_on) })}</Badge> : r.status === 'completed' ? <Badge tone="success">{t('Done')}</Badge> : <Badge>{t('Declined')}</Badge>}
                   </p>
-                  <p className="text-xs text-on-surface-variant">Sent {date(r.created_at)}</p>
+                  <p className="text-xs text-on-surface-variant">{t('Sent {date}', { date: date(r.created_at) })}</p>
                   {r.details && <p className="mt-1 whitespace-pre-line">{r.details}</p>}
-                  {r.resolution && <p className="mt-2 rounded-[3px] bg-surface-container p-3"><span className="font-medium">Our answer:</span> {r.resolution}</p>}
+                  {r.resolution && <p className="mt-2 rounded-[3px] bg-surface-container p-3"><span className="font-medium">{t('Our answer:')}</span> {r.resolution}</p>}
                 </li>
               ))}
             </ul>
@@ -118,7 +119,7 @@ export function PortalPrivacyPage() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader title="Privacy notice" description={p.accepted_at ? `Version ${p.version}. You read it on ${date(p.accepted_at)}.` : `Version ${p.version}.`} />
+          <CardHeader title={t('Privacy notice')} description={p.accepted_at ? t('Version {version}. You read it on {date}.', { version: p.version, date: date(p.accepted_at) }) : t('Version {version}.', { version: p.version })} />
           <div className="p-5 text-sm whitespace-pre-line">{p.notice}</div>
         </Card>
       </div>

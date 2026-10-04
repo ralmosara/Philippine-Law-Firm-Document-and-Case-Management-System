@@ -12,10 +12,11 @@ import { date, dateTime, money } from '@/shared/lib/format'
 import { Button, DownloadButton } from '@/shared/ui/Button'
 import { ConfirmDialog, Dialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
-import { Checkbox, Field, FormError, Input } from '@/shared/ui/Form'
+import { Checkbox, Field, FormError, Input, Select } from '@/shared/ui/Form'
 import { Card, CardHeader, DescriptionList, PageHeader, Table, Td, Th, Tr } from '@/shared/ui/Layout'
 import { useClient, useDeleteClient, usePortalAccess } from '../api'
 import { ClientForm } from './ClientForm'
+import { LOCALES, type Locale } from '@/shared/lib/i18n'
 
 export function ClientDetail() {
   const id = Number(useParams().id)
@@ -124,6 +125,7 @@ function PortalAccessDialog({ client, onClose }: { client: Client; onClose: () =
   const [enabled, setEnabled] = useState(client.portal_enabled)
   const [password, setPassword] = useState('')
   const [method, setMethod] = useState<'keep' | 'invite' | 'password'>(client.portal_password_set ? 'keep' : 'invite')
+  const [locale, setLocale] = useState<Locale>(client.portal_locale)
   const [error, setError] = useState<ApiError | null>(null)
 
   const submit = async (e: FormEvent) => {
@@ -131,6 +133,7 @@ function PortalAccessDialog({ client, onClose }: { client: Client; onClose: () =
     try {
       await access.mutateAsync({
         portal_enabled: enabled,
+        locale,
         ...(enabled && method === 'invite' ? { send_invite: true } : {}),
         ...(enabled && method === 'password' && password ? { password } : {}),
       })
@@ -167,6 +170,15 @@ function PortalAccessDialog({ client, onClose }: { client: Client; onClose: () =
             </label>
             <label className="flex items-center gap-2 text-sm"><input type="radio" name="pw" checked={method === 'password'} onChange={() => setMethod('password')} className="accent-(--color-primary)" /> Set a password myself</label>
           </fieldset>
+        )}
+        {enabled && (
+          <Field label="Language" hint="Of the portal and of the emails the firm sends this client. They can change it in the portal.">
+            {(a) => (
+              <Select {...a} value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>
+                {LOCALES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+              </Select>
+            )}
+          </Field>
         )}
         {enabled && method === 'password' && (
           <Field label="Password" required error={error?.field('password')} hint={`Share it with ${client.email} through a secure channel; they sign in at /portal.`}>

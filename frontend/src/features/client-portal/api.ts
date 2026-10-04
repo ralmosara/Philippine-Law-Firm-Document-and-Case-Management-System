@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError, apiClient, get, post } from '@/shared/api/axios'
+import { ApiError, apiClient, get, post, put } from '@/shared/api/axios'
 import { messageForm, type MessageThread } from '@/features/messages/api'
+import { getLocale, setLocale, type Locale } from '@/shared/lib/i18n'
 
 export interface PortalClient {
   id: number
   name: string
   email: string
+  locale: Locale
   firm: { id: number; name: string; email: string | null; phone: string | null; address: string | null }
 }
 
@@ -63,7 +65,10 @@ export function usePortalSession() {
     queryKey: portalKey,
     queryFn: async () => {
       try {
-        return (await get<{ client: PortalClient }>('/portal/me')).client
+        const client = (await get<{ client: PortalClient }>('/portal/me')).client
+        // Signed in, the language saved on the client's record (set on any device) applies.
+        setLocale(client.locale)
+        return client
       } catch (error) {
         if (error instanceof ApiError && (error.status === 401 || error.status === 403)) return null
         throw error
@@ -78,7 +83,12 @@ export function usePortalLogin() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (credentials: { email: string; password: string }) => post<{ client: PortalClient }>('/portal/login', credentials),
-    onSuccess: (data) => queryClient.setQueryData(portalKey, data.client),
+    onSuccess: (data) => {
+      // A language picked on the sign-in screen is saved to the client's record.
+      const chosen = getLocale()
+      if (chosen !== data.client.locale) void put('/portal/locale', { locale: chosen })
+      queryClient.setQueryData(portalKey, { ...data.client, locale: chosen })
+    },
   })
 }
 

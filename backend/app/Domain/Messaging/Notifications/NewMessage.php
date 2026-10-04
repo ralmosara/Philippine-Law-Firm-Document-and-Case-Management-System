@@ -41,10 +41,10 @@ class NewMessage extends Notification implements ShouldQueue
 
         if ($this->forClient) {
             return (new MailMessage)
-                ->subject('New message from your lawyer')
-                ->line("You have a new message about your matter {$reference}: \"{$this->thread->subject}\".")
-                ->line('For your privacy, the message can only be read in the client portal.')
-                ->action('Read the message', "{$base}/portal/messages/{$this->thread->id}");
+                ->subject(__('New message from your lawyer'))
+                ->line(__('You have a new message about your matter :reference: ":subject".', ['reference' => $reference, 'subject' => $this->thread->subject]))
+                ->line(__('For your privacy, the message can only be read in the client portal.'))
+                ->action(__('Read the message'), "{$base}/portal/messages/{$this->thread->id}");
         }
 
         return (new MailMessage)

@@ -93,6 +93,7 @@ export interface Client {
   notes: string | null
   aliases?: string | null
   portal_enabled: boolean
+  portal_locale: 'en' | 'fil'
   portal_password_set: boolean
   last_portal_login_at: string | null
   matters_count?: number

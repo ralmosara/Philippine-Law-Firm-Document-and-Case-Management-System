@@ -56,15 +56,16 @@ class PrivacyController extends Controller
             'dpo_name' => ['nullable', 'string', 'max:255'],
             'dpo_email' => ['nullable', 'email', 'max:255'],
             'privacy_notice' => ['nullable', 'string', 'max:20000'],
+            'privacy_notice_fil' => ['nullable', 'string', 'max:20000'],
             'retention_years' => ['required', 'integer', 'min:1', 'max:50'],
         ]);
 
         $firm = $this->firm($request);
-        $before = PrivacyNotice::text($firm);
+        $before = [PrivacyNotice::text($firm), PrivacyNotice::text($firm, 'fil')];
         $firm->fill($validated);
 
-        // A changed notice is a new version: portal clients are asked to accept it again.
-        if (PrivacyNotice::text($firm) !== $before) {
+        // A changed notice (in either language) is a new version: portal clients are asked to accept it again.
+        if ([PrivacyNotice::text($firm), PrivacyNotice::text($firm, 'fil')] !== $before) {
             $firm->forceFill(['privacy_notice_version' => $firm->privacy_notice_version + 1, 'privacy_notice_updated_at' => now()]);
         }
         $firm->save();
@@ -239,6 +240,8 @@ class PrivacyController extends Controller
             'dpo_email' => $firm->dpo_email,
             'privacy_notice' => $firm->privacy_notice,
             'default_notice' => PrivacyNotice::default($firm),
+            'privacy_notice_fil' => $firm->privacy_notice_fil,
+            'default_notice_fil' => PrivacyNotice::defaultFilipino($firm),
             'notice_text' => PrivacyNotice::text($firm),
             'privacy_notice_version' => $firm->privacy_notice_version,
             'privacy_notice_updated_at' => $firm->privacy_notice_updated_at?->toIso8601String(),

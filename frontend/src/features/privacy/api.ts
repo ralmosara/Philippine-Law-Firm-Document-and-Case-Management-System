@@ -26,6 +26,8 @@ export interface PrivacySettings {
   dpo_email: string | null
   privacy_notice: string | null
   default_notice: string
+  privacy_notice_fil: string | null
+  default_notice_fil: string
   notice_text: string
   privacy_notice_version: number
   privacy_notice_updated_at: string | null
@@ -87,7 +89,7 @@ export const useIncidents = () => useQuery({ queryKey: ['privacy', 'incidents'],
 export const useRetention = () => useQuery({ queryKey: ['privacy', 'retention'], queryFn: () => get<{ retention_years: number; matters: RetentionMatter[] }>('/v1/privacy/retention') })
 
 export function useSavePrivacySettings() {
-  return useApiMutation((input: { dpo_name: string | null; dpo_email: string | null; privacy_notice: string | null; retention_years: number }) => put<PrivacySettings>('/v1/privacy/settings', input), {
+  return useApiMutation((input: { dpo_name: string | null; dpo_email: string | null; privacy_notice: string | null; privacy_notice_fil: string | null; retention_years: number }) => put<PrivacySettings>('/v1/privacy/settings', input), {
     invalidate,
     success: (s) => `Saved. Privacy notice is at version ${s.privacy_notice_version}.`,
     toastErrors: false,

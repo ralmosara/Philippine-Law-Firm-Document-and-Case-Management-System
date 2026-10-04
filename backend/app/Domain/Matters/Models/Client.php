@@ -6,7 +6,9 @@ use App\Domain\Billing\Models\Invoice;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Models\Traits\Auditable;
 use App\Models\Traits\HasTenantScope;
+use App\Support\Localization\PortalLocale;
 use Database\Factories\ClientFactory;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,7 +19,7 @@ use Illuminate\Notifications\Notifiable;
  * A firm's client. Also the authenticatable principal for the client portal
  * (the `client` guard) when portal access has been enabled.
  */
-class Client extends Authenticatable
+class Client extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<ClientFactory> */
     use Auditable, HasFactory, HasTenantScope, Notifiable, SoftDeletes;
@@ -33,6 +35,7 @@ class Client extends Authenticatable
         'notes',
         'aliases',
         'portal_enabled',
+        'locale',
         'password',
     ];
 
@@ -43,6 +46,7 @@ class Client extends Authenticatable
 
     protected $attributes = [
         'portal_enabled' => false,
+        'locale' => 'en',
         'privacy_notice_version' => null,
         'privacy_accepted_at' => null,
         'anonymized_at' => null,
@@ -79,5 +83,11 @@ class Client extends Authenticatable
     protected static function newFactory(): ClientFactory
     {
         return ClientFactory::new();
+    }
+
+    /** Emails to the client go out in the language they chose in the portal. */
+    public function preferredLocale(): string
+    {
+        return PortalLocale::normalize($this->locale);
     }
 }

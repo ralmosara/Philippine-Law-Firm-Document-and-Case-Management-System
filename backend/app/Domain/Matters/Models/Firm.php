@@ -13,7 +13,7 @@ class Firm extends Model
     /** @use HasFactory<FirmFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'dpo_name', 'dpo_email', 'privacy_notice', 'retention_years', 'payment_reminders_enabled', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees'];
+    protected $fillable = ['name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'dpo_name', 'dpo_email', 'privacy_notice', 'privacy_notice_fil', 'retention_years', 'payment_reminders_enabled', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees'];
 
     /** The database defaults, so a firm just created in code behaves the same as one loaded. */
     protected $attributes = [

@@ -8,6 +8,7 @@ import { ClientLogin } from './features/client-portal/components/ClientLogin'
 import { ClientPortalDashboard } from './features/client-portal/components/ClientPortalDashboard'
 import { ErrorState, PageLoader } from './shared/ui/Feedback'
 import type { Abilities } from './shared/api/types'
+import { PortalLocaleScope } from './features/client-portal/i18n'
 
 /** Code-split each page; the shell and auth screens load eagerly. */
 function page<K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) {
@@ -53,8 +54,12 @@ export const router = createBrowserRouter([
       { path: '/login', element: <LoginForm /> },
       { path: '/forgot-password', element: page(() => import('./features/auth/components/PasswordReset'), 'ForgotPasswordPage') },
       { path: '/reset-password', element: page(() => import('./features/auth/components/PasswordReset'), 'ResetPasswordPage') },
-      { path: '/portal/login', element: <ClientLogin /> },
       { path: '/consult/:slug', element: page(() => import('./features/intake/components/PublicIntakePage'), 'PublicIntakePage') },
+      {
+        // The client portal, in English or Filipino.
+        element: <PortalLocaleScope />,
+        children: [
+      { path: '/portal/login', element: <ClientLogin /> },
       { path: '/portal/forgot-password', element: page(() => import('./features/auth/components/PasswordReset'), 'PortalForgotPasswordPage') },
       { path: '/portal/reset-password', element: page(() => import('./features/auth/components/PasswordReset'), 'PortalResetPasswordPage') },
       {
@@ -68,6 +73,8 @@ export const router = createBrowserRouter([
           { path: 'messages/:id', element: page(() => import('./features/client-portal/components/PortalMessages'), 'PortalMessages') },
           { path: 'privacy', element: page(() => import('./features/client-portal/components/PortalPrivacy'), 'PortalPrivacyPage') },
           { path: 'requests/:id', element: page(() => import('./features/client-portal/components/PortalDocumentRequests'), 'PortalDocumentRequest') },
+        ],
+      },
         ],
       },
       {

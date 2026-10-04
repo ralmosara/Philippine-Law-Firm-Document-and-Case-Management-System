@@ -26,17 +26,17 @@ class PortalPrivacyController extends Controller
         $firm = Firm::findOrFail($client->firm_id);
 
         return response()->json([
-            'notice' => PrivacyNotice::text($firm),
+            'notice' => PrivacyNotice::text($firm, app()->getLocale()),
             'version' => $firm->privacy_notice_version,
             'accepted_version' => $client->privacy_notice_version,
             'accepted_at' => $client->privacy_accepted_at?->toIso8601String(),
             'needs_acceptance' => $client->privacy_notice_version === null || $client->privacy_notice_version < $firm->privacy_notice_version,
             'dpo' => ['name' => $firm->dpo_name, 'email' => $firm->dpo_email ?: $firm->email],
-            'request_types' => collect(DataSubjectRequest::TYPES)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),
+            'request_types' => collect(DataSubjectRequest::TYPES)->map(fn ($label, $value) => ['value' => $value, 'label' => __($label)])->values(),
             'requests' => DataSubjectRequest::where('client_id', $client->id)->latest('id')->get()->map(fn (DataSubjectRequest $r) => [
                 'id' => $r->id,
                 'type' => $r->type,
-                'type_label' => DataSubjectRequest::TYPES[$r->type] ?? $r->type,
+                'type_label' => __(DataSubjectRequest::TYPES[$r->type] ?? $r->type),
                 'details' => $r->details,
                 'status' => $r->status,
                 'due_on' => $r->due_on->toDateString(),
@@ -58,7 +58,7 @@ class PortalPrivacyController extends Controller
         $validated = $request->validate([
             'type' => ['required', Rule::in(array_keys(DataSubjectRequest::TYPES))],
             'details' => ['required_if:type,correction,objection', 'nullable', 'string', 'max:5000'],
-        ], ['details.required_if' => 'Tell us what should change, or which use you object to.']);
+        ], ['details.required_if' => __('Tell us what should change, or which use you object to.')]);
 
         $client = $this->client($request);
         $dsr = $this->privacy->receiveRequest(Firm::findOrFail($client->firm_id), $validated, $client, 'portal');

@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import { noteNetworkFailure } from '@/shared/offline/connectivity'
+import { getLocale } from '@/shared/lib/i18n'
 
 /**
  * HTTP client for the Laravel API. Authentication is Sanctum's cookie-based
@@ -30,6 +31,8 @@ export function ensureCsrfCookie(): Promise<unknown> {
 const SAFE_METHODS = new Set(['get', 'head', 'options'])
 
 apiClient.interceptors.request.use(async (config) => {
+  // The portal's language, for messages the server writes (validation errors, labels).
+  config.headers.set('X-Locale', getLocale())
   if (!SAFE_METHODS.has((config.method ?? 'get').toLowerCase())) {
     await ensureCsrfCookie()
   }

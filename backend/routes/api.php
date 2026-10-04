@@ -58,6 +58,7 @@ use App\Http\Controllers\PortalDocumentRequestController;
 use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
 use App\Http\Controllers\PublicIntakeController;
+use App\Http\Middleware\SetPortalLocale;
 use Illuminate\Support\Facades\Route;
 
 // For uptime monitors. /up (Laravel's) only proves PHP runs; this checks
@@ -324,7 +325,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 | A separate session guard (`client`) and a read-only surface.
 */
 
-Route::prefix('portal')->middleware('throttle:api')->group(function () {
+Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->group(function () {
     Route::middleware('throttle:login')->group(function () {
         Route::post('login', [ClientAuthController::class, 'login']);
         Route::post('forgot-password', [ClientAuthController::class, 'forgotPassword']);
@@ -334,6 +335,7 @@ Route::prefix('portal')->middleware('throttle:api')->group(function () {
     Route::middleware(['auth:client', 'tenant:client'])->group(function () {
         Route::get('me', [ClientAuthController::class, 'me']);
         Route::post('logout', [ClientAuthController::class, 'logout']);
+        Route::put('locale', [ClientAuthController::class, 'locale']);
         Route::get('matters', [ClientPortalController::class, 'getMatters']);
         Route::get('matters/{matter}', [ClientPortalController::class, 'getMatter'])->whereNumber('matter');
         Route::get('documents/{document}', [ClientPortalController::class, 'getDocument'])->whereNumber('document');
