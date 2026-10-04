@@ -5,6 +5,7 @@ FROM php:8.4-fpm-bookworm
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git unzip libpq-dev libzip-dev libicu-dev \
        tesseract-ocr tesseract-ocr-eng tesseract-ocr-fil poppler-utils ghostscript \
+       catdoc libemail-outlook-message-perl libemail-address-perl \
        libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
     && docker-php-ext-configure gd --with-jpeg --with-freetype \
     && docker-php-ext-install pdo_pgsql pgsql bcmath intl pcntl zip opcache gd \

@@ -5,7 +5,10 @@ use App\Domain\Billing\Services\Disbursements;
 use App\Domain\Business\Pipeline;
 use App\Domain\Corporate\CorporateSecretarial;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
+use App\Domain\Documents\Jobs\ExtractMatterFileText;
+use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Documents\Requests\DocumentRequests;
+use App\Domain\Documents\Search\FileTextExtractor;
 use App\Domain\EInvoicing\EInvoicing;
 use App\Domain\Matters\Models\Firm;
 use App\Domain\Prescription\Prescriptions;
@@ -131,3 +134,20 @@ Artisan::command('einvoices:flag-overdue', function (EInvoicing $eInvoicing, Ten
     $this->info("Flagged {$total} e-invoice(s) due to reach the BIR and not yet sent.");
 })->purpose('Tell finance staff about e-invoices due to reach the BIR that have not been sent');
 Schedule::command('einvoices:flag-overdue')->dailyAt('08:30')->withoutOverlapping()->onOneServer();
+
+Artisan::command('files:extract-text {--failed : Also retry files whose extraction failed}', function (FileTextExtractor $extractor) {
+    // After new readers are added (e.g. old .doc/.xls/.ppt and Outlook .msg), files
+    // uploaded before are still marked "unsupported": queue the ones now readable.
+    $statuses = $this->option('failed') ? ['unsupported', 'failed'] : ['unsupported'];
+    $queued = 0;
+    MatterFile::withoutGlobalScopes()->whereIn('text_status', $statuses)->select(['id', 'original_name'])->chunkById(500, function ($files) use ($extractor, &$queued) {
+        foreach ($files as $file) {
+            if ($extractor->supports(pathinfo($file->original_name, PATHINFO_EXTENSION))) {
+                $file->forceFill(['text_status' => 'pending'])->saveQuietly();
+                ExtractMatterFileText::dispatch($file->id);
+                $queued++;
+            }
+        }
+    });
+    $this->info("Queued {$queued} file(s) for text extraction.");
+})->purpose('Re-read files that could not be read before, now that more formats are supported');
