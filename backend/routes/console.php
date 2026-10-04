@@ -8,6 +8,7 @@ use App\Domain\Deadlines\Services\ReminderDispatcher;
 use App\Domain\Documents\Requests\DocumentRequests;
 use App\Domain\EInvoicing\EInvoicing;
 use App\Domain\Matters\Models\Firm;
+use App\Domain\Prescription\Prescriptions;
 use App\Domain\Tax\TaxFilingReminders;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Domain\Trust\Services\TrustLedgerService;
@@ -112,6 +113,15 @@ Artisan::command('ops:health-check', function (SystemHealth $health) {
 // Run by the scheduler, so it cannot report the scheduler itself stopping:
 // point an external uptime monitor at /api/health for that.
 Schedule::command('ops:health-check')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+
+Artisan::command('prescriptions:remind', function (Prescriptions $prescriptions, TenantContext $tenant) {
+    $total = 0;
+    Firm::query()->each(function (Firm $firm) use ($prescriptions, $tenant, &$total) {
+        $total += $tenant->runAs($firm->id, fn () => $prescriptions->sendReminders());
+    });
+    $this->info("Sent {$total} prescription reminder(s).");
+})->purpose('Remind lawyers of causes of action about to prescribe: 6 months, 3 months, 30, 14, 7, 3 and 1 days before, on the day and once past');
+Schedule::command('prescriptions:remind')->dailyAt('07:45')->withoutOverlapping()->onOneServer();
 
 Artisan::command('einvoices:flag-overdue', function (EInvoicing $eInvoicing, TenantContext $tenant) {
     $total = 0;

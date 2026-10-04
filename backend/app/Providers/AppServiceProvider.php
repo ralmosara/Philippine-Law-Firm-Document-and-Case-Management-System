@@ -29,6 +29,7 @@ use App\Domain\Filing\Models\EFiling;
 use App\Domain\Knowledge\Models\KnowledgeItem;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
+use App\Domain\Prescription\MatterPrescription;
 use App\Domain\Privacy\Models\DataSubjectRequest;
 use App\Domain\Privacy\Models\PrivacyIncident;
 use App\Domain\Tax\Models\TaxFiling;
@@ -98,6 +99,7 @@ class AppServiceProvider extends ServiceProvider
             'prospect' => Prospect::class,
             'e_filing' => EFiling::class,
             'matter_budget' => MatterBudget::class,
+            'matter_prescription' => MatterPrescription::class,
         ]);
 
         $this->configureDatabaseTenancy();
