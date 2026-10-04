@@ -29,6 +29,8 @@ export interface PortalMatterDetail extends PortalMatter {
   court: string | null
   court_branch: string | null
   description: string | null
+  /** Shared by the firm: centavos (basis amount) or minutes (basis hours). */
+  budget: { basis: 'amount' | 'hours'; total: number; used: number; percent: number; includes_expenses: boolean } | null
   timeline: { status: string; date: string }[]
   documents: { id: number; title: string; status: string; updated_at: string }[]
   files: { id: number; name: string; description: string | null; size_bytes: number; created_at: string }[]

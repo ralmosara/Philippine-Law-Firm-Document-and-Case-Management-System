@@ -6,6 +6,7 @@ use App\Casts\DateOnly;
 use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\TimeEntry;
+use App\Domain\Budgets\MatterBudget;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
@@ -132,6 +133,11 @@ class Matter extends Model
     public function parties(): HasMany
     {
         return $this->hasMany(MatterParty::class);
+    }
+
+    public function budget(): HasOne
+    {
+        return $this->hasOne(MatterBudget::class);
     }
 
     public function statusEvents(): HasMany

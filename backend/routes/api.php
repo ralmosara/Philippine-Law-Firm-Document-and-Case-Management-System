@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoicePaymentController;
 use App\Http\Controllers\Api\V1\KnowledgeController;
 use App\Http\Controllers\Api\V1\LookupController;
+use App\Http\Controllers\Api\V1\MatterBudgetController;
 use App\Http\Controllers\Api\V1\MatterController;
 use App\Http\Controllers\Api\V1\MatterDeadlineController;
 use App\Http\Controllers\Api\V1\MatterEmailController;
@@ -214,6 +215,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('matters/{matter}/pleadings/preview', [PleadingController::class, 'preview']);
         Route::post('matters/{matter}/pleadings', [PleadingController::class, 'store']);
         Route::get('matters/{matter}/e-filings', [EFilingController::class, 'index']);
+        Route::get('matters/{matter}/budget', [MatterBudgetController::class, 'show']);
+        Route::put('matters/{matter}/budget', [MatterBudgetController::class, 'update']);
+        Route::delete('matters/{matter}/budget', [MatterBudgetController::class, 'destroy']);
         Route::get('matters/{matter}/e-filings/sources', [EFilingController::class, 'sources']);
         Route::post('matters/{matter}/e-filings', [EFilingController::class, 'store'])->middleware('throttle:10,1');
         Route::post('e-filings/{eFiling}/filed', [EFilingController::class, 'filed']);

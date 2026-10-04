@@ -8,6 +8,7 @@ use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Models\TimeEntry;
+use App\Domain\Budgets\MatterBudget;
 use App\Domain\Business\Models\Prospect;
 use App\Domain\Compliance\Models\McleCredit;
 use App\Domain\Corporate\Models\CorporateObligation;
@@ -96,6 +97,7 @@ class AppServiceProvider extends ServiceProvider
             'knowledge_item' => KnowledgeItem::class,
             'prospect' => Prospect::class,
             'e_filing' => EFiling::class,
+            'matter_budget' => MatterBudget::class,
         ]);
 
         $this->configureDatabaseTenancy();
@@ -174,6 +176,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('practice-law', fn (User $user) => $user->role->isLawyer());
 
         // Expenses from a liquidated cash advance must keep matching it (and the trust ledger).
+        // Lawyers and whoever runs the firm's finances set what a matter may cost.
+        Gate::define('set-budgets', fn (User $user) => $user->role->isLawyer() || $user->role->canManageFinances());
         Gate::define('modify-expense', fn (User $user, Expense $expense) => ! $expense->isInvoiced() && $expense->disbursement_request_id === null
             && ((int) $expense->user_id === $user->id || $user->role->canManageFinances()));
 

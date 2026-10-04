@@ -118,6 +118,12 @@ registerDictionary('fil', {
   Files: 'Mga file',
   'Copies the firm has shared with you.': 'Mga kopyang ibinahagi sa iyo ng firm.',
   Document: 'Dokumento',
+  'Budget:': 'Badyet:',
+  '{used} of {total} used': '{used} sa {total} ang nagamit',
+  'Budget used': 'Nagamit sa badyet',
+  'Hours of work on your matter, as agreed with your lawyer.': 'Mga oras ng trabaho sa iyong kaso, ayon sa napagkasunduan ninyo ng iyong abogado.',
+  'Professional fees and expenses, as agreed with your lawyer.': 'Propesyonal na bayad at mga gastos, ayon sa napagkasunduan ninyo ng iyong abogado.',
+  'Professional fees, as agreed with your lawyer.': 'Propesyonal na bayad, ayon sa napagkasunduan ninyo ng iyong abogado.',
 
   // Signing
   'Back to your matters': 'Bumalik sa iyong mga kaso',

@@ -37,6 +37,7 @@ const AFFECTS: Record<string, string[][]> = {
   disbursement: [['disbursements']],
   prospect: [['prospects']],
   document_uploaded: [['document-requests'], ['files']],
+  budget: [['budget']],
 }
 
 export function useNotifications() {

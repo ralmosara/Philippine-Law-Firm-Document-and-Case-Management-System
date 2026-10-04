@@ -33,7 +33,7 @@ export interface TimeEntryInput {
   rate_cents?: number
 }
 
-const timeInvalidate = [['time-entries'], ['matters'], ['dashboard']]
+const timeInvalidate = [['time-entries'], ['matters'], ['dashboard'], ['budget']]
 
 export function useSaveTimeEntry(id?: number) {
   const userId = useCurrentSession().user.id
@@ -196,14 +196,14 @@ export interface ExpenseInput {
 
 export function useSaveExpense(id?: number) {
   return useApiMutation((input: ExpenseInput) => (id ? patch<Expense>(`/v1/expenses/${id}`, input) : post<Expense>('/v1/expenses', input)), {
-    invalidate: [['expenses'], ['matters']],
+    invalidate: [['expenses'], ['matters'], ['budget']],
     success: id ? 'Expense updated' : 'Expense recorded',
     toastErrors: false,
   })
 }
 
 export function useDeleteExpense() {
-  return useApiMutation((id: number) => del(`/v1/expenses/${id}`), { invalidate: [['expenses'], ['matters']], success: 'Expense deleted' })
+  return useApiMutation((id: number) => del(`/v1/expenses/${id}`), { invalidate: [['expenses'], ['matters'], ['budget']], success: 'Expense deleted' })
 }
 
 /** Omitted id lists bill everything unbilled; an empty list bills none of that kind. */

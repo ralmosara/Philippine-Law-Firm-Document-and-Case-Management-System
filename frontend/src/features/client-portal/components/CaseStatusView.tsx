@@ -1,7 +1,7 @@
 import { ArrowLeft, Download, FileDown, FileText, Paperclip } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { date, fileSize } from '@/shared/lib/format'
+import { date, duration, fileSize, money } from '@/shared/lib/format'
 import { DownloadButton } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
 import { EmptyState, ErrorState, PageLoader, ProgressBar } from '@/shared/ui/Feedback'
@@ -31,6 +31,21 @@ export function CaseStatusView() {
         <div className="mb-2 flex justify-between text-sm"><span>{t('Current stage:')} <strong>{m.status_label}</strong></span><span className="text-on-surface-variant">{m.progress}%</span></div>
         <ProgressBar value={m.progress} label={t('Case progress')} tone={m.status === 'closed' ? 'success' : 'primary'} />
       </Card>
+
+      {m.budget && (
+        <Card className="mb-6 p-5">
+          <div className="mb-2 flex flex-wrap justify-between gap-2 text-sm">
+            <span>
+              {t('Budget:')} <strong>{t('{used} of {total} used', { used: m.budget.basis === 'hours' ? duration(m.budget.used) : money(m.budget.used), total: m.budget.basis === 'hours' ? duration(m.budget.total) : money(m.budget.total) })}</strong>
+            </span>
+            <span className="text-on-surface-variant">{m.budget.percent}%</span>
+          </div>
+          <ProgressBar value={m.budget.percent} label={t('Budget used')} tone={m.budget.percent >= 100 ? 'danger' : m.budget.percent >= 80 ? 'warning' : 'primary'} />
+          <p className="mt-2 text-xs text-on-surface-variant">
+            {m.budget.basis === 'hours' ? t('Hours of work on your matter, as agreed with your lawyer.') : m.budget.includes_expenses ? t('Professional fees and expenses, as agreed with your lawyer.') : t('Professional fees, as agreed with your lawyer.')}
+          </p>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
