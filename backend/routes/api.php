@@ -283,6 +283,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('e-invoices/{eInvoice}/payload', [EInvoiceController::class, 'payload']);
         Route::post('e-invoices/{eInvoice}/retry', [EInvoiceController::class, 'retry']);
         Route::post('invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink']);
+        Route::post('online-payments/{payment}/refund', [InvoiceController::class, 'refundOnlinePayment']);
         Route::get('privacy/summary', [PrivacyController::class, 'summary']);
         Route::get('privacy/settings', [PrivacyController::class, 'settings']);
         Route::put('privacy/settings', [PrivacyController::class, 'updateSettings']);

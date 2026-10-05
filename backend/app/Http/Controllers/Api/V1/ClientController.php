@@ -131,6 +131,7 @@ class ClientController extends Controller
                 Rule::unique('clients', 'email')->where('firm_id', $client?->firm_id ?? request()->user()->firm_id)->ignore($client?->id),
             ],
             'phone' => ['nullable', 'string', 'max:30'],
+            'hearing_reminders' => ['sometimes', 'boolean'],
             'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
             // Maiden or former names, trade names, affiliates: one per line.

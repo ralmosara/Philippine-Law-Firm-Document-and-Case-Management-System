@@ -2,6 +2,7 @@
 
 namespace App\Domain\Deadlines\Services;
 
+use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Enums\DeadlineKind;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
 use App\Domain\Deadlines\Enums\TaskProgress;
@@ -68,6 +69,7 @@ class DeadlineScheduler
         return DB::transaction(function () use ($deadline, $by, $reason) {
             $deadline->forceFill(['status' => DeadlineStatus::Cancelled])->save();
             $deadline->logEvent('cancelled', $by, ['reason' => $reason]);
+            app(ClientHearingNotices::class)->cancelled($deadline);
 
             return $deadline;
         });
@@ -93,6 +95,7 @@ class DeadlineScheduler
                 'to' => $newDueDate->toDateString(),
                 'reason' => $reason,
             ]);
+            app(ClientHearingNotices::class)->moved($deadline, $previous);
 
             return $deadline;
         });
@@ -107,6 +110,7 @@ class DeadlineScheduler
                 ...$attributes,
             ]);
             $deadline->logEvent('created', $by, $eventPayload);
+            app(ClientHearingNotices::class)->scheduled($deadline);
 
             return $deadline;
         });

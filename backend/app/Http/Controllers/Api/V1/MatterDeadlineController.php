@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Enums\DeadlineKind;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
 use App\Domain\Deadlines\Enums\TaskPriority;
@@ -89,9 +90,10 @@ class MatterDeadlineController extends Controller
             'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')->where('firm_id', $matter->firm_id)],
             'notes' => ['nullable', 'string', 'max:5000'],
             'priority' => ['nullable', new Enum(TaskPriority::class)],
+            'notify_client' => ['boolean'],
         ]);
 
-        $attributes = collect($validated)->only(['due_time', 'location', 'assigned_to', 'notes', 'priority'])->filter(fn ($v) => $v !== null)->all();
+        $attributes = collect($validated)->only(['due_time', 'location', 'assigned_to', 'notes', 'priority', 'notify_client'])->filter(fn ($v) => $v !== null)->all();
 
         if (isset($validated['deadline_rule_id'])) {
             $rule = DeadlineRule::availableTo($matter->firm_id)->where('is_active', true)->findOrFail($validated['deadline_rule_id']);
@@ -126,10 +128,15 @@ class MatterDeadlineController extends Controller
             'assigned_to' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('firm_id', $deadline->firm_id)],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'priority' => ['sometimes', new Enum(TaskPriority::class)],
+            'notify_client' => ['sometimes', 'boolean'],
         ]));
 
         if ($deadline->wasChanged('assigned_to')) {
             $this->tellAssignee($deadline, $request->user());
+        }
+        // A hearing at another time is a move, for the client too.
+        if ($deadline->wasChanged('due_time') && $deadline->status === DeadlineStatus::Pending) {
+            app(ClientHearingNotices::class)->moved($deadline, $deadline->due_date->toDateString());
         }
 
         return new DeadlineResource($deadline->load(['matter', 'assignee', 'rule']));

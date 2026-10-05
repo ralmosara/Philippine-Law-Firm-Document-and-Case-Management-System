@@ -6,7 +6,7 @@ import { applyServerErrors } from '@/shared/api/hooks'
 import type { Client } from '@/shared/api/types'
 import { Button } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
-import { Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
+import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { useSaveClient } from '../api'
 
 const schema = z.object({
@@ -18,6 +18,7 @@ const schema = z.object({
   address: z.string().trim().max(255),
   notes: z.string().max(5000),
   aliases: z.string().max(2000),
+  hearing_reminders: z.boolean(),
 })
 
 type Values = z.infer<typeof schema>
@@ -38,6 +39,7 @@ export function ClientForm({ open, onClose, client }: { open: boolean; onClose: 
       address: client?.address ?? '',
       notes: client?.notes ?? '',
       aliases: client?.aliases ?? '',
+      hearing_reminders: client?.hearing_reminders ?? true,
     },
   })
 
@@ -103,6 +105,9 @@ export function ClientForm({ open, onClose, client }: { open: boolean; onClose: 
         <Field label="Address" error={formState.errors.address?.message}>
           {(a) => <Input {...a} {...register('address')} />}
         </Field>
+        <div className="sm:col-span-2">
+          <Checkbox label="Send this client notices and reminders of their hearings (email, and SMS to the phone above), when the firm has them on" {...register('hearing_reminders')} />
+        </div>
         <Field label="Also known as" className="sm:col-span-2" hint="Maiden or former names, trade names, affiliated companies; one per line. Conflict checks search these too." error={formState.errors.aliases?.message}>
           {(a) => <Textarea {...a} rows={2} {...register('aliases')} />}
         </Field>

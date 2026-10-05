@@ -20,6 +20,7 @@ class DeadlineResource extends JsonResource
             'due_date' => $this->due_date->toDateString(),
             'due_time' => $this->due_time ? substr($this->due_time, 0, 5) : null,
             'location' => $this->location,
+            'notify_client' => (bool) $this->notify_client,
             'status' => $this->status->value,
             'progress' => $this->progress?->value ?? 'todo',
             'priority' => $this->priority?->value ?? 'normal',

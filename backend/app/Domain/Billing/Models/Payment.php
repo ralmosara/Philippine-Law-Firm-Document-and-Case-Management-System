@@ -36,6 +36,7 @@ class Payment extends Model
         return [
             'amount_cents' => 'integer',
             'paid_at' => 'datetime',
+            'refunded_at' => 'datetime',
         ];
     }
 

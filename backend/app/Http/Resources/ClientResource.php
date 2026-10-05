@@ -18,6 +18,7 @@ class ClientResource extends JsonResource
             'tin' => $this->tin,
             'email' => $this->email,
             'phone' => $this->phone,
+            'hearing_reminders' => (bool) $this->hearing_reminders,
             'address' => $this->address,
             'notes' => $this->notes,
             'aliases' => $this->aliases,

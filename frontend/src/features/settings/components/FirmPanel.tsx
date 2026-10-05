@@ -23,6 +23,7 @@ export function FirmPanel() {
       <SecurityCard firm={firm.data} />
       <IntakeCard firm={firm.data} />
       <AssistantCard firm={firm.data} />
+      <HearingRemindersCard firm={firm.data} />
     </div>
   )
 }
@@ -125,6 +126,27 @@ function AssistantCard({ firm }: { firm: FirmSettings }) {
         loading={save.isPending}
         onConfirm={() => save.mutate({ ai_enabled: true }, { onSuccess: () => setConfirming(false) })}
       />
+    </Card>
+  )
+}
+
+/**
+ * Hearing notices and reminders to clients: off until the firm turns them on,
+ * since they go to clients by email and (with a mobile number) SMS.
+ */
+function HearingRemindersCard({ firm }: { firm: FirmSettings }) {
+  const save = useSaveFirmSettings()
+  const on = firm.client_hearing_reminders
+
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader title="Hearing reminders to clients" description="Clients are told when a hearing is set, moved or cancelled, and reminded a week before and the day before: by email, and by SMS when they have a mobile number. In English or Filipino, as they chose in the portal." actions={on ? <Badge tone="success">On</Badge> : <Badge>Off</Badge>} />
+      <div className="flex flex-col gap-3 p-5 text-sm">
+        <p className="text-on-surface-variant">They say only the case title, date, time and venue. Leave out a client on their page, or a hearing they need not attend when scheduling it. SMS needs the Semaphore key (SEMAPHORE_API_KEY); without it, text messages are only written to the log.</p>
+        <div>
+          <Button variant={on ? 'outlined' : 'filled'} loading={save.isPending} onClick={() => save.mutate({ client_hearing_reminders: !on })}>{on ? 'Turn off' : 'Turn on'}</Button>
+        </div>
+      </div>
     </Card>
   )
 }

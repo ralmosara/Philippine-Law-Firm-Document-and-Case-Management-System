@@ -14,6 +14,7 @@ import { useInvoice, useInvoiceAction, usePaymentLink } from '../api'
 import { InvoiceReminders } from './InvoiceReminders'
 import { PaymentsCard, RecordPaymentDialog } from './InvoicePayments'
 import { InvoiceEInvoiceCard } from '@/features/einvoicing/components/EInvoicing'
+import { RefundDialog } from './RefundDialog'
 
 export function InvoiceDetail() {
   const id = Number(useParams().id)
@@ -22,6 +23,7 @@ export function InvoiceDetail() {
   const abilities = useAbilities()
   const actions = useInvoiceAction(id)
   const [dialog, setDialog] = useState<'pay' | 'void' | 'link' | null>(null)
+  const [refunding, setRefunding] = useState<number | null>(null)
 
   if (invoice.isPending) return <PageLoader />
   if (invoice.isError) return <ErrorState error={invoice.error} onRetry={() => invoice.refetch()} />
@@ -133,7 +135,13 @@ export function InvoiceDetail() {
                   <Td className="whitespace-nowrap">{dateTime(p.created_at)}</Td>
                   <Td>
                     {p.status === 'paid' ? <Badge tone="success">Paid {dateTime(p.paid_at)}</Badge> : p.status === 'unapplied' ? <Badge tone="danger">Received, not applied</Badge> : <Badge>Not completed</Badge>}
-                    {p.status === 'unapplied' && <div className="mt-1 text-xs text-on-surface-variant">The invoice was already settled or voided. Refund or reallocate this payment in PayMongo.</div>}
+                    {p.status === 'unapplied' && !p.refund && (
+                      <div className="mt-1 text-xs text-on-surface-variant">
+                        The invoice was already settled or voided.
+                        {abilities.manage_finances && <> <button type="button" className="font-medium text-primary hover:underline" onClick={() => setRefunding(p.id)}>Refund through PayMongo</button></>}
+                      </div>
+                    )}
+                    {p.refund && <div className="mt-1 text-xs text-on-surface-variant">Refund {p.refund.status} · {p.refund.id}{p.refund.at && ` · ${dateTime(p.refund.at)}`}{p.refund.reason && ` · ${p.refund.reason}`}</div>}
                   </Td>
                   <Td>{p.method ?? '—'}</Td>
                   <Td className="font-mono text-xs">{p.reference ?? '—'}</Td>
@@ -158,6 +166,7 @@ export function InvoiceDetail() {
         loading={actions.void.isPending}
         onConfirm={() => actions.void.mutate(undefined, { onSuccess: () => setDialog(null) })}
       />
+      {refunding !== null && inv.payments?.find((p) => p.id === refunding) && <RefundDialog invoiceId={inv.id} payment={inv.payments.find((p) => p.id === refunding)!} onClose={() => setRefunding(null)} />}
     </>
   )
 }

@@ -56,6 +56,7 @@ class InvoiceResource extends JsonResource
                 'reference' => $payment->provider_payment_id,
                 'paid_at' => $payment->paid_at?->toIso8601String(),
                 'created_at' => $payment->created_at?->toIso8601String(),
+                'refund' => $payment->refund_id ? ['id' => $payment->refund_id, 'status' => $payment->refund_status, 'reason' => $payment->refund_reason, 'at' => $payment->refunded_at?->toIso8601String()] : null,
             ])),
             'invoice_payments' => InvoicePaymentResource::collection($this->whenLoaded('invoicePayments')),
             'reminders_paused_at' => $this->reminders_paused_at?->toIso8601String(),

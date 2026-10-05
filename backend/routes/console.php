@@ -4,6 +4,7 @@ use App\Domain\Billing\Collections\Collections;
 use App\Domain\Billing\Services\Disbursements;
 use App\Domain\Business\Pipeline;
 use App\Domain\Corporate\CorporateSecretarial;
+use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
 use App\Domain\Documents\Jobs\ExtractMatterFileText;
 use App\Domain\Documents\Models\MatterFile;
@@ -116,6 +117,11 @@ Artisan::command('ops:health-check', function (SystemHealth $health) {
 // Run by the scheduler, so it cannot report the scheduler itself stopping:
 // point an external uptime monitor at /api/health for that.
 Schedule::command('ops:health-check')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+
+Artisan::command('hearings:remind-clients', function (ClientHearingNotices $notices) {
+    $this->info("Sent {$notices->sendReminders()} client hearing reminder(s).");
+})->purpose('Remind clients of their hearings a week before and the day before (firms that turned it on)');
+Schedule::command('hearings:remind-clients')->dailyAt('09:00')->withoutOverlapping()->onOneServer();
 
 Artisan::command('prescriptions:remind', function (Prescriptions $prescriptions, TenantContext $tenant) {
     $total = 0;

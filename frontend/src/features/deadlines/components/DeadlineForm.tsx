@@ -7,7 +7,7 @@ import { longDate, today } from '@/shared/lib/format'
 import { Button } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
 import { Spinner } from '@/shared/ui/Feedback'
-import { Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
+import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { Tabs } from '@/shared/ui/Layout'
 import { useComputeDeadline, useCreateDeadline, useDeadlineRules } from '../api'
 
@@ -28,6 +28,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
   const [dueDate, setDueDate] = useState('')
   const [dueTime, setDueTime] = useState('')
   const [location, setLocation] = useState('')
+  const [notifyClient, setNotifyClient] = useState(true)
   const [assignedTo, setAssignedTo] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<ApiError | null>(null)
@@ -58,7 +59,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
         if (!ruleId) return
         await create.mutateAsync({ deadline_rule_id: ruleId, trigger_date: triggerDate, assigned_to, notes: notes || undefined })
       } else {
-        await create.mutateAsync({ kind, title, due_date: dueDate, due_time: dueTime || null, location: location || null, assigned_to, notes: notes || undefined, ...(kind === 'task' ? { priority } : {}) })
+        await create.mutateAsync({ kind, title, due_date: dueDate, due_time: dueTime || null, location: location || null, assigned_to, notes: notes || undefined, ...(kind === 'task' ? { priority } : {}), ...(kind === 'hearing' ? { notify_client: notifyClient } : {}) })
       }
       close()
     } catch (err) {
@@ -173,6 +174,11 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
               <Field label="Location" className="sm:col-span-2">
                 {(a) => <Input {...a} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Sala of RTC Branch 58, Makati City Hall" />}
               </Field>
+            )}
+            {kind === 'hearing' && (
+              <div className="sm:col-span-2">
+                <Checkbox label="Tell the client (notice now, reminders a week before and the day before), if the firm sends client hearing reminders" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} />
+              </div>
             )}
           </>
         )}

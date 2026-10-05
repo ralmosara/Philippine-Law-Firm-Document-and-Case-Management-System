@@ -70,6 +70,7 @@ export interface FirmSettings {
   /** Usual creditable withholding on fees, in basis points (1000 = 10%). */
   default_withholding_bps: number
   payment_reminders_enabled: boolean
+  client_hearing_reminders: boolean
   pleading_paper: 'folio' | 'a4' | 'letter'
   pleading_font: string
   pleading_font_size: number

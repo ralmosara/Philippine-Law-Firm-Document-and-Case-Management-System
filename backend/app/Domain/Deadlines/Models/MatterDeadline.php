@@ -38,12 +38,16 @@ class MatterDeadline extends Model
         'notes',
         'progress',
         'priority',
+        'notify_client',
     ];
 
     protected $attributes = [
         'status' => 'pending',
         'progress' => 'todo',
         'priority' => 'normal',
+        // Hearings: tell the client (when the firm sends client hearing reminders).
+        'notify_client' => true,
+        'client_reminded_stage' => null,
     ];
 
     protected function casts(): array
@@ -57,6 +61,7 @@ class MatterDeadline extends Model
             'trigger_date' => DateOnly::class,
             'due_date' => DateOnly::class,
             'completed_at' => 'datetime',
+            'notify_client' => 'boolean',
         ];
     }
 

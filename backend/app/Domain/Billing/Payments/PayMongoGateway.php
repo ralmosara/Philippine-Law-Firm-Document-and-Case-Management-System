@@ -70,6 +70,37 @@ class PayMongoGateway
     }
 
     /**
+     * Refund (all of) a payment. PayMongo's reasons: duplicate, fraudulent,
+     * requested_by_customer, others.
+     *
+     * @return array{id: string, status: string}
+     *
+     * @throws RequestException
+     */
+    public function refund(string $paymentId, int $amountCents, string $reason, ?string $notes): array
+    {
+        $response = Http::withBasicAuth((string) config('services.paymongo.secret_key'), '')
+            ->acceptJson()
+            ->timeout(20)
+            ->post(self::API.'/refunds', [
+                'data' => [
+                    'attributes' => array_filter([
+                        'amount' => $amountCents,
+                        'payment_id' => $paymentId,
+                        'reason' => $reason,
+                        'notes' => $notes ? mb_substr($notes, 0, 255) : null,
+                    ], fn ($v) => $v !== null),
+                ],
+            ])
+            ->throw();
+
+        return [
+            'id' => (string) $response->json('data.id'),
+            'status' => (string) ($response->json('data.attributes.status') ?? 'pending'),
+        ];
+    }
+
+    /**
      * Verify the `Paymongo-Signature` header: "t=<timestamp>,te=<test sig>,li=<live sig>",
      * where each signature is HMAC-SHA256 of "<timestamp>.<raw body>".
      */

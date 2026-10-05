@@ -94,6 +94,8 @@ export interface Client {
   aliases?: string | null
   portal_enabled: boolean
   portal_locale: 'en' | 'fil'
+  /** Hearing notices and reminders by email and SMS (when the firm sends them). */
+  hearing_reminders: boolean
   portal_password_set: boolean
   last_portal_login_at: string | null
   matters_count?: number
@@ -385,6 +387,8 @@ export interface OnlinePayment {
   provider: string
   /** `unapplied`: money received after the invoice was paid or voided; needs a refund. */
   status: 'pending' | 'paid' | 'unapplied'
+  /** A refund through PayMongo of an unapplied payment. */
+  refund: { id: string; status: string; reason: string | null; at: string | null } | null
   method: string | null
   amount_cents: number
   reference: string | null
