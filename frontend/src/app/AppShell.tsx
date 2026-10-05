@@ -37,6 +37,7 @@ const GROUPS: NavGroup[] = [
       { to: '/clients', label: 'Clients' },
       { to: '/intake', label: 'Intake requests', ability: 'work_matters', badge: 'intake' },
       { to: '/prospects', label: 'Business development', ability: 'work_matters' },
+      { to: '/feedback', label: 'Client feedback', ability: 'practice_law' },
       { to: '/court-day', label: 'Court day', ability: 'work_matters' },
       { to: '/corporate', label: 'Corporate secretarial' },
       { to: '/directory', label: 'Directory' },

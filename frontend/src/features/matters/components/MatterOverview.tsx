@@ -9,7 +9,7 @@ import { date, dateTime } from '@/shared/lib/format'
 import { Button, IconButton } from '@/shared/ui/Button'
 import { ConfirmDialog, Dialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
-import { Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
+import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { Card, CardHeader, DescriptionList } from '@/shared/ui/Layout'
 import { useDeleteParty, useMatterTimeline, useSaveParty, useTransitionMatter } from '../api'
 
@@ -146,7 +146,9 @@ function PartyDialog({ matterId, party, onClose }: { matterId: number; party?: M
 export function StatusMenu({ matter }: { matter: Matter }) {
   const [open, setOpen] = useState(false)
   const [target, setTarget] = useState<{ value: MatterStatus; label: string } | null>(null)
+  const [askFeedback, setAskFeedback] = useState(true)
   const transition = useTransitionMatter(matter.id)
+  const canAskFeedback = target?.value === 'closed' && !!matter.client?.portal_enabled
 
   if (matter.allowed_transitions.length === 0) return null
 
@@ -171,13 +173,22 @@ export function StatusMenu({ matter }: { matter: Matter }) {
         open={target !== null}
         onClose={() => setTarget(null)}
         title={`Move to ${target?.label}?`}
-        description={<>The change from <strong>{matter.status_label}</strong> to <strong>{target?.label}</strong> is recorded in the matter history.</>}
+        description={
+          <>
+            The change from <strong>{matter.status_label}</strong> to <strong>{target?.label}</strong> is recorded in the matter history.
+            {canAskFeedback && (
+              <span className="mt-3 block">
+                <Checkbox label="Ask the client how we did (rating and comment, in the portal)" checked={askFeedback} onChange={(e) => setAskFeedback(e.target.checked)} />
+              </span>
+            )}
+          </>
+        }
         reasonLabel={target?.value === 'closed' ? 'Reason for closing' : 'Note (optional)'}
         reasonRequired={target?.value === 'closed'}
         destructive={target?.value === 'closed'}
         confirmLabel="Change status"
         loading={transition.isPending}
-        onConfirm={(reason) => target && transition.mutate({ status: target.value, reason: reason || undefined }, { onSuccess: () => setTarget(null) })}
+        onConfirm={(reason) => target && transition.mutate({ status: target.value, reason: reason || undefined, ...(target.value === 'closed' ? { ask_feedback: canAskFeedback && askFeedback } : {}) }, { onSuccess: () => setTarget(null) })}
       />
     </div>
   )

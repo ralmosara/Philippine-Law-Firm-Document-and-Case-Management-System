@@ -2,6 +2,7 @@
 
 namespace App\Domain\Matters\Actions;
 
+use App\Domain\Feedback\ClientFeedback;
 use App\Domain\Matters\Enums\MatterStatus;
 use App\Domain\Matters\Models\Matter;
 use App\Models\User;
@@ -15,7 +16,8 @@ use Illuminate\Validation\ValidationException;
  */
 class TransitionMatterStatus
 {
-    public function execute(Matter $matter, MatterStatus $to, User $by, ?string $reason = null): Matter
+    /** $askFeedback: on closing, ask a portal client how the firm did (once per matter). */
+    public function execute(Matter $matter, MatterStatus $to, User $by, ?string $reason = null, bool $askFeedback = true): Matter
     {
         $from = $matter->status;
 
@@ -34,7 +36,7 @@ class TransitionMatterStatus
             throw ValidationException::withMessages(['reason' => 'A reason is required to close a matter.']);
         }
 
-        return DB::transaction(function () use ($matter, $from, $to, $by, $reason) {
+        return DB::transaction(function () use ($matter, $from, $to, $by, $reason, $askFeedback) {
             $matter->forceFill([
                 'status' => $to,
                 'closed_at' => $to === MatterStatus::Closed ? now() : null,
@@ -46,6 +48,10 @@ class TransitionMatterStatus
                 'changed_by' => $by->id,
                 'reason' => $reason,
             ]);
+
+            if ($to === MatterStatus::Closed && $askFeedback) {
+                app(ClientFeedback::class)->requestFor($matter);
+            }
 
             return $matter;
         });

@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\EFilingController;
 use App\Http\Controllers\Api\V1\EInvoiceController;
 use App\Http\Controllers\Api\V1\ExhibitController;
 use App\Http\Controllers\Api\V1\ExpenseController;
+use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\FirmController;
 use App\Http\Controllers\Api\V1\HolidayController;
 use App\Http\Controllers\Api\V1\ImportController;
@@ -59,6 +60,7 @@ use App\Http\Controllers\HealthController;
 use App\Http\Controllers\InboundEmailWebhookController;
 use App\Http\Controllers\PayMongoWebhookController;
 use App\Http\Controllers\PortalDocumentRequestController;
+use App\Http\Controllers\PortalExperienceController;
 use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
 use App\Http\Controllers\PublicIntakeController;
@@ -222,6 +224,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('matters/{matter}/e-filings', [EFilingController::class, 'index']);
         Route::get('matters/{matter}/budget', [MatterBudgetController::class, 'show']);
         Route::get('prescription-periods', [PrescriptionController::class, 'periods']);
+        Route::get('feedback', [FeedbackController::class, 'index']);
+        Route::post('feedback/{feedback}/follow-up', [FeedbackController::class, 'followUp']);
         Route::post('prescription-periods/preview', [PrescriptionController::class, 'preview']);
         Route::get('prescriptions', [PrescriptionController::class, 'index']);
         Route::get('matters/{matter}/prescriptions', [PrescriptionController::class, 'forMatter']);
@@ -363,6 +367,10 @@ Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->g
         Route::get('me', [ClientAuthController::class, 'me']);
         Route::post('logout', [ClientAuthController::class, 'logout']);
         Route::put('locale', [ClientAuthController::class, 'locale']);
+        Route::post('feedback/{feedback}', [PortalExperienceController::class, 'respond'])->whereNumber('feedback');
+        Route::get('calendar', [PortalExperienceController::class, 'calendar']);
+        Route::post('calendar', [PortalExperienceController::class, 'createCalendar']);
+        Route::delete('calendar', [PortalExperienceController::class, 'deleteCalendar']);
         // Private channels for the client's live message threads (the staff route is /api/broadcasting/auth).
         Route::post('broadcasting/auth', fn (Request $request) => Broadcast::auth($request));
         Route::get('matters', [ClientPortalController::class, 'getMatters']);
@@ -408,6 +416,8 @@ Route::post('public/intake/{slug}', [PublicIntakeController::class, 'submit'])->
 
 // Calendar subscriptions: calendar apps cannot sign in, so the unguessable
 // token in the URL authenticates the request.
+// A portal client's own hearings; the token in the URL is the credential.
+Route::get('portal-calendar/{token}.ics', [PortalExperienceController::class, 'feed'])->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:api');
 Route::get('calendar/{token}.ics', [CalendarFeedController::class, 'feed'])
     ->where('token', '[A-Za-z0-9]{40}')
     ->middleware('throttle:60,1');

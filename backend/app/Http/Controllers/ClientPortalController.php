@@ -55,6 +55,7 @@ class ClientPortalController extends Controller
                 'documents' => fn ($q) => $q->where('shared_with_client', true)->latest('updated_at'),
                 'files' => fn ($q) => $q->select(FileSearch::COLUMNS)->where('shared_with_client', true)->latest(),
                 'budget',
+                'feedback',
             ])
             ->findOrFail($matter);
 
@@ -67,6 +68,8 @@ class ClientPortalController extends Controller
             'court' => $model->court,
             'court_branch' => $model->court_branch,
             'description' => $model->description,
+            // Asked for once the matter closed: the client answers (or changes their answer) here.
+            'feedback' => PortalExperienceController::feedbackPayload($model->feedback),
             'budget' => $budget ? [
                 'basis' => $budget->basis,
                 'total' => $budget->total,

@@ -10,6 +10,7 @@ import { Card, CardHeader, PageHeader, StatCard, Table, Td, Th } from '@/shared/
 import { usePayInvoice, usePortalInvoices, usePortalMatters, usePortalSession, usePortalSignatureRequests, usePortalTrust } from '../api'
 import { DocumentRequestsBanner } from './PortalDocumentRequests'
 import { t } from '@/shared/lib/i18n'
+import { CalendarCard } from './PortalExperience'
 
 export function ClientDashboard() {
   const session = usePortalSession()
@@ -147,6 +148,8 @@ export function ClientDashboard() {
           )}
         </Card>
       </div>
+
+      <CalendarCard />
     </>
   )
 }

@@ -121,6 +121,15 @@
     "Thank you for considering :firm. After review, we are unable to take on your matter.": "Salamat sa pagsasaalang-alang sa :firm. Matapos suriin, hindi namin matatanggap ang iyong usapin.",
     "This is not a judgment on the merits of your concern. Legal remedies can be subject to deadlines, so we encourage you to consult another lawyer promptly. The Integrated Bar of the Philippines chapter in your area or the Public Attorney’s Office may be able to help.": "Hindi ito paghatol sa merito ng iyong concern. Maaaring may takdang panahon ang mga legal na remedyo, kaya hinihikayat ka naming kumonsulta agad sa ibang abogado. Maaaring makatulong ang chapter ng Integrated Bar of the Philippines sa inyong lugar o ang Public Attorney’s Office.",
 
+    "How did we do? :firm": "Kumusta ang aming serbisyo? :firm",
+    "Your matter \":title\" is now closed. Thank you for trusting :firm with it.": "Sarado na ang iyong kaso na \":title\". Salamat sa pagtitiwala mo sa :firm.",
+    "Would you tell us how we did? It takes a minute: a rating and, if you like, a comment. Only the firm sees your answer.": "Maaari mo bang sabihin sa amin kung kumusta ang aming serbisyo? Isang minuto lang ito: isang marka at, kung gusto mo, isang komento. Ang firm lamang ang makakakita ng iyong sagot.",
+    "Give feedback": "Magbigay ng feedback",
+    "Thank you; the firm has already followed up on your feedback.": "Salamat; nasundan na ng firm ang iyong feedback.",
+    "Hearings: :name": "Mga pagdinig: :name",
+    "Hearing: :title": "Pagdinig: :title",
+    "Details in your client portal: :url": "Mga detalye sa iyong client portal: :url",
+
     "The :attribute field must contain at least one letter.": "Dapat may kahit isang titik ang :attribute.",
     "The :attribute field must contain at least one uppercase and one lowercase letter.": "Dapat may kahit isang malaki at isang maliit na titik ang :attribute.",
     "The :attribute field must contain at least one number.": "Dapat may kahit isang numero ang :attribute.",

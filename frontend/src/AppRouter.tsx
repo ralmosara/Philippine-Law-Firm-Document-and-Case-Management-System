@@ -102,6 +102,7 @@ export const router = createBrowserRouter([
           { path: 'billing/invoices/:id', element: gated('practice_law', page(() => import('./features/billing/components/InvoiceDetail'), 'InvoiceDetail')) },
           { path: 'trust', element: gated('work_matters', page(() => import('./features/trust/components/TrustLedgerDashboard'), 'TrustLedgerDashboard')) },
           { path: 'trust/:id', element: gated('work_matters', page(() => import('./features/trust/components/TrustAccountDetail'), 'TrustAccountDetail')) },
+          { path: 'feedback', element: gated('practice_law', page(() => import('./features/feedback/FeedbackPage'), 'FeedbackPage')) },
           { path: 'prescription', element: gated('work_matters', page(() => import('./features/prescription/components/Prescription'), 'PrescriptionsPage')) },
           { path: 'compliance', element: page(() => import('./features/compliance/components/ComplianceDashboard'), 'ComplianceDashboard') },
           { path: 'reports', element: gated('manage_finances', page(() => import('./features/reports/components/ReportsPage'), 'ReportsPage')) },

@@ -128,9 +128,10 @@ class MatterController extends Controller
         $validated = $request->validate([
             'status' => ['required', new Enum(MatterStatus::class)],
             'reason' => ['nullable', 'string', 'max:2000'],
+            'ask_feedback' => ['boolean'],
         ]);
 
-        $transition->execute($matter, MatterStatus::from($validated['status']), $request->user(), $validated['reason'] ?? null);
+        $transition->execute($matter, MatterStatus::from($validated['status']), $request->user(), $validated['reason'] ?? null, $validated['ask_feedback'] ?? true);
 
         return new MatterResource($matter->load(['client', 'responsibleLawyer', 'parties']));
     }

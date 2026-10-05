@@ -42,6 +42,7 @@ class Client extends Authenticatable implements HasLocalePreference
     protected $hidden = [
         'password',
         'remember_token',
+        'calendar_token_hash',
     ];
 
     protected $attributes = [
@@ -51,6 +52,9 @@ class Client extends Authenticatable implements HasLocalePreference
         'privacy_accepted_at' => null,
         'anonymized_at' => null,
         'aliases' => null,
+        'calendar_token_hash' => null,
+        'calendar_created_at' => null,
+        'calendar_accessed_at' => null,
     ];
 
     protected function casts(): array
@@ -62,6 +66,8 @@ class Client extends Authenticatable implements HasLocalePreference
             'privacy_notice_version' => 'integer',
             'privacy_accepted_at' => 'datetime',
             'anonymized_at' => 'datetime',
+            'calendar_created_at' => 'datetime',
+            'calendar_accessed_at' => 'datetime',
         ];
     }
 

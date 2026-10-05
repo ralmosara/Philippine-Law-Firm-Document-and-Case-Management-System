@@ -10,6 +10,7 @@ use App\Domain\Budgets\MatterBudget;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
+use App\Domain\Feedback\MatterFeedback;
 use App\Domain\Matters\Enums\FeeArrangement;
 use App\Domain\Matters\Enums\MatterStatus;
 use App\Domain\Trust\Models\TrustAccount;
@@ -133,6 +134,11 @@ class Matter extends Model
     public function parties(): HasMany
     {
         return $this->hasMany(MatterParty::class);
+    }
+
+    public function feedback(): HasOne
+    {
+        return $this->hasOne(MatterFeedback::class);
     }
 
     public function budget(): HasOne
