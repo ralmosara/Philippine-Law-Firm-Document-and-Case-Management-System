@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { get, post } from '@/shared/api/axios'
 import { useApiMutation } from '@/shared/api/hooks'
 
-export type ImportType = 'clients' | 'matters' | 'deadlines' | 'trust_balances'
+export type ImportType = 'clients' | 'matters' | 'deadlines' | 'trust_balances' | 'invoices' | 'time_entries'
 export type RowStatus = 'ready' | 'duplicate' | 'error'
 
 export interface ImportTypeInfo {

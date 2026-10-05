@@ -5,7 +5,9 @@ namespace App\Domain\Imports;
 use App\Domain\Imports\Importers\ClientImporter;
 use App\Domain\Imports\Importers\DeadlineImporter;
 use App\Domain\Imports\Importers\Importer;
+use App\Domain\Imports\Importers\InvoiceImporter;
 use App\Domain\Imports\Importers\MatterImporter;
+use App\Domain\Imports\Importers\TimeEntryImporter;
 use App\Domain\Imports\Importers\TrustBalanceImporter;
 use App\Domain\Imports\Models\DataImport;
 use App\Models\User;
@@ -32,6 +34,9 @@ class DataImports
         'matters' => MatterImporter::class,
         'deadlines' => DeadlineImporter::class,
         'trust_balances' => TrustBalanceImporter::class,
+        // Billing history: invoices first, so time entries can be tied to them.
+        'invoices' => InvoiceImporter::class,
+        'time_entries' => TimeEntryImporter::class,
     ];
 
     public function __construct(private readonly SpreadsheetReader $reader) {}

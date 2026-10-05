@@ -34,7 +34,7 @@ function ImportSteps({ onPreviewed }: { onPreviewed: (id: number) => void }) {
     <Card>
       <CardHeader
         title="Import from spreadsheets"
-        description="Bring your existing records over from Excel or CSV. Import them in this order: matters refer to clients, deadlines and trust balances refer to matters. You see a preview before anything is saved, and can undo an import for 7 days."
+        description="Bring your existing records over from Excel or CSV. Import them in this order: matters refer to clients; deadlines, trust balances and invoices refer to matters; time entries can refer to invoices (those count as billed). You see a preview before anything is saved, and can undo an import for 7 days."
       />
       {types.isPending ? <PageLoader /> : types.isError ? <div className="p-4"><ErrorState error={types.error} /></div> : (
         <ol className="divide-y divide-outline-variant">
@@ -183,7 +183,7 @@ function ImportPreview({ id, onBack }: { id: number; onBack: () => void }) {
         open={confirmUndo}
         onClose={() => setConfirmUndo(false)}
         title="Undo this import?"
-        description="Records it created are removed. Any that have been used since (a client with a matter, a deadline already worked on) are kept and listed. Trust balances are reversed in the ledger, not erased."
+        description="Records it created are removed. Any that have been used since (a client with a matter, a deadline already worked on, an invoice paid or time billed since) are kept and listed. Trust balances are reversed in the ledger, not erased."
         destructive
         confirmLabel="Undo import"
         loading={undo.isPending}
