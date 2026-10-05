@@ -39,6 +39,8 @@ class MatterDeadline extends Model
         'progress',
         'priority',
         'notify_client',
+        'repeat',
+        'repeat_until',
     ];
 
     protected $attributes = [
@@ -62,6 +64,7 @@ class MatterDeadline extends Model
             'due_date' => DateOnly::class,
             'completed_at' => 'datetime',
             'notify_client' => 'boolean',
+            'repeat_until' => DateOnly::class,
         ];
     }
 

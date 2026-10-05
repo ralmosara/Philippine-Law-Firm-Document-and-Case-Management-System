@@ -57,6 +57,7 @@ class DeadlineScheduler
                 'completed_by' => $by->id,
             ])->save();
             $deadline->logEvent('completed', $by, array_filter(['notes' => $notes]));
+            app(RecurringTasks::class)->afterCompleted($deadline, $by);
 
             return $deadline;
         });
@@ -138,6 +139,7 @@ class DeadlineScheduler
                 return DB::transaction(function () use ($task, $by) {
                     $task->forceFill(['status' => DeadlineStatus::Completed, 'completed_at' => now(), 'completed_by' => $by->id])->save();
                     $task->logEvent('completed', $by, ['late' => true]);
+                    app(RecurringTasks::class)->afterCompleted($task, $by);
 
                     return $task;
                 });

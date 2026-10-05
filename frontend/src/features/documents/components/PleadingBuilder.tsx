@@ -39,6 +39,7 @@ export function PleadingBuilder({ matterId, open, onClose }: { matterId: number;
   const navigate = useNavigate()
   const [form, setForm] = useState<PleadingInput>({ type: 'motion', title: '', body: '', verification: false, certification: false, service: true })
   const [preview, setPreview] = useState('')
+  const [warnings, setWarnings] = useState<string[]>([])
   const [picking, setPicking] = useState(false)
   const create = useApiMutation((input: PleadingInput) => post<{ id: number }>(`/v1/matters/${matterId}/pleadings`, clean(input)), {
     invalidate: [['documents']],
@@ -55,7 +56,7 @@ export function PleadingBuilder({ matterId, open, onClose }: { matterId: number;
   useEffect(() => {
     if (!open) return
     const timer = setTimeout(() => {
-      post<{ text: string }>(`/v1/matters/${matterId}/pleadings/preview`, clean(form)).then((r) => setPreview(r.text)).catch(() => setPreview(''))
+      post<{ text: string; warnings?: string[] }>(`/v1/matters/${matterId}/pleadings/preview`, clean(form)).then((r) => { setPreview(r.text); setWarnings(r.warnings ?? []) }).catch(() => setPreview(''))
     }, 300)
     return () => clearTimeout(timer)
   }, [form, matterId, open])
@@ -113,6 +114,13 @@ ${text}` : text }))} />}
         </div>
         <div className="min-w-0">
           <p className="mb-1 text-sm font-medium">Preview</p>
+          {warnings.length > 0 && (
+            <div role="status" className="mb-2 rounded-[3px] bg-warning-container p-3 text-sm text-on-warning-container">
+              <p className="font-medium">Check the signature details before filing:</p>
+              <ul className="list-disc pl-5">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+              <p className="mt-1">Update them under your profile (Signature details for pleadings).</p>
+            </div>
+          )}
           <pre className="max-h-[60vh] overflow-auto rounded-[3px] border border-outline-variant bg-surface-container p-4 font-mono text-xs leading-relaxed whitespace-pre" aria-label="Pleading preview">{preview || 'Preparing preview…'}</pre>
         </div>
       </div>

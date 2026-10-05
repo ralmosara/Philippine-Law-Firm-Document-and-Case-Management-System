@@ -41,6 +41,7 @@ const AFFECTS: Record<string, string[][]> = {
   prescription: [['prescriptions']],
   feedback: [['feedback']],
   time: [['time-entries']],
+  credentials: [['session']],
 }
 
 export function useNotifications() {

@@ -25,6 +25,9 @@ class DeadlineResource extends JsonResource
             'progress' => $this->progress?->value ?? 'todo',
             'priority' => $this->priority?->value ?? 'normal',
             'notes' => $this->notes,
+            'repeat' => $this->repeat,
+            'repeat_until' => $this->repeat_until?->toDateString(),
+            'next_task_id' => $this->next_task_id,
             'days_remaining' => (int) today()->diffInDays($this->due_date, false),
             'completed_at' => $this->completed_at?->toIso8601String(),
             'rule' => $this->whenLoaded('rule', fn () => $this->rule ? [

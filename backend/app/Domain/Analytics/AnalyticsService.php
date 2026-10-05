@@ -30,7 +30,7 @@ class AnalyticsService
         $monthStart = $today->startOfMonth();
         $yearStart = $today->startOfYear();
 
-        $billedYtd = (int) Invoice::whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value])
+        $billedYtd = (int) Invoice::whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value, InvoiceStatus::WrittenOff->value])
             ->whereDate('issued_at', '>=', $yearStart)->sum('total_cents');
         // Cash received plus tax withheld (a credit against the firm's income tax).
         $collectedYtd = (int) InvoicePayment::active()->whereDate('received_on', '>=', $yearStart)

@@ -78,6 +78,10 @@ export function useInvoiceAction(id: number) {
   return {
     issue: useApiMutation(() => post<Invoice>(`/v1/invoices/${id}/issue`), { invalidate: invoiceInvalidate, success: 'Invoice issued' }),
     void: useApiMutation(() => post<Invoice>(`/v1/invoices/${id}/void`), { invalidate: invoiceInvalidate, success: 'Invoice voided; its time is billable again' }),
+    writeDown: useApiMutation((input: { line: number; amount_cents: number; reason: string | null }) => put<Invoice>(`/v1/invoices/${id}/lines/${input.line}`, input), { invalidate: invoiceInvalidate, success: 'Line updated', toastErrors: false }),
+    discount: useApiMutation((input: { discount_cents: number; discount_reason: string | null }) => put<Invoice>(`/v1/invoices/${id}/discount`, input), { invalidate: invoiceInvalidate, success: 'Discount saved', toastErrors: false }),
+    writeOff: useApiMutation((reason: string) => post<Invoice>(`/v1/invoices/${id}/write-off`, { reason }), { invalidate: [...invoiceInvalidate, ['statements'], ['reports']], success: 'Balance written off', toastErrors: false }),
+    undoWriteOff: useApiMutation(() => del(`/v1/invoices/${id}/write-off`), { invalidate: [...invoiceInvalidate, ['statements'], ['reports']], success: 'Write-off undone; the balance is owed again' }),
   }
 }
 

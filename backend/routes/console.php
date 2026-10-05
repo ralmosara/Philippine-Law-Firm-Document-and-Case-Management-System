@@ -5,6 +5,7 @@ use App\Domain\Billing\Services\Disbursements;
 use App\Domain\Billing\Statements\ClientStatements;
 use App\Domain\Billing\TimeReminders\TimeReminders;
 use App\Domain\Business\Pipeline;
+use App\Domain\Compliance\Services\CounselCredentials;
 use App\Domain\Corporate\CorporateSecretarial;
 use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
@@ -174,3 +175,8 @@ Artisan::command('time:weekly-summary', function (TimeReminders $reminders) {
     $this->info("Sent {$reminders->sendWeeklySummary()} weekly time summary(ies).");
 })->purpose('Last week\'s hours against target for everyone, to the managing partners (firms that turned it on)');
 Schedule::command('time:weekly-summary')->mondays()->at('08:15')->withoutOverlapping()->onOneServer();
+
+Artisan::command('credentials:remind', function (CounselCredentials $credentials) {
+    $this->info("Sent {$credentials->sendReminders()} PTR/IBP renewal reminder(s).");
+})->purpose('In January, remind lawyers whose PTR or IBP details are not for the new year');
+Schedule::command('credentials:remind')->dailyAt('08:45')->withoutOverlapping()->onOneServer();

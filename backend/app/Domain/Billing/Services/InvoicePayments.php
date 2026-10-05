@@ -95,6 +95,9 @@ class InvoicePayments
             if ($invoice->status === InvoiceStatus::Void) {
                 throw ValidationException::withMessages(['payment' => 'The invoice is void.']);
             }
+            if ($invoice->status === InvoiceStatus::WrittenOff) {
+                throw ValidationException::withMessages(['payment' => 'Undo the write-off first.']);
+            }
 
             if ($payment->trust_transaction_id !== null) {
                 $account = TrustAccount::findOrFail($this->trustAccountId($payment));

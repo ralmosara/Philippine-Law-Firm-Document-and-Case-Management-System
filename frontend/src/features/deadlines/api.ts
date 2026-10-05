@@ -36,7 +36,7 @@ export function useComputeDeadline(ruleId: number | null, triggerDate: string) {
 
 export type DeadlineInput =
   | { deadline_rule_id: number; trigger_date: string; title?: string; assigned_to?: number | null; notes?: string }
-  | { kind: DeadlineKind; title: string; due_date: string; due_time?: string | null; location?: string | null; assigned_to?: number | null; notes?: string; priority?: string; notify_client?: boolean }
+  | { kind: DeadlineKind; title: string; due_date: string; due_time?: string | null; location?: string | null; assigned_to?: number | null; notes?: string; priority?: string; notify_client?: boolean; repeat?: string | null; repeat_until?: string | null }
 
 export function useCreateDeadline(matterId: number) {
   return useApiMutation((input: DeadlineInput) => post<Deadline>(`/v1/matters/${matterId}/deadlines`, input), {

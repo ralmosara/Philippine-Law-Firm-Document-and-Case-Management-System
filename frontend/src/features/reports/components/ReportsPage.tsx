@@ -9,7 +9,7 @@ import { EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Field, Input } from '@/shared/ui/Form'
 import { Card, PageHeader, StatCard, Table, Tabs, Td, Th } from '@/shared/ui/Layout'
 
-type Report = 'aged-receivables' | 'collections' | 'matter-profitability'
+type Report = 'aged-receivables' | 'collections' | 'matter-profitability' | 'write-offs'
 type Row = Record<string, string | number | null>
 interface ReportData { rows: Row[]; totals: Record<string, number> }
 
@@ -36,11 +36,13 @@ export function ReportsPage() {
           { value: 'aged-receivables', label: 'Aged receivables' },
           { value: 'collections', label: 'Collections by lawyer' },
           { value: 'matter-profitability', label: 'Matter profitability' },
+          { value: 'write-offs', label: 'Write-offs' },
         ]}
       />
       {tab === 'aged-receivables' && <AgedReceivables />}
       {tab === 'collections' && <Collections />}
       {tab === 'matter-profitability' && <Profitability />}
+      {tab === 'write-offs' && <WriteOffs />}
     </>
   )
 }
@@ -90,6 +92,49 @@ function AgedReceivables() {
         )}
       </ReportCard>
     </div>
+  )
+}
+
+/** What was not charged: written down or discounted before billing, written off after. */
+function WriteOffs() {
+  const [from, setFrom] = useUrlState('from', `${new Date().getFullYear()}-01-01`)
+  const [to, setTo] = useUrlState('to', today())
+  const params = { from, to }
+  const query = useReport('write-offs', params)
+  const amount = (n: unknown) => (Number(n) ? money(Number(n)) : '—')
+
+  return (
+    <ReportCard
+      report="write-offs"
+      params={params}
+      query={query}
+      toolbar={
+        <>
+          <Field label="From">{(a) => <Input {...a} type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />}</Field>
+          <Field label="To">{(a) => <Input {...a} type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />}</Field>
+          <p className="text-sm text-on-surface-variant sm:self-end">Write-downs and discounts by issue date; write-offs by the date written off. Fees before VAT, except write-offs (the unpaid balance).</p>
+        </>
+      }
+    >
+      {(data) => (
+        <Table caption="Write-offs by responsible lawyer">
+          <thead><tr><Th>Responsible lawyer</Th><Th align="right">Invoices</Th><Th align="right">Written down</Th><Th align="right">Discounts</Th><Th align="right">Written off</Th><Th align="right">Total not charged</Th></tr></thead>
+          <tbody>
+            {data.rows.map((r, i) => (
+              <tr key={i}>
+                <Td className="font-medium">{r.lawyer}</Td>
+                <Td align="right">{r.invoices}</Td>
+                <Td align="right">{amount(r.written_down)}</Td>
+                <Td align="right">{amount(r.discounted)}</Td>
+                <Td align="right">{amount(r.written_off)}</Td>
+                <Td align="right" className="font-semibold">{money(Number(r.total))}</Td>
+              </tr>
+            ))}
+            <TotalsRow cells={['Total', String(data.totals.invoices), money(data.totals.written_down), money(data.totals.discounted), money(data.totals.written_off), money(data.totals.total)]} />
+          </tbody>
+        </Table>
+      )}
+    </ReportCard>
   )
 }
 

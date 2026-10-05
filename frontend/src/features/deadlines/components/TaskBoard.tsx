@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { AlertTriangle, CalendarClock, Plus } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Plus, Repeat } from 'lucide-react'
 import { useState, type DragEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAbilities } from '@/features/auth/session'
@@ -22,6 +22,8 @@ const COLUMNS: { value: BoardColumn; label: string }[] = [
   { value: 'review', label: 'For review' },
   { value: 'done', label: 'Done (last 14 days)' },
 ]
+
+const REPEAT_LABELS = { weekly: 'Weekly', monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly' } as const
 
 const PRIORITY = {
   urgent: { label: 'Urgent', tone: 'danger', weight: 0 },
@@ -136,6 +138,7 @@ function TaskCard({ task, onMove, canMove }: { task: Deadline; onMove: (column: 
       <div className="flex items-start justify-between gap-2">
         <p className={clsx('text-sm font-medium', task.status === 'completed' && 'line-through')}>{task.title}</p>
         {task.priority !== 'normal' && <Badge tone={priority.tone}>{priority.label}</Badge>}
+        {task.repeat && <span className="inline-flex items-center gap-1 text-xs text-on-surface-variant" title={`Repeats ${REPEAT_LABELS[task.repeat]}${task.repeat_until ? ` until ${task.repeat_until}` : ''}`}><Repeat className="size-3" aria-hidden />{REPEAT_LABELS[task.repeat]}</span>}
       </div>
       {task.matter && (
         <Link to={`/matters/${task.matter.id}`} className="mt-1 block truncate text-xs text-primary hover:underline">{task.matter.reference} · {task.matter.title}</Link>

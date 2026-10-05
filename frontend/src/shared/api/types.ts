@@ -19,7 +19,7 @@ export type MatterStatus = 'intake' | 'filed' | 'pre_trial' | 'trial' | 'decisio
 export type DeadlineKind = 'filing' | 'hearing' | 'task'
 export type DeadlineStatus = 'pending' | 'completed' | 'missed' | 'cancelled'
 export type DocumentStatus = 'draft' | 'final' | 'pending_signature' | 'signed' | 'notarized'
-export type InvoiceStatus = 'draft' | 'issued' | 'partially_paid' | 'paid' | 'void'
+export type InvoiceStatus = 'draft' | 'issued' | 'partially_paid' | 'paid' | 'void' | 'written_off'
 export type FeeArrangement = 'hourly' | 'flat' | 'retainer' | 'contingency' | 'pro_bono'
 export type ConflictStatus = 'clear' | 'flagged' | 'waived' | 'declined'
 
@@ -37,6 +37,13 @@ export interface User extends UserRef {
   roll_number: string | null
   ptr_number?: string | null
   mcle_compliance_number?: string | null
+  ptr_date?: string | null
+  ptr_place?: string | null
+  ibp_date?: string | null
+  ibp_chapter?: string | null
+  ibp_lifetime?: boolean
+  /** For lawyers: PTR or IBP details missing or not for this year. */
+  credential_problems?: string[]
   mobile_number: string | null
   hourly_rate_cents: number
   daily_target_minutes: number | null
@@ -188,6 +195,10 @@ export interface Deadline {
   location: string | null
   status: DeadlineStatus
   notes: string | null
+  /** Tasks only: finishing one creates the next. */
+  repeat: 'weekly' | 'monthly' | 'quarterly' | 'yearly' | null
+  repeat_until: string | null
+  next_task_id: number | null
   days_remaining: number
   completed_at: string | null
   rule?: { id: number; name: string; legal_basis: string | null } | null
@@ -326,6 +337,9 @@ export interface InvoiceLine {
   minutes: number | null
   rate_cents: number | null
   amount_cents: number
+  /** Set when the line was written down before issue. */
+  original_amount_cents: number | null
+  adjustment_reason: string | null
 }
 
 export interface Invoice {
@@ -343,6 +357,13 @@ export interface Invoice {
   balance_cents: number
   /** Fees (before VAT) on which tax can still be withheld. */
   withholding_room_cents: number
+  /** Off professional fees, before VAT; subtotal_cents is after it. */
+  discount_cents: number
+  discount_reason: string | null
+  written_off_cents: number
+  written_off_at: string | null
+  write_off_reason: string | null
+  written_off_by?: string | null
   issued_at: string | null
   due_at: string | null
   paid_at: string | null

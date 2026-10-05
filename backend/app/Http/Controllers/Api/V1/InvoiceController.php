@@ -78,7 +78,7 @@ class InvoiceController extends Controller
     {
         Gate::authorize('practice-law');
 
-        return new InvoiceResource($invoice->load(['client', 'matter', 'lines', 'payments', 'invoicePayments.recorder:id,name', 'reminders.sender:id,name']));
+        return new InvoiceResource($invoice->load(['client', 'matter', 'lines', 'payments', 'invoicePayments.recorder:id,name', 'reminders.sender:id,name', 'writtenOffBy:id,name']));
     }
 
     public function pdf(Invoice $invoice, PdfRenderer $pdf): Response

@@ -10,6 +10,7 @@ use App\Domain\Deadlines\Models\DeadlineRule;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Services\DeadlineCalculator;
 use App\Domain\Deadlines\Services\DeadlineScheduler;
+use App\Domain\Deadlines\Services\RecurringTasks;
 use App\Domain\Matters\Models\Matter;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DeadlineResource;
@@ -91,9 +92,12 @@ class MatterDeadlineController extends Controller
             'notes' => ['nullable', 'string', 'max:5000'],
             'priority' => ['nullable', new Enum(TaskPriority::class)],
             'notify_client' => ['boolean'],
+            // Tasks only: finishing one creates the next.
+            'repeat' => ['nullable', Rule::in(array_keys(RecurringTasks::REPEATS)), Rule::prohibitedIf(fn () => $request->input('kind') !== DeadlineKind::Task->value)],
+            'repeat_until' => ['nullable', 'date', 'after_or_equal:due_date'],
         ]);
 
-        $attributes = collect($validated)->only(['due_time', 'location', 'assigned_to', 'notes', 'priority', 'notify_client'])->filter(fn ($v) => $v !== null)->all();
+        $attributes = collect($validated)->only(['due_time', 'location', 'assigned_to', 'notes', 'priority', 'notify_client', 'repeat', 'repeat_until'])->filter(fn ($v) => $v !== null)->all();
 
         if (isset($validated['deadline_rule_id'])) {
             $rule = DeadlineRule::availableTo($matter->firm_id)->where('is_active', true)->findOrFail($validated['deadline_rule_id']);
@@ -129,6 +133,8 @@ class MatterDeadlineController extends Controller
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'priority' => ['sometimes', new Enum(TaskPriority::class)],
             'notify_client' => ['sometimes', 'boolean'],
+            'repeat' => ['sometimes', 'nullable', Rule::in(array_keys(RecurringTasks::REPEATS)), Rule::prohibitedIf(fn () => $deadline->kind !== DeadlineKind::Task)],
+            'repeat_until' => ['sometimes', 'nullable', 'date', 'after_or_equal:'.$deadline->due_date->toDateString()],
         ]));
 
         if ($deadline->wasChanged('assigned_to')) {

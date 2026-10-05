@@ -93,6 +93,7 @@ function InvoicesTab() {
           <option value="draft">Drafts</option>
           <option value="issued">Issued (unpaid)</option>
           <option value="partially_paid">Partly paid</option>
+          <option value="written_off">Written off</option>
           <option value="paid">Paid</option>
           <option value="void">Void</option>
         </Select>

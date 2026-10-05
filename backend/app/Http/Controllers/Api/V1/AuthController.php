@@ -162,6 +162,11 @@ class AuthController extends Controller
             'ibp_number' => ['nullable', 'string', 'max:32'],
             'ptr_number' => ['nullable', 'string', 'max:100'],
             'mcle_compliance_number' => ['nullable', 'string', 'max:100'],
+            'ptr_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'ptr_place' => ['nullable', 'string', 'max:100'],
+            'ibp_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'ibp_chapter' => ['nullable', 'string', 'max:100'],
+            'ibp_lifetime' => ['sometimes', 'boolean'],
         ]));
 
         return response()->json(['user' => new UserResource($request->user()->fresh())]);
