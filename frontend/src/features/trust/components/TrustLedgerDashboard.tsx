@@ -5,12 +5,13 @@ import { useAbilities } from '@/features/auth/session'
 import { useClientOptions } from '@/features/clients/api'
 import { ApiError } from '@/shared/api/axios'
 import { money } from '@/shared/lib/format'
-import { useUrlPage } from '@/shared/lib/hooks'
+import { useUrlPage, useUrlState } from '@/shared/lib/hooks'
 import { Button } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Field, FormError, Select } from '@/shared/ui/Form'
-import { Card, PageHeader, Pagination, StatCard, Table, Td, Th, Tr } from '@/shared/ui/Layout'
+import { Card, PageHeader, Pagination, StatCard, Table, Tabs, Td, Th, Tr } from '@/shared/ui/Layout'
+import { TrustReconciliationPanel } from './TrustReconciliation'
 import { useMatterOptions, useOpenTrustAccount, useTrustAccounts } from '../api'
 
 /** Client funds held in trust, separate from the firm's own money. */
@@ -20,14 +21,24 @@ export function TrustLedgerDashboard() {
   const [page, setPage] = useUrlPage()
   const [opening, setOpening] = useState(false)
   const query = useTrustAccounts({ page })
+  const [tab, setTab] = useUrlState('tab', 'accounts')
 
   return (
     <>
       <PageHeader
         title="Trust Accounts"
         description="Client money held in trust. Every posting is permanent and carries its running balance; ledgers are reconciled nightly."
-        actions={abilities.manage_finances && <Button icon={<Plus className="size-4" />} onClick={() => setOpening(true)}>Open account</Button>}
+        actions={abilities.manage_finances && tab === 'accounts' && <Button icon={<Plus className="size-4" />} onClick={() => setOpening(true)}>Open account</Button>}
       />
+      {abilities.manage_finances && (
+        <Tabs<'accounts' | 'reconciliation'>
+          label="Trust"
+          value={tab as 'accounts' | 'reconciliation'}
+          onChange={setTab}
+          tabs={[{ value: 'accounts', label: 'Accounts' }, { value: 'reconciliation', label: 'Bank reconciliation' }]}
+        />
+      )}
+      {tab === 'reconciliation' && abilities.manage_finances ? <TrustReconciliationPanel /> : (<>
 
       {query.data && (
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -63,6 +74,7 @@ export function TrustLedgerDashboard() {
         )}
         <Pagination page={query.data} onPage={setPage} />
       </Card>
+      </>)}
 
       {opening && <OpenAccountDialog onClose={() => setOpening(false)} />}
     </>

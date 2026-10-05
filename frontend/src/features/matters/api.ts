@@ -67,7 +67,7 @@ export function useSaveMatter(id?: number) {
 }
 
 export function useTransitionMatter(id: number) {
-  return useApiMutation((input: { status: MatterStatus; reason?: string; ask_feedback?: boolean }) => post<Matter>(`/v1/matters/${id}/status`, input), {
+  return useApiMutation((input: { status: MatterStatus; reason?: string; ask_feedback?: boolean; acknowledge_warnings?: boolean }) => post<Matter>(`/v1/matters/${id}/status`, input), {
     invalidate: [matterKeys.all],
     success: (m) => `Status changed to ${m.status_label}`,
   })

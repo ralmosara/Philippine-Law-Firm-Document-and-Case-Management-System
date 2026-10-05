@@ -10,8 +10,10 @@ use App\Domain\Deadlines\Models\DeadlineRule;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Services\DeadlineCalculator;
 use App\Domain\Deadlines\Services\DeadlineScheduler;
+use App\Domain\Deadlines\Services\HearingClashes;
 use App\Domain\Deadlines\Services\RecurringTasks;
 use App\Domain\Matters\Models\Matter;
+use App\Domain\Staff\OutOfOffice;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DeadlineResource;
 use App\Models\User;
@@ -148,11 +150,30 @@ class MatterDeadlineController extends Controller
         return new DeadlineResource($deadline->load(['matter', 'assignee', 'rule']));
     }
 
+    /** Hearings the same lawyer already has at that date and time (checked while scheduling). */
+    public function clashes(Request $request, HearingClashes $clashes): JsonResponse
+    {
+        Gate::authorize('work-matters');
+        $validated = $request->validate([
+            'date' => ['required', 'date'],
+            'time' => ['nullable', 'date_format:H:i'],
+            'matter_id' => ['required', 'integer'],
+            'assigned_to' => ['nullable', 'integer'],
+            'except' => ['nullable', 'integer'],
+        ]);
+        $lawyer = $validated['assigned_to'] ?? Matter::findOrFail($validated['matter_id'])->responsible_lawyer_id;
+        $found = $lawyer ? $clashes->forSlot(CarbonImmutable::parse($validated['date']), $validated['time'] ?? null, (int) $lawyer, $validated['except'] ?? null) : collect();
+
+        return response()->json(['clashes' => $found->map(fn ($h) => $clashes->describe($h))->values()]);
+    }
+
     /** The new assignee hears about it, unless they assigned it to themselves. */
     private function tellAssignee(MatterDeadline $deadline, User $by): void
     {
         if ($deadline->assigned_to && $deadline->assigned_to !== $by->id) {
-            User::find($deadline->assigned_to)?->notify(new WorkAssigned($deadline, $by));
+            $assignee = User::find($deadline->assigned_to);
+            // Their cover hears too while they are away.
+            OutOfOffice::withCover(collect([$assignee])->filter())->each->notify(new WorkAssigned($deadline, $by));
         }
     }
 

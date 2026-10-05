@@ -79,7 +79,7 @@ export function TaskBoard() {
           <option value="me">My tasks</option>
           <option value="all">Everyone</option>
           <option value="unassigned">Unassigned</option>
-          {staff.data?.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          {staff.data?.map((u) => <option key={u.id} value={u.id}>{u.name}{u.is_away ? ` (away until ${u.away_until})` : ''}</option>)}
         </Select>
         <Select aria-label="Matter" value={matter} onChange={(e) => setMatter(e.target.value)} className="sm:w-80">
           <option value="">All matters</option>

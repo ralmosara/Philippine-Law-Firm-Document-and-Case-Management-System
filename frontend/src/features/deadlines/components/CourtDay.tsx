@@ -13,6 +13,7 @@ import { Dialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Field, FormError, Input, Textarea } from '@/shared/ui/Form'
 import { Card, PageHeader } from '@/shared/ui/Layout'
+import { ClashWarning, type Clash } from './HearingClashes'
 
 interface Hearing {
   id: number
@@ -22,6 +23,8 @@ interface Hearing {
   notes: string | null
   status: 'pending' | 'completed' | 'missed' | 'cancelled'
   assignee: string | null
+  /** The same lawyer's other hearings at about the same time. */
+  clashes: Clash[]
   matter: {
     id: number
     reference: string
@@ -111,6 +114,7 @@ export function CourtDay() {
                   )}
                   {h.notes && <div className="rounded-[3px] bg-warning-container p-3 text-on-warning-container"><dt className="font-medium">Bring / remember</dt><dd className="whitespace-pre-line">{h.notes}</dd></div>}
                   {h.assignee && <p className="text-xs text-on-surface-variant">Appearing: {h.assignee}</p>}
+                  {h.status === 'pending' && <ClashWarning clashes={h.clashes ?? []} intro="Same lawyer, same time: ask a colleague to appear, or move one" />}
                 </dl>
 
                 {h.status === 'pending' && (

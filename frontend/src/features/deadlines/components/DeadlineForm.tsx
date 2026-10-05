@@ -10,6 +10,7 @@ import { Spinner } from '@/shared/ui/Feedback'
 import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { Tabs } from '@/shared/ui/Layout'
 import { useComputeDeadline, useCreateDeadline, useDeadlineRules } from '../api'
+import { ClashWarning, useHearingClashes } from './HearingClashes'
 
 type Mode = 'rule' | 'manual'
 
@@ -40,6 +41,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
   const preview = useComputeDeadline(mode === 'rule' ? ruleId : null, triggerDate)
   const create = useCreateDeadline(matterId)
   const selectedRule = rules.data?.find((r) => r.id === ruleId)
+  const clashes = useHearingClashes({ matter_id: matterId, date: dueDate, time: dueTime || undefined, assigned_to: assignedTo ? Number(assignedTo) : undefined }, open && mode === 'manual' && kind === 'hearing')
 
   const close = () => {
     setError(null)
@@ -197,6 +199,9 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
                 {(a) => <Input {...a} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Sala of RTC Branch 58, Makati City Hall" />}
               </Field>
             )}
+            {kind === 'hearing' && clashes.data && clashes.data.clashes.length > 0 && (
+              <div className="sm:col-span-2"><ClashWarning clashes={clashes.data.clashes} intro="This lawyer already has a hearing at about that time:" /></div>
+            )}
             {kind === 'hearing' && (
               <div className="sm:col-span-2">
                 <Checkbox label="Tell the client (notice now, reminders a week before and the day before), if the firm sends client hearing reminders" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} />
@@ -209,7 +214,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
           {(a) => (
             <Select {...a} value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
               <option value="">Responsible lawyer</option>
-              {staff.data?.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {staff.data?.map((u) => <option key={u.id} value={u.id}>{u.name}{u.is_away ? ` (away until ${u.away_until})` : ''}</option>)}
             </Select>
           )}
         </Field>

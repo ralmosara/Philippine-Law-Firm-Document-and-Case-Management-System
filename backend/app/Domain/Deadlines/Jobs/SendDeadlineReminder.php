@@ -5,6 +5,7 @@ namespace App\Domain\Deadlines\Jobs;
 use App\Domain\Deadlines\Enums\ReminderStage;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Notifications\DeadlineReminder;
+use App\Domain\Staff\OutOfOffice;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
@@ -40,9 +41,9 @@ class SendDeadlineReminder implements ShouldQueue
             return;
         }
 
-        $recipients = collect([$deadline->assignee, $deadline->matter?->responsibleLawyer])
+        $recipients = OutOfOffice::withCover(collect([$deadline->assignee, $deadline->matter?->responsibleLawyer])
             ->filter(fn ($user) => $user !== null && $user->is_active)
-            ->unique('id');
+            ->unique('id'));
 
         $recipients->each->notify(new DeadlineReminder($deadline, $this->stage));
 

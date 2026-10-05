@@ -19,6 +19,7 @@ use App\Domain\Prescription\Prescriptions;
 use App\Domain\Tax\TaxFilingReminders;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Domain\Trust\Services\TrustLedgerService;
+use App\Domain\Trust\Services\TrustReconciliations;
 use App\Jobs\QueueHeartbeat;
 use App\Support\Ops\OpsAlert;
 use App\Support\Ops\SystemHealth;
@@ -180,3 +181,8 @@ Artisan::command('credentials:remind', function (CounselCredentials $credentials
     $this->info("Sent {$credentials->sendReminders()} PTR/IBP renewal reminder(s).");
 })->purpose('In January, remind lawyers whose PTR or IBP details are not for the new year');
 Schedule::command('credentials:remind')->dailyAt('08:45')->withoutOverlapping()->onOneServer();
+
+Artisan::command('trust:reconciliation-reminder', function (TrustReconciliations $reconciliations) {
+    $this->info("Sent {$reconciliations->remind()} trust reconciliation reminder(s).");
+})->purpose('On the 10th, remind partners when last month\'s trust funds are not yet reconciled with the bank and signed off');
+Schedule::command('trust:reconciliation-reminder')->dailyAt('09:15')->withoutOverlapping()->onOneServer();

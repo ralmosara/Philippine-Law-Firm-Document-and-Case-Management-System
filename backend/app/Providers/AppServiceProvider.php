@@ -34,6 +34,7 @@ use App\Domain\Prescription\MatterPrescription;
 use App\Domain\Privacy\Models\DataSubjectRequest;
 use App\Domain\Privacy\Models\PrivacyIncident;
 use App\Domain\Tax\Models\TaxFiling;
+use App\Domain\Trust\Models\TrustReconciliation;
 use App\Models\User;
 use App\Support\Ops\OpsAlert;
 use App\Support\Tenancy\DatabaseTenancy;
@@ -102,6 +103,7 @@ class AppServiceProvider extends ServiceProvider
             'matter_budget' => MatterBudget::class,
             'matter_feedback' => MatterFeedback::class,
             'matter_prescription' => MatterPrescription::class,
+            'trust_reconciliation' => TrustReconciliation::class,
         ]);
 
         $this->configureDatabaseTenancy();

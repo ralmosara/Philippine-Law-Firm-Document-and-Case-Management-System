@@ -27,6 +27,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   feedback: MessageSquareHeart,
   time: Clock,
   credentials: BadgeCheck,
+  trust: Landmark,
 }
 
 /** The notification center: a bell with the unread count and the latest 50. */

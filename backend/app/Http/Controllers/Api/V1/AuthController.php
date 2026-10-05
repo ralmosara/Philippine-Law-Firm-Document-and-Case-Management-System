@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -170,6 +171,26 @@ class AuthController extends Controller
         ]));
 
         return response()->json(['user' => new UserResource($request->user()->fresh())]);
+    }
+
+    /** Away from the office, and who covers meanwhile. Empty dates clear it. */
+    public function updateAway(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $validated = $request->validate([
+            'away_from' => ['nullable', 'date', 'required_with:away_until'],
+            'away_until' => ['nullable', 'date', 'after_or_equal:away_from', 'required_with:away_from'],
+            'cover_user_id' => ['nullable', 'integer', Rule::notIn([$user->id]), Rule::exists('users', 'id')->where('firm_id', $user->firm_id)->where('is_active', true)],
+        ], ['cover_user_id.not_in' => 'Choose someone else to cover for you.']);
+
+        $away = filled($validated['away_from'] ?? null);
+        $user->forceFill([
+            'away_from' => $away ? $validated['away_from'] : null,
+            'away_until' => $away ? $validated['away_until'] : null,
+            'cover_user_id' => $away ? ($validated['cover_user_id'] ?? null) : null,
+        ])->save();
+
+        return response()->json(['user' => new UserResource($user->fresh())]);
     }
 
     /**

@@ -55,6 +55,7 @@ use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TaxController;
 use App\Http\Controllers\Api\V1\TimeEntryController;
 use App\Http\Controllers\Api\V1\TrustAccountController;
+use App\Http\Controllers\Api\V1\TrustReconciliationController;
 use App\Http\Controllers\Api\V1\TwoFactorController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WorkflowTemplateController;
@@ -105,6 +106,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::put('auth/password', [AuthController::class, 'updatePassword']);
         Route::put('auth/credentials', [AuthController::class, 'updateCredentials']);
+        Route::put('auth/away', [AuthController::class, 'updateAway']);
         Route::post('auth/two-factor', [TwoFactorController::class, 'enable']);
         Route::post('auth/two-factor/confirm', [TwoFactorController::class, 'confirm']);
         Route::delete('auth/two-factor', [TwoFactorController::class, 'disable']);
@@ -126,6 +128,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('matters/options', [MatterController::class, 'options']);
         Route::apiResource('matters', MatterController::class);
         Route::post('matters/{matter}/status', [MatterController::class, 'transition']);
+        Route::get('matters/{matter}/closing-check', [MatterController::class, 'closingCheck']);
+        Route::post('matters/{matter}/closing-letter', [MatterController::class, 'closingLetter']);
         Route::get('matters/{matter}/timeline', [MatterController::class, 'timeline']);
         Route::apiResource('matters.parties', MatterPartyController::class)->only(['store', 'update', 'destroy'])->scoped();
         Route::get('matters/{matter}/deadlines', [MatterDeadlineController::class, 'forMatter']);
@@ -207,6 +211,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('deadlines/{deadline}/hearing-outcome', [CourtDayController::class, 'outcome'])->middleware('idempotent');
         Route::get('deadlines', [MatterDeadlineController::class, 'index']);
         Route::post('deadlines/compute', [MatterDeadlineController::class, 'compute']);
+        Route::get('deadlines/clashes', [MatterDeadlineController::class, 'clashes']);
         Route::get('deadlines/{deadline}', [MatterDeadlineController::class, 'show']);
         Route::patch('deadlines/{deadline}', [MatterDeadlineController::class, 'update']);
         Route::post('deadlines/{deadline}/complete', [MatterDeadlineController::class, 'complete']);
@@ -270,6 +275,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('trust-accounts/{trustAccount}/transactions', [TrustAccountController::class, 'record']);
         Route::get('trust-accounts/{trustAccount}/reconcile', [TrustAccountController::class, 'reconcile']);
         Route::post('trust-accounts/{trustAccount}/close', [TrustAccountController::class, 'close']);
+        Route::get('trust-reconciliations', [TrustReconciliationController::class, 'index']);
+        Route::post('trust-reconciliations', [TrustReconciliationController::class, 'store']);
+        Route::post('trust-reconciliations/{trustReconciliation}/sign-off', [TrustReconciliationController::class, 'signOff']);
+        Route::get('trust-reconciliations/{trustReconciliation}/pdf', [TrustReconciliationController::class, 'pdf']);
 
         Route::apiResource('time-entries', TimeEntryController::class)->except('show')->middlewareFor('store', 'idempotent');
         Route::apiResource('expenses', ExpenseController::class)->except('show');

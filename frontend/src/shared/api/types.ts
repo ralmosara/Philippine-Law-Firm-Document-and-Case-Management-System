@@ -44,6 +44,10 @@ export interface User extends UserRef {
   ibp_lifetime?: boolean
   /** For lawyers: PTR or IBP details missing or not for this year. */
   credential_problems?: string[]
+  away_from?: string | null
+  away_until?: string | null
+  cover_user_id?: number | null
+  is_away?: boolean
   mobile_number: string | null
   hourly_rate_cents: number
   daily_target_minutes: number | null

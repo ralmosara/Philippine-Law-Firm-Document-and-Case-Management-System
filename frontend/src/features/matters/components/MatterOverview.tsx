@@ -12,6 +12,7 @@ import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { Card, CardHeader, DescriptionList } from '@/shared/ui/Layout'
 import { useDeleteParty, useMatterTimeline, useSaveParty, useTransitionMatter } from '../api'
+import { ClosingChecks, ClosingLetterButton, useClosingCheck } from './ClosingChecks'
 
 export function MatterOverview({ matter, upcoming, onShowDeadlines }: { matter: Matter; upcoming: Deadline[]; onShowDeadlines: () => void }) {
   const abilities = useAbilities()
@@ -34,6 +35,12 @@ export function MatterOverview({ matter, upcoming, onShowDeadlines }: { matter: 
               ]}
             />
             {matter.description && <p className="mt-6 text-sm whitespace-pre-line text-on-surface-variant">{matter.description}</p>}
+            {matter.status === 'closed' && abilities.practice_law && (
+              <div className="mt-6 flex flex-col gap-2 rounded-[3px] bg-surface-container p-3 text-sm sm:flex-row sm:items-center">
+                <p className="flex-1">The matter is closed. Send the client a closing letter: what was done, their documents, and how long the file is kept.</p>
+                <ClosingLetterButton matterId={matter.id} />
+              </div>
+            )}
           </div>
         </Card>
         <PartiesCard matter={matter} />
@@ -149,6 +156,8 @@ export function StatusMenu({ matter }: { matter: Matter }) {
   const [askFeedback, setAskFeedback] = useState(true)
   const transition = useTransitionMatter(matter.id)
   const canAskFeedback = target?.value === 'closed' && !!matter.client?.portal_enabled
+  const closing = useClosingCheck(matter.id, target?.value === 'closed')
+  const blocked = target?.value === 'closed' && (closing.isPending || (closing.data?.blockers.length ?? 0) > 0)
 
   if (matter.allowed_transitions.length === 0) return null
 
@@ -176,6 +185,7 @@ export function StatusMenu({ matter }: { matter: Matter }) {
         description={
           <>
             The change from <strong>{matter.status_label}</strong> to <strong>{target?.label}</strong> is recorded in the matter history.
+            {target?.value === 'closed' && <ClosingChecks query={closing} />}
             {canAskFeedback && (
               <span className="mt-3 block">
                 <Checkbox label="Ask the client how we did (rating and comment, in the portal)" checked={askFeedback} onChange={(e) => setAskFeedback(e.target.checked)} />
@@ -187,8 +197,9 @@ export function StatusMenu({ matter }: { matter: Matter }) {
         reasonRequired={target?.value === 'closed'}
         destructive={target?.value === 'closed'}
         confirmLabel="Change status"
+        confirmDisabled={blocked}
         loading={transition.isPending}
-        onConfirm={(reason) => target && transition.mutate({ status: target.value, reason: reason || undefined, ...(target.value === 'closed' ? { ask_feedback: canAskFeedback && askFeedback } : {}) }, { onSuccess: () => setTarget(null) })}
+        onConfirm={(reason) => target && transition.mutate({ status: target.value, reason: reason || undefined, ...(target.value === 'closed' ? { ask_feedback: canAskFeedback && askFeedback, acknowledge_warnings: true } : {}) }, { onSuccess: () => setTarget(null) })}
       />
     </div>
   )

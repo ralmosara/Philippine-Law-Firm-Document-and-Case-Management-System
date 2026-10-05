@@ -9,6 +9,8 @@ use App\Domain\Matters\Enums\FeeArrangement;
 use App\Domain\Matters\Enums\MatterStatus;
 use App\Domain\Matters\Enums\PartyRole;
 use App\Domain\Matters\Models\Matter;
+use App\Domain\Matters\Services\MatterClosing;
+use App\Domain\Staff\OutOfOffice;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MatterResource;
 use App\Http\Resources\MatterStatusEventResource;
@@ -129,11 +131,28 @@ class MatterController extends Controller
             'status' => ['required', new Enum(MatterStatus::class)],
             'reason' => ['nullable', 'string', 'max:2000'],
             'ask_feedback' => ['boolean'],
+            'acknowledge_warnings' => ['boolean'],
         ]);
 
-        $transition->execute($matter, MatterStatus::from($validated['status']), $request->user(), $validated['reason'] ?? null, $validated['ask_feedback'] ?? true);
+        $transition->execute($matter, MatterStatus::from($validated['status']), $request->user(), $validated['reason'] ?? null, $validated['ask_feedback'] ?? true, $validated['acknowledge_warnings'] ?? false);
 
         return new MatterResource($matter->load(['client', 'responsibleLawyer', 'parties']));
+    }
+
+    /** What must be settled before closing, and what is still open. */
+    public function closingCheck(Matter $matter, MatterClosing $closing): JsonResponse
+    {
+        Gate::authorize('practice-law');
+
+        return response()->json($closing->check($matter));
+    }
+
+    public function closingLetter(Request $request, Matter $matter, MatterClosing $closing): JsonResponse
+    {
+        Gate::authorize('practice-law');
+        $document = $closing->draftLetter($matter, $request->user());
+
+        return response()->json(['id' => $document->id, 'title' => $document->title], 201);
     }
 
     public function timeline(Matter $matter): AnonymousResourceCollection
@@ -144,7 +163,7 @@ class MatterController extends Controller
     private function tellResponsibleLawyer(Matter $matter, User $by): void
     {
         if ($matter->responsible_lawyer_id && $matter->responsible_lawyer_id !== $by->id) {
-            User::find($matter->responsible_lawyer_id)?->notify(new WorkAssigned($matter, $by));
+            OutOfOffice::withCover(collect([User::find($matter->responsible_lawyer_id)])->filter())->each->notify(new WorkAssigned($matter, $by));
         }
     }
 

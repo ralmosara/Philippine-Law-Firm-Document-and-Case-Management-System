@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Domain\Compliance\Services\CounselCredentials;
+use App\Domain\Staff\OutOfOffice;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -28,6 +29,10 @@ class UserResource extends JsonResource
             'ibp_date' => $this->ibp_date?->toDateString(),
             'ibp_chapter' => $this->ibp_chapter,
             'ibp_lifetime' => (bool) $this->ibp_lifetime,
+            'away_from' => $this->away_from?->toDateString(),
+            'away_until' => $this->away_until?->toDateString(),
+            'cover_user_id' => $this->cover_user_id,
+            'is_away' => OutOfOffice::isAway($this->resource),
             'credential_problems' => $this->role->isLawyer() ? app(CounselCredentials::class)->problems($this->resource) : [],
             'mobile_number' => $this->mobile_number,
             'hourly_rate_cents' => $this->hourly_rate_cents,

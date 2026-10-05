@@ -71,6 +71,8 @@ class User extends Authenticatable implements HasLocalePreference
             'ptr_date' => DateOnly::class,
             'ibp_date' => DateOnly::class,
             'ibp_lifetime' => 'boolean',
+            'away_from' => DateOnly::class,
+            'away_until' => DateOnly::class,
             'is_active' => 'boolean',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
