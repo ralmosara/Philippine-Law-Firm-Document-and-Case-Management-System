@@ -40,6 +40,7 @@ export interface UserInput {
   roll_number?: string | null
   mobile_number?: string | null
   hourly_rate_cents?: number
+  daily_target_minutes?: number | null
   is_active?: boolean
 }
 

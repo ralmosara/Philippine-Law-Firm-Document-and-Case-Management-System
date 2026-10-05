@@ -41,6 +41,10 @@ class FirmController extends Controller
             'default_withholding_bps' => ['sometimes', 'integer', 'min:0', 'max:3000'],
             'payment_reminders_enabled' => ['sometimes', 'boolean'],
             'client_hearing_reminders' => ['sometimes', 'boolean'],
+            'statements_enabled' => ['sometimes', 'boolean'],
+            'statement_day' => ['sometimes', 'integer', 'min:1', 'max:28'],
+            'time_reminders_enabled' => ['sometimes', 'boolean'],
+            'daily_target_minutes' => ['sometimes', 'integer', 'min:30', 'max:720'],
             'pleading_paper' => ['sometimes', Rule::in(array_keys(DocxWriter::PAPERS))],
             'pleading_font' => ['sometimes', 'string', 'max:64', 'regex:/^[A-Za-z0-9 ]+$/'],
             'pleading_font_size' => ['sometimes', 'integer', 'min:10', 'max:16'],
@@ -88,7 +92,7 @@ class FirmController extends Controller
     private function payload(Firm $firm): array
     {
         return [
-            ...$firm->only(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'payment_reminders_enabled', 'client_hearing_reminders', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees']),
+            ...$firm->only(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'payment_reminders_enabled', 'client_hearing_reminders', 'statements_enabled', 'statement_day', 'time_reminders_enabled', 'daily_target_minutes', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees']),
             'ai_configured' => filled(config('services.anthropic.api_key')),
             'users_without_two_factor' => User::where('firm_id', $firm->id)
                 ->where('is_active', true)

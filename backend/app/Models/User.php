@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Domain\Compliance\Models\McleCredit;
 use App\Domain\Matters\Models\Matter;
 use App\Enums\Role;
@@ -35,6 +36,7 @@ class User extends Authenticatable implements HasLocalePreference
         'mcle_compliance_number',
         'mobile_number',
         'hourly_rate_cents',
+        'daily_target_minutes',
         'is_active',
     ];
 
@@ -59,6 +61,8 @@ class User extends Authenticatable implements HasLocalePreference
             'password' => 'hashed',
             'role' => Role::class,
             'hourly_rate_cents' => 'integer',
+            'daily_target_minutes' => 'integer',
+            'time_reminded_for' => DateOnly::class,
             'is_active' => 'boolean',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',

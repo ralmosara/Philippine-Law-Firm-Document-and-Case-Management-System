@@ -24,6 +24,7 @@ class UserResource extends JsonResource
             'mcle_compliance_number' => $this->mcle_compliance_number,
             'mobile_number' => $this->mobile_number,
             'hourly_rate_cents' => $this->hourly_rate_cents,
+            'daily_target_minutes' => $this->daily_target_minutes,
             'is_active' => $this->is_active,
             'two_factor_enabled' => $this->hasTwoFactorEnabled(),
             'last_login_at' => $this->last_login_at?->toIso8601String(),

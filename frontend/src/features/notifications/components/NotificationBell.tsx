@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { AlarmClock, AlertTriangle, Bell, MessageSquareHeart, Building2, ClipboardCheck, Gauge, Landmark, Mail, HandCoins, TrendingUp, CalendarClock, FileSignature, Inbox, MessagesSquare, ShieldCheck, UserPlus, Wallet } from 'lucide-react'
+import { AlarmClock, AlertTriangle, Bell, Clock, MessageSquareHeart, Building2, ClipboardCheck, Gauge, Landmark, Mail, HandCoins, TrendingUp, CalendarClock, FileSignature, Inbox, MessagesSquare, ShieldCheck, UserPlus, Wallet } from 'lucide-react'
 import { useEffect, useState, type ComponentType } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { dateTime } from '@/shared/lib/format'
@@ -25,6 +25,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   budget: Gauge,
   prescription: AlarmClock,
   feedback: MessageSquareHeart,
+  time: Clock,
 }
 
 /** The notification center: a bell with the unread count and the latest 50. */

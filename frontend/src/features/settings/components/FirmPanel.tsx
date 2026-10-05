@@ -9,6 +9,7 @@ import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui
 import { useToast } from '@/shared/ui/Toast'
 import { Card, CardHeader } from '@/shared/ui/Layout'
 import { useFirmSettings, useSaveFirmSettings, type FirmSettings } from '../api'
+import { StatementsCard, TimeRemindersCard } from './RevenueReminders'
 
 /** The firm's details (printed on invoices) and firm-wide security rules. */
 export function FirmPanel() {
@@ -24,6 +25,8 @@ export function FirmPanel() {
       <IntakeCard firm={firm.data} />
       <AssistantCard firm={firm.data} />
       <HearingRemindersCard firm={firm.data} />
+      <StatementsCard firm={firm.data} />
+      <TimeRemindersCard firm={firm.data} />
     </div>
   )
 }

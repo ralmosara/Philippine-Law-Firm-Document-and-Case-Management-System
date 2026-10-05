@@ -71,6 +71,11 @@ export interface FirmSettings {
   default_withholding_bps: number
   payment_reminders_enabled: boolean
   client_hearing_reminders: boolean
+  statements_enabled: boolean
+  /** Day of the month (1-28) statements of account are emailed. */
+  statement_day: number
+  time_reminders_enabled: boolean
+  daily_target_minutes: number
   pleading_paper: 'folio' | 'a4' | 'letter'
   pleading_font: string
   pleading_font_size: number

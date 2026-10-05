@@ -39,6 +39,7 @@ export interface User extends UserRef {
   mcle_compliance_number?: string | null
   mobile_number: string | null
   hourly_rate_cents: number
+  daily_target_minutes: number | null
   is_active: boolean
   two_factor_enabled: boolean
   last_login_at: string | null

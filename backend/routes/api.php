@@ -49,6 +49,7 @@ use App\Http\Controllers\Api\V1\ProspectController;
 use App\Http\Controllers\Api\V1\PushController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SignatureRequestController;
+use App\Http\Controllers\Api\V1\StatementController;
 use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\TaxController;
 use App\Http\Controllers\Api\V1\TimeEntryController;
@@ -274,6 +275,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show']);
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
+        Route::get('clients/{client}/statement', [StatementController::class, 'show']);
+        Route::get('clients/{client}/statement/pdf', [StatementController::class, 'pdf']);
+        Route::post('clients/{client}/statement/send', [StatementController::class, 'send']);
+        Route::post('statements/send', [StatementController::class, 'sendAll']);
         Route::post('invoices/{invoice}/issue', [InvoiceController::class, 'issue']);
         Route::get('reports/{report}', [ReportController::class, 'show'])->whereIn('report', ['aged-receivables', 'collections', 'matter-profitability']);
         Route::post('invoices/{invoice}/pay', [InvoiceController::class, 'pay']);
@@ -390,6 +395,7 @@ Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->g
         Route::get('documents/{document}/pdf', [ClientPortalController::class, 'getDocumentPdf'])->whereNumber('document');
         Route::get('invoices/{invoice}/pdf', [ClientPortalController::class, 'getInvoicePdf'])->whereNumber('invoice');
         Route::get('invoices', [ClientPortalController::class, 'getInvoices']);
+        Route::get('statement/pdf', [ClientPortalController::class, 'getStatementPdf']);
         Route::post('invoices/{invoice}/checkout', [ClientPortalController::class, 'checkout'])->whereNumber('invoice');
         Route::get('trust-accounts', [ClientPortalController::class, 'getTrustAccounts']);
         Route::get('files/{file}/download', [ClientPortalController::class, 'downloadFile'])->whereNumber('file');

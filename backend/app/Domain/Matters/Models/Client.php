@@ -2,6 +2,7 @@
 
 namespace App\Domain\Matters\Models;
 
+use App\Casts\DateOnly;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Models\Traits\Auditable;
@@ -65,6 +66,7 @@ class Client extends Authenticatable implements HasLocalePreference
             'portal_enabled' => 'boolean',
             'password' => 'hashed',
             'last_portal_login_at' => 'datetime',
+            'statement_sent_on' => DateOnly::class,
             'privacy_notice_version' => 'integer',
             'privacy_accepted_at' => 'datetime',
             'anonymized_at' => 'datetime',

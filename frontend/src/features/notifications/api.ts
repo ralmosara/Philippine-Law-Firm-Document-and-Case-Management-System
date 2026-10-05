@@ -40,6 +40,7 @@ const AFFECTS: Record<string, string[][]> = {
   budget: [['budget']],
   prescription: [['prescriptions']],
   feedback: [['feedback']],
+  time: [['time-entries']],
 }
 
 export function useNotifications() {

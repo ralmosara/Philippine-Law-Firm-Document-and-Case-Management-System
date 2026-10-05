@@ -79,6 +79,7 @@ registerDictionary('fil', {
   Invoices: 'Mga invoice',
   'Pay by card, GCash, Maya or QR Ph through PayMongo.': 'Magbayad gamit ang card, GCash, Maya o QR Ph sa pamamagitan ng PayMongo.',
   'No invoices': 'Walang invoice',
+  'Statement of account': 'Statement of account (buod ng balanse)',
   Number: 'Numero',
   Due: 'Takdang petsa',
   Status: 'Katayuan',

@@ -149,5 +149,12 @@
     "The :attribute field must contain at least one uppercase and one lowercase letter.": "Dapat may kahit isang malaki at isang maliit na titik ang :attribute.",
     "The :attribute field must contain at least one number.": "Dapat may kahit isang numero ang :attribute.",
     "The :attribute field must contain at least one symbol.": "Dapat may kahit isang simbolo ang :attribute.",
-    "The given :attribute has appeared in a data leak. Please choose a different :attribute.": "Lumabas na sa isang data leak ang :attribute na ito. Pumili ng ibang :attribute."
+    "The given :attribute has appeared in a data leak. Please choose a different :attribute.": "Lumabas na sa isang data leak ang :attribute na ito. Pumili ng ibang :attribute.",
+
+    "Statement of account as of :date": "Statement of account hanggang :date",
+    "Attached is your statement of account as of :date.": "Nakalakip ang inyong statement of account hanggang :date.",
+    "Total amount due: :amount.": "Kabuuang halagang dapat bayaran: :amount.",
+    "Nothing is owed. Thank you.": "Wala po kayong balanseng dapat bayaran. Salamat po.",
+    "Funds we hold in trust for you: :amount.": "Pondong hawak namin para sa inyo (trust): :amount.",
+    "Please contact us if anything does not match your records. If you have paid recently, thank you: your payment may not appear yet.": "Mangyaring makipag-ugnayan sa amin kung may hindi tugma sa inyong talaan. Kung kayo ay nakabayad kamakailan, salamat po: maaaring hindi pa ito nakikita rito."
 }

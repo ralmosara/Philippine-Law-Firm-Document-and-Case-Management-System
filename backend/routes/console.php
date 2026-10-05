@@ -2,6 +2,8 @@
 
 use App\Domain\Billing\Collections\Collections;
 use App\Domain\Billing\Services\Disbursements;
+use App\Domain\Billing\Statements\ClientStatements;
+use App\Domain\Billing\TimeReminders\TimeReminders;
 use App\Domain\Business\Pipeline;
 use App\Domain\Corporate\CorporateSecretarial;
 use App\Domain\Deadlines\ClientHearingNotices;
@@ -157,3 +159,18 @@ Artisan::command('files:extract-text {--failed : Also retry files whose extracti
     });
     $this->info("Queued {$queued} file(s) for text extraction.");
 })->purpose('Re-read files that could not be read before, now that more formats are supported');
+
+Artisan::command('statements:send', function (ClientStatements $statements) {
+    $this->info("Sent {$statements->sendDue()} statement(s) of account.");
+})->purpose('Email each client their monthly statement of account on the firm\'s statement day (firms that turned it on)');
+Schedule::command('statements:send')->dailyAt('08:30')->withoutOverlapping()->onOneServer();
+
+Artisan::command('time:remind', function (TimeReminders $reminders) {
+    $this->info("Sent {$reminders->remindMissing()} missing-time reminder(s).");
+})->purpose('Remind people who logged less than their daily target on the previous working day (firms that turned it on)');
+Schedule::command('time:remind')->weekdays()->at('08:00')->withoutOverlapping()->onOneServer();
+
+Artisan::command('time:weekly-summary', function (TimeReminders $reminders) {
+    $this->info("Sent {$reminders->sendWeeklySummary()} weekly time summary(ies).");
+})->purpose('Last week\'s hours against target for everyone, to the managing partners (firms that turned it on)');
+Schedule::command('time:weekly-summary')->mondays()->at('08:15')->withoutOverlapping()->onOneServer();

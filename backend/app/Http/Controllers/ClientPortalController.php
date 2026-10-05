@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Payments\OnlinePayments;
+use App\Domain\Billing\Statements\StatementOfAccount;
 use App\Domain\Budgets\MatterBudgets;
 use App\Domain\Deadlines\Enums\DeadlineKind;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
@@ -222,6 +223,13 @@ class ClientPortalController extends Controller
             ->findOrFail($invoice);
 
         return $pdf->download('pdf.invoice', InvoiceController::pdfData($model), "billing-statement-{$model->number}");
+    }
+
+    /** The client's statement of account as of today. */
+    public function getStatementPdf(Request $request, StatementOfAccount $statements, PdfRenderer $pdf): Response
+    {
+        // The signed-in client is loaded with only a few columns; the statement shows the address and TIN.
+        return $pdf->download('pdf.statement', $statements->build(Client::findOrFail($this->client($request)->id)), 'statement-of-account-'.today()->toDateString());
     }
 
     public function getInvoices(Request $request, OnlinePayments $payments): JsonResponse
