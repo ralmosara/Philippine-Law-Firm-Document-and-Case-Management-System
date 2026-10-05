@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { FormError, Select } from '@/shared/ui/Form'
 import { Card, CardHeader, Table, Td, Th } from '@/shared/ui/Layout'
+import { DocumentImportCard } from './DocumentImport'
 import { useCommitImport, useImport, useImports, useImportTypes, usePreviewImport, useUndoImport, type DataImport, type ImportTypeInfo, type RowStatus } from '../api'
 
 const STATUS: Record<RowStatus, { label: string; tone: 'success' | 'warning' | 'danger' }> = {
@@ -22,6 +23,7 @@ export function ImportPanel() {
   return openId !== null ? <ImportPreview id={openId} onBack={() => setOpenId(null)} /> : (
     <div className="flex flex-col gap-6">
       <ImportSteps onPreviewed={setOpenId} />
+      <DocumentImportCard />
       <ImportHistory onOpen={setOpenId} />
     </div>
   )

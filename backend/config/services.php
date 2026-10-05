@@ -104,6 +104,14 @@ return [
         'deadline_days' => (int) env('EINVOICE_DEADLINE_DAYS', 3),
     ],
 
+    // Bulk import of documents (Firm Settings > Import data): a ZIP, uploaded in
+    // 10 MB pieces, with at most this many files and this much unpacked.
+    'document_imports' => [
+        'max_mb' => (int) env('DOCUMENT_IMPORT_MAX_MB', 2048),
+        'max_files' => (int) env('DOCUMENT_IMPORT_MAX_FILES', 5000),
+        'max_unpacked_mb' => (int) env('DOCUMENT_IMPORT_MAX_UNPACKED_MB', 10240),
+    ],
+
     'efiling' => [
         'max_mb' => (int) env('EFILING_MAX_MB', 25),
     ],

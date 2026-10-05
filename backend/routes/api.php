@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\Api\V1\DisbursementController;
 use App\Http\Controllers\Api\V1\DocumentCompareController;
 use App\Http\Controllers\Api\V1\DocumentController;
+use App\Http\Controllers\Api\V1\DocumentImportController;
 use App\Http\Controllers\Api\V1\DocumentRequestController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
 use App\Http\Controllers\Api\V1\EFilingController;
@@ -302,6 +303,15 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('imports/template/{type}', [ImportController::class, 'template'])->whereIn('type', ['clients', 'matters', 'deadlines', 'trust_balances']);
         Route::get('imports', [ImportController::class, 'index']);
         Route::post('imports', [ImportController::class, 'store']);
+        Route::get('document-imports', [DocumentImportController::class, 'index']);
+        Route::post('document-imports', [DocumentImportController::class, 'start']);
+        Route::get('document-imports/{documentImport}', [DocumentImportController::class, 'show']);
+        // Pieces of the ZIP, in order; each well under the upload limit.
+        Route::post('document-imports/{documentImport}/chunks/{index}', [DocumentImportController::class, 'chunk'])->whereNumber('index')->middleware('throttle:600,1');
+        Route::post('document-imports/{documentImport}/finish', [DocumentImportController::class, 'finish']);
+        Route::post('document-imports/{documentImport}/assign', [DocumentImportController::class, 'assign']);
+        Route::post('document-imports/{documentImport}/commit', [DocumentImportController::class, 'commit']);
+        Route::post('document-imports/{documentImport}/undo', [DocumentImportController::class, 'undo']);
         Route::get('imports/{import}', [ImportController::class, 'show']);
         Route::post('imports/{import}/commit', [ImportController::class, 'commit']);
         Route::post('imports/{import}/undo', [ImportController::class, 'undo']);
