@@ -184,6 +184,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('intake-requests/{intakeRequest}', [IntakeController::class, 'show']);
         Route::post('intake-requests/{intakeRequest}/schedule', [IntakeController::class, 'schedule']);
         Route::post('intake-requests/{intakeRequest}/decline', [IntakeController::class, 'decline']);
+        Route::put('intake-requests/{intakeRequest}/prescription', [IntakeController::class, 'prescription']);
         Route::post('intake-requests/{intakeRequest}/accept', [IntakeController::class, 'accept']);
 
         Route::get('calendar-feed', [CalendarFeedController::class, 'show']);
@@ -401,8 +402,9 @@ Route::post('webhooks/paymongo', PayMongoWebhookController::class)->middleware('
 Route::post('webhooks/inbound-email', InboundEmailWebhookController::class)->middleware('throttle:api');
 
 // A firm's public consultation-request form.
-Route::get('public/intake/{slug}', [PublicIntakeController::class, 'show'])->middleware('throttle:api');
-Route::post('public/intake/{slug}', [PublicIntakeController::class, 'submit'])->middleware('throttle:intake');
+// In English or Filipino (X-Locale, like the portal before sign-in).
+Route::get('public/intake/{slug}', [PublicIntakeController::class, 'show'])->middleware(['throttle:api', SetPortalLocale::class]);
+Route::post('public/intake/{slug}', [PublicIntakeController::class, 'submit'])->middleware(['throttle:intake', SetPortalLocale::class]);
 
 // Calendar subscriptions: calendar apps cannot sign in, so the unguessable
 // token in the URL authenticates the request.

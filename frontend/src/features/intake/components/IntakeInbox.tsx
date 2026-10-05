@@ -7,14 +7,15 @@ import { useResolveConflict } from '@/features/compliance/api'
 import { useTrackIntake } from '@/features/prospects/api'
 import { useLawyerOptions } from '@/features/users/api'
 import { ApiError } from '@/shared/api/axios'
-import { dateTime } from '@/shared/lib/format'
+import { date, dateTime, longDate, today } from '@/shared/lib/format'
 import { useUrlPage, useUrlState } from '@/shared/lib/hooks'
 import { Button } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { Card, CardHeader, DescriptionList, PageHeader, Pagination, Table, Tabs, Td, Th, Tr } from '@/shared/ui/Layout'
-import { useIntakeAction, useIntakeRequest, useIntakeRequests, type IntakeDetail, type IntakeRequest } from '../api'
+import { useIntakeAction, useIntakeRequest, useIntakeRequests, useScreenPrescription, type IntakeDetail, type IntakeRequest } from '../api'
+import { usePrescriptionPeriods } from '@/features/prescription/api'
 
 const STATUS: Record<IntakeRequest['status'], { label: string; tone: 'primary' | 'success' | 'neutral' | 'warning' }> = {
   new: { label: 'New', tone: 'primary' },
@@ -27,6 +28,14 @@ function ConflictBadge({ status }: { status: 'clear' | 'flagged' }) {
   return status === 'flagged'
     ? <Badge tone="danger"><AlertTriangle className="mr-1 inline size-3" aria-hidden="true" />Possible conflict</Badge>
     : <Badge tone="success">No conflicts found</Badge>
+}
+
+/** How soon the claim prescribes, if the period the lawyer chose applies (open requests only). */
+function PrescriptionBadge({ p }: { p: IntakeRequest['prescription'] }) {
+  if (!p) return null
+  if (p.state === 'prescribed') return <Badge tone="danger">Prescribed {date(p.last_day)}</Badge>
+  const tone = p.state === 'urgent' ? 'danger' : p.state === 'soon' ? 'warning' : 'neutral'
+  return <Badge tone={tone}>Prescribes in {p.days_left} day{p.days_left === 1 ? '' : 's'}</Badge>
 }
 
 /** Consultation requests from the firm's public intake page. */
@@ -59,7 +68,7 @@ export function IntakeInbox() {
               {list.data.data.map((r) => (
                 <Tr key={r.id} onClick={() => navigate(`/intake/${r.id}`)}>
                   <Td><Link to={`/intake/${r.id}`} onClick={(e) => e.stopPropagation()} className="font-medium text-primary hover:underline">{r.name}</Link><div className="text-xs text-on-surface-variant">{r.email}</div></Td>
-                  <Td>{r.case_type}</Td>
+                  <Td>{r.case_type}{r.prescription && <div className="mt-1"><PrescriptionBadge p={r.prescription} /></div>}</Td>
                   <Td><ConflictBadge status={r.conflict_status} /></Td>
                   <Td><Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge>{r.consultation_at && <div className="text-xs text-on-surface-variant">{dateTime(r.consultation_at)}</div>}</Td>
                   <Td className="whitespace-nowrap text-on-surface-variant">{dateTime(r.created_at)}</Td>
@@ -112,6 +121,7 @@ export function IntakeReview() {
             <CardHeader title="Their concern" />
             <p className="p-5 text-sm leading-6 whitespace-pre-wrap">{r.description}</p>
           </Card>
+          {open && <PrescriptionScreen request={r} canEdit={abilities.work_matters} />}
           <Card>
             <CardHeader title="Conflict checks" description="Run automatically on the applicant and every party they named. Resolve any flagged check before accepting." />
             <ul className="divide-y divide-outline-variant">
@@ -158,6 +168,63 @@ export function IntakeReview() {
       {dialog === 'decline' && <DeclineDialog request={r} onClose={() => setDialog(null)} />}
       {resolving && <ResolveConflictDialog check={resolving} onClose={() => setResolving(null)} />}
     </>
+  )
+}
+
+/**
+ * Before taking the case: from the date the applicant gave (correctable) and
+ * the type of claim the lawyer judges it to be, when it prescribes. Once the
+ * case is taken, the matter tracks it with reminders.
+ */
+function PrescriptionScreen({ request, canEdit }: { request: IntakeDetail; canEdit: boolean }) {
+  const periods = usePrescriptionPeriods()
+  const screen = useScreenPrescription(request.id)
+  const [incident, setIncident] = useState(request.incident_on ?? '')
+  const [period, setPeriod] = useState(request.prescription?.period_key ?? '')
+  const p = request.prescription
+  const error = screen.error ? ApiError.from(screen.error) : null
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    screen.mutate({ period_key: period || null, incident_on: incident || null })
+  }
+
+  return (
+    <Card>
+      <CardHeader
+        title="Prescription"
+        description={request.incident_on ? `The applicant says it happened or started on ${longDate(request.incident_on)}.` : 'The applicant gave no date. Ask at the consultation, or enter it here.'}
+      />
+      <div className="flex flex-col gap-4 p-5">
+        {p && (
+          <p role="status" className={`rounded-[3px] p-3 text-sm ${p.state === 'prescribed' || p.state === 'urgent' ? 'bg-danger-container text-on-danger-container' : p.state === 'soon' ? 'bg-warning-container text-on-warning-container' : 'bg-surface-container'}`}>
+            <strong>{p.label}</strong> ({p.basis}): {p.state === 'prescribed' ? <>prescribed on <strong>{longDate(p.last_day)}</strong>.</> : <>last day <strong>{longDate(p.last_day)}</strong>, {p.days_left} day{p.days_left === 1 ? '' : 's'} from today{p.file_by !== p.last_day && <> (Rule 22 moves it to {longDate(p.file_by)})</>}.</>}
+            {' '}Taking the case starts tracking it on the matter, with reminders.
+          </p>
+        )}
+        {canEdit && (
+          <form onSubmit={submit} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_11rem_auto] sm:items-end">
+            <Field label="Type of claim" error={error?.field('period_key')}>
+              {(a) => (
+                <Select {...a} value={period} onChange={(e) => setPeriod(e.target.value)}>
+                  <option value="">Not checked yet</option>
+                  {periods.data?.groups.map((g) => (
+                    <optgroup key={g.group} label={g.label}>
+                      {g.periods.map((x) => <option key={x.key} value={x.key}>{x.label} ({[x.years && `${x.years} yr`, x.months && `${x.months} mo`].filter(Boolean).join(' ')})</option>)}
+                    </optgroup>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Field label="It arose on" error={error?.field('incident_on')}>
+              {(a) => <Input {...a} type="date" max={today()} value={incident} onChange={(e) => setIncident(e.target.value)} />}
+            </Field>
+            <Button type="submit" variant="tonal" loading={screen.isPending}>Check</Button>
+          </form>
+        )}
+        <p className="text-xs text-on-surface-variant">A first look, from what the applicant wrote: confirm the accrual date and the period against the documents and current law.</p>
+      </div>
+    </Card>
   )
 }
 

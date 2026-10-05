@@ -2,6 +2,7 @@
 
 namespace App\Domain\Intake\Models;
 
+use App\Casts\DateOnly;
 use App\Domain\Compliance\Models\ConflictCheck;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
@@ -27,15 +28,20 @@ class IntakeRequest extends Model
     protected $fillable = [
         'firm_id', 'name', 'email', 'phone', 'client_type', 'case_type', 'description',
         'opposing_parties', 'preferred_times', 'consent_at', 'privacy_notice_version', 'ip_address', 'conflict_check_ids', 'conflict_status',
+        'incident_on', 'locale',
     ];
 
     protected $attributes = [
         'status' => self::NEW,
+        'incident_on' => null,
+        'prescription_period_key' => null,
+        'locale' => 'en',
     ];
 
     protected function casts(): array
     {
         return [
+            'incident_on' => DateOnly::class,
             'opposing_parties' => 'array',
             'preferred_times' => 'array',
             'conflict_check_ids' => 'array',

@@ -54,11 +54,11 @@ export const router = createBrowserRouter([
       { path: '/login', element: <LoginForm /> },
       { path: '/forgot-password', element: page(() => import('./features/auth/components/PasswordReset'), 'ForgotPasswordPage') },
       { path: '/reset-password', element: page(() => import('./features/auth/components/PasswordReset'), 'ResetPasswordPage') },
-      { path: '/consult/:slug', element: page(() => import('./features/intake/components/PublicIntakePage'), 'PublicIntakePage') },
       {
-        // The client portal, in English or Filipino.
+        // The client portal and the public consultation form, in English or Filipino.
         element: <PortalLocaleScope />,
         children: [
+      { path: '/consult/:slug', element: page(() => import('./features/intake/components/PublicIntakePage'), 'PublicIntakePage') },
       { path: '/portal/login', element: <ClientLogin /> },
       { path: '/portal/forgot-password', element: page(() => import('./features/auth/components/PasswordReset'), 'PortalForgotPasswordPage') },
       { path: '/portal/reset-password', element: page(() => import('./features/auth/components/PasswordReset'), 'PortalResetPasswordPage') },

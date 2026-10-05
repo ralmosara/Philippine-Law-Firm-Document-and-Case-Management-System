@@ -7,13 +7,13 @@ use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Services\ClientPasswordResets;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClientResource;
+use App\Support\Localization\PortalLocale;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
-use App\Support\Localization\PortalLocale;
 
 class ClientController extends Controller
 {

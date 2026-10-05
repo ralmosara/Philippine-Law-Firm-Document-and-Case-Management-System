@@ -14,9 +14,11 @@ use App\Domain\Matters\Enums\PartyRole;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Firm;
 use App\Domain\Matters\Models\Matter;
+use App\Domain\Prescription\Prescriptions;
 use App\Enums\Role;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\Localization\PortalLocale;
 use App\Support\Tenancy\DatabaseTenancy;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
@@ -64,6 +66,9 @@ class IntakeService
                         'ip_address' => $ip,
                         'conflict_check_ids' => $checks->pluck('id')->all(),
                         'conflict_status' => $checks->contains(fn ($c) => $c->status === ConflictCheckStatus::Flagged) ? 'flagged' : 'clear',
+                        'incident_on' => $data['incident_on'] ?? null,
+                        // The language the form was filled in: the applicant's emails follow it.
+                        'locale' => PortalLocale::normalize(app()->getLocale()),
                     ]);
                 });
             } finally {
@@ -71,7 +76,7 @@ class IntakeService
             }
         });
 
-        Notification::route('mail', $request->email)->notify(new IntakeReceived($request, $firm));
+        Notification::route('mail', $request->email)->notify((new IntakeReceived($request, $firm))->locale($request->locale));
         Notification::send($this->reviewers($firm), new NewIntakeRequest($request));
 
         return $request;
@@ -88,7 +93,7 @@ class IntakeService
             'reviewed_by' => $by->id,
         ])->save();
 
-        Notification::route('mail', $request->email)->notify(new ConsultationScheduled($request->load('assignedLawyer'), Firm::findOrFail($request->firm_id)));
+        Notification::route('mail', $request->email)->notify((new ConsultationScheduled($request->load('assignedLawyer'), Firm::findOrFail($request->firm_id)))->locale($request->locale));
 
         return $request;
     }
@@ -102,7 +107,7 @@ class IntakeService
         AuditLog::record('intake_declined', $request->firm_id, $by, null, ['intake_request_id' => $request->id]);
 
         if ($notify) {
-            Notification::route('mail', $request->email)->notify(new IntakeDeclined($request, Firm::findOrFail($request->firm_id)));
+            Notification::route('mail', $request->email)->notify((new IntakeDeclined($request, Firm::findOrFail($request->firm_id)))->locale($request->locale));
         }
 
         return $request;
@@ -150,6 +155,9 @@ class IntakeService
                 'matter_id' => $matter->id,
                 'reviewed_by' => $by->id,
             ])->save();
+
+            // A prescription screened at intake is tracked on the matter from now on.
+            app(Prescriptions::class)->startFromIntake($request, $matter, $by);
 
             AuditLog::record('intake_accepted', $request->firm_id, $by, $matter, ['intake_request_id' => $request->id]);
 

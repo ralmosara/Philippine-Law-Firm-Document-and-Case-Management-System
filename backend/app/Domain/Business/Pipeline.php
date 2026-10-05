@@ -12,6 +12,7 @@ use App\Domain\Matters\Actions\OpenMatter;
 use App\Domain\Matters\Enums\PartyRole;
 use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
+use App\Domain\Prescription\Prescriptions;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
@@ -157,6 +158,11 @@ class Pipeline
                 'description' => $prospect->description,
                 'responsible_lawyer_id' => $lawyerId ?? $prospect->owner_id,
             ], $by, array_map(fn (string $name) => ['role' => PartyRole::AdverseParty->value, 'name' => $name], $prospect->opposing_parties ?? []));
+
+            // From an online request whose prescription was screened: track it on the matter.
+            if ($prospect->intake_request_id && ($intake = IntakeRequest::find($prospect->intake_request_id))) {
+                app(Prescriptions::class)->startFromIntake($intake, $matter, $by);
+            }
 
             $from = $prospect->stage;
             $prospect->forceFill([
