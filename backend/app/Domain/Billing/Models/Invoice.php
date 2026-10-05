@@ -9,6 +9,7 @@ use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Models\Matter;
 use App\Models\Traits\Auditable;
 use App\Models\Traits\HasTenantScope;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -35,6 +36,8 @@ class Invoice extends Model
         'status' => 'draft',
         'settled_cents' => 0,
         'withholding_cents' => 0,
+        'discount_cents' => 0,
+        'written_off_cents' => 0,
         'reminders_paused_at' => null,
     ];
 
@@ -52,13 +55,16 @@ class Invoice extends Model
             'settled_cents' => 'integer',
             'withholding_cents' => 'integer',
             'reminders_paused_at' => 'datetime',
+            'discount_cents' => 'integer',
+            'written_off_cents' => 'integer',
+            'written_off_at' => 'datetime',
         ];
     }
 
-    /** Still owed: the total less cash received and tax withheld. */
+    /** Still owed: the total less cash received, tax withheld and anything written off. */
     public function balanceDue(): int
     {
-        return max(0, $this->total_cents - (int) ($this->attributes['settled_cents'] ?? 0));
+        return max(0, $this->total_cents - (int) ($this->attributes['settled_cents'] ?? 0) - (int) ($this->attributes['written_off_cents'] ?? 0));
     }
 
     /**
@@ -108,6 +114,11 @@ class Invoice extends Model
     public function matter(): BelongsTo
     {
         return $this->belongsTo(Matter::class);
+    }
+
+    public function writtenOffBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'written_off_by');
     }
 
     public function lines(): HasMany

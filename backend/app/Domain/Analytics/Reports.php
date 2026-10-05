@@ -101,7 +101,7 @@ class Reports
         $billed = Invoice::query()->where('status', '!=', InvoiceStatus::Void->value)->where('status', '!=', InvoiceStatus::Draft->value)
             ->selectRaw('matter_id, SUM(subtotal_cents) as total')->groupBy('matter_id')->pluck('total', 'matter_id');
         // Fees collected: each invoice's fees in proportion to how much of it is settled.
-        $collected = Invoice::query()->whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value])
+        $collected = Invoice::query()->whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value, InvoiceStatus::WrittenOff->value])
             ->where('settled_cents', '>', 0)
             ->get(['matter_id', 'subtotal_cents', 'total_cents', 'settled_cents'])
             ->groupBy('matter_id')
@@ -139,6 +139,58 @@ class Reports
         }
 
         return ['rows' => $rows, 'totals' => $totals];
+    }
+
+    /**
+     * What was not charged, by responsible lawyer: lines written down and
+     * discounts on bills issued in the period, and balances written off in it.
+     *
+     * @return array{from: string, to: string, rows: list<array>, totals: array<string, int>}
+     */
+    public function writeOffs(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $range = [$from->toDateString(), $to->toDateString()];
+        $billed = [InvoiceStatus::Issued->value, InvoiceStatus::PartiallyPaid->value, InvoiceStatus::Paid->value, InvoiceStatus::WrittenOff->value];
+        $with = ['matter:id,responsible_lawyer_id', 'matter.responsibleLawyer:id,name'];
+
+        $issued = Invoice::query()->whereIn('status', $billed)->whereBetween('issued_at', $range)
+            ->where(fn ($q) => $q->where('discount_cents', '>', 0)->orWhereHas('lines', fn ($l) => $l->whereNotNull('original_amount_cents')))
+            ->with([...$with, 'lines' => fn ($l) => $l->whereNotNull('original_amount_cents')])
+            ->get();
+        $writtenOff = Invoice::query()->where('status', InvoiceStatus::WrittenOff->value)
+            ->whereBetween('written_off_at', [$from->startOfDay(), $to->endOfDay()])
+            ->with($with)->get();
+
+        $rows = [];
+        $add = function (Invoice $invoice, string $key, int $amount) use (&$rows) {
+            $id = $invoice->matter?->responsible_lawyer_id ?? 0;
+            $rows[$id] ??= ['lawyer' => $invoice->matter?->responsibleLawyer?->name ?? 'Unassigned', 'invoices' => [], 'written_down' => 0, 'discounted' => 0, 'written_off' => 0];
+            $rows[$id][$key] += $amount;
+            $rows[$id]['invoices'][$invoice->id] = true;
+        };
+        foreach ($issued as $invoice) {
+            $down = (int) $invoice->lines->sum(fn ($l) => $l->original_amount_cents - $l->amount_cents);
+            if ($down > 0) {
+                $add($invoice, 'written_down', $down);
+            }
+            if ($invoice->discount_cents > 0) {
+                $add($invoice, 'discounted', $invoice->discount_cents);
+            }
+        }
+        foreach ($writtenOff as $invoice) {
+            $add($invoice, 'written_off', $invoice->written_off_cents);
+        }
+
+        $rows = collect($rows)->map(fn ($r) => [...$r, 'invoices' => count($r['invoices']), 'total' => $r['written_down'] + $r['discounted'] + $r['written_off']])
+            ->sortByDesc('total')->values()->all();
+        $totals = ['invoices' => 0, 'written_down' => 0, 'discounted' => 0, 'written_off' => 0, 'total' => 0];
+        foreach ($rows as $row) {
+            foreach ($totals as $key => $_) {
+                $totals[$key] += $row[$key];
+            }
+        }
+
+        return ['from' => $from->toDateString(), 'to' => $to->toDateString(), 'rows' => $rows, 'totals' => $totals];
     }
 
     private function bucket(?\DateTimeInterface $dueAt, CarbonImmutable $asOf): string

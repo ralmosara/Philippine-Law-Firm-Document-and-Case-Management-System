@@ -74,9 +74,11 @@ interface ConfirmProps {
   /** Ask for a reason (recorded in audit trails). */
   reasonLabel?: string
   reasonRequired?: boolean
+  /** Keep the confirm button disabled (e.g. while something blocks the action). */
+  confirmDisabled?: boolean
 }
 
-export function ConfirmDialog({ open, onClose, onConfirm, title, description, confirmLabel, destructive, loading, reasonLabel, reasonRequired }: ConfirmProps) {
+export function ConfirmDialog({ open, onClose, onConfirm, title, description, confirmLabel, destructive, loading, reasonLabel, reasonRequired, confirmDisabled }: ConfirmProps) {
   const [reason, setReason] = useState('')
 
   const submit = (e: FormEvent) => {
@@ -97,7 +99,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, description, co
           <Button variant="text" onClick={onClose}>
             {t('Cancel')}
           </Button>
-          <Button type="submit" variant={destructive ? 'danger' : 'filled'} loading={loading} disabled={reasonRequired && !reason.trim()}>
+          <Button type="submit" variant={destructive ? 'danger' : 'filled'} loading={loading} disabled={confirmDisabled || (reasonRequired && !reason.trim())}>
             {confirmLabel ?? t('Confirm')}
           </Button>
         </div>

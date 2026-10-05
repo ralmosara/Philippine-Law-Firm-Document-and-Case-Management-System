@@ -54,11 +54,11 @@ export const router = createBrowserRouter([
       { path: '/login', element: <LoginForm /> },
       { path: '/forgot-password', element: page(() => import('./features/auth/components/PasswordReset'), 'ForgotPasswordPage') },
       { path: '/reset-password', element: page(() => import('./features/auth/components/PasswordReset'), 'ResetPasswordPage') },
-      { path: '/consult/:slug', element: page(() => import('./features/intake/components/PublicIntakePage'), 'PublicIntakePage') },
       {
-        // The client portal, in English or Filipino.
+        // The client portal and the public consultation form, in English or Filipino.
         element: <PortalLocaleScope />,
         children: [
+      { path: '/consult/:slug', element: page(() => import('./features/intake/components/PublicIntakePage'), 'PublicIntakePage') },
       { path: '/portal/login', element: <ClientLogin /> },
       { path: '/portal/forgot-password', element: page(() => import('./features/auth/components/PasswordReset'), 'PortalForgotPasswordPage') },
       { path: '/portal/reset-password', element: page(() => import('./features/auth/components/PasswordReset'), 'PortalResetPasswordPage') },
@@ -102,6 +102,7 @@ export const router = createBrowserRouter([
           { path: 'billing/invoices/:id', element: gated('practice_law', page(() => import('./features/billing/components/InvoiceDetail'), 'InvoiceDetail')) },
           { path: 'trust', element: gated('work_matters', page(() => import('./features/trust/components/TrustLedgerDashboard'), 'TrustLedgerDashboard')) },
           { path: 'trust/:id', element: gated('work_matters', page(() => import('./features/trust/components/TrustAccountDetail'), 'TrustAccountDetail')) },
+          { path: 'feedback', element: gated('practice_law', page(() => import('./features/feedback/FeedbackPage'), 'FeedbackPage')) },
           { path: 'prescription', element: gated('work_matters', page(() => import('./features/prescription/components/Prescription'), 'PrescriptionsPage')) },
           { path: 'compliance', element: page(() => import('./features/compliance/components/ComplianceDashboard'), 'ComplianceDashboard') },
           { path: 'reports', element: gated('manage_finances', page(() => import('./features/reports/components/ReportsPage'), 'ReportsPage')) },

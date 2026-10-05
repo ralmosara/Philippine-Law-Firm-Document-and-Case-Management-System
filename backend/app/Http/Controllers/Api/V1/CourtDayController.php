@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Deadlines\Enums\DeadlineKind;
 use App\Domain\Deadlines\Models\MatterDeadline;
+use App\Domain\Deadlines\Services\HearingClashes;
 use App\Domain\Deadlines\Services\HearingOutcomes;
 use App\Domain\Matters\Enums\PartyRole;
 use App\Http\Controllers\Controller;
@@ -30,6 +31,7 @@ class CourtDayController extends Controller
             ->get()
             ->sortBy(fn (MatterDeadline $d) => [$d->due_time ?? '99:99', $d->id])
             ->values();
+        $clashes = app(HearingClashes::class)->onDay($date);
 
         return response()->json([
             'date' => $date->toDateString(),
@@ -41,6 +43,8 @@ class CourtDayController extends Controller
                 'notes' => $d->notes,
                 'status' => $d->status->value,
                 'assignee' => $d->assignee?->name,
+                // The same lawyer's other hearings at about the same time.
+                'clashes' => array_map(fn ($h) => app(HearingClashes::class)->describe($h), $clashes[$d->id] ?? []),
                 'matter' => [
                     'id' => $d->matter->id,
                     'reference' => $d->matter->reference,

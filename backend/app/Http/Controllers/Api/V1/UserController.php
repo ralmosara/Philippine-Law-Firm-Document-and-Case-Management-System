@@ -97,6 +97,8 @@ class UserController extends Controller
             'mcle_compliance_number' => ['nullable', 'string', 'max:100'],
             'mobile_number' => ['nullable', 'regex:/^(\+63|0)9\d{9}$/'],
             'hourly_rate_cents' => ['nullable', 'integer', 'min:0', 'max:10000000'],
+            // Hours a day they are expected to log; null follows the firm's, 0 leaves them out of time reminders.
+            'daily_target_minutes' => ['nullable', 'integer', 'min:0', 'max:720'],
             'is_active' => ['boolean'],
         ];
     }

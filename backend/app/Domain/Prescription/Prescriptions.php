@@ -3,6 +3,7 @@
 namespace App\Domain\Prescription;
 
 use App\Domain\Deadlines\Services\DeadlineCalculator;
+use App\Domain\Intake\Models\IntakeRequest;
 use App\Domain\Matters\Models\Matter;
 use App\Domain\Prescription\Notifications\PrescriptionApproaching;
 use App\Enums\Role;
@@ -40,6 +41,48 @@ class Prescriptions
         $rolled = $this->calculator->rollForward($nominal);
 
         return ['last_day' => $rolled->nominalDate, 'file_by' => $rolled->dueDate, 'adjustments' => $rolled->adjustments];
+    }
+
+    /**
+     * Before a case is taken: when would it prescribe, if the period the
+     * lawyer chose applies from the day the applicant says it happened?
+     *
+     * @return array{period_key: string, label: string, basis: string, last_day: string, file_by: string, days_left: int, state: string}|null
+     */
+    public function screen(?CarbonInterface $incident, ?string $periodKey): ?array
+    {
+        $period = $periodKey ? PrescriptionPeriods::find($periodKey) : null;
+        if ($incident === null || $period === null) {
+            return null;
+        }
+
+        $result = $this->compute($incident, $period['years'], $period['months']);
+        $diff = (new \DateTimeImmutable(today()->toDateString()))->diff(new \DateTimeImmutable($result['last_day']->toDateString()));
+        $days = $diff->invert ? -$diff->days : $diff->days;
+
+        return [
+            'period_key' => $periodKey,
+            'label' => $period['label'],
+            'basis' => $period['basis'],
+            'last_day' => $result['last_day']->toDateString(),
+            'file_by' => $result['file_by']->toDateString(),
+            'days_left' => $days,
+            'state' => $days < 0 ? 'prescribed' : ($days <= 30 ? 'urgent' : ($days <= 180 ? 'soon' : 'running')),
+        ];
+    }
+
+    /** On taking the case: carry the intake's screening over as the matter's tracked prescription. */
+    public function startFromIntake(IntakeRequest $intake, Matter $matter, User $by): ?MatterPrescription
+    {
+        if ($intake->incident_on === null || $intake->prescription_period_key === null || $intake->incident_on->isFuture()) {
+            return null;
+        }
+
+        return $this->save($matter, [
+            'period_key' => $intake->prescription_period_key,
+            'accrued_on' => $intake->incident_on->toDateString(),
+            'notes' => 'From the online intake request: the date the applicant gave. Confirm it against the documents.',
+        ], $by);
     }
 
     /** @param array{period_key?: ?string, label?: ?string, years?: ?int, months?: ?int, basis?: ?string, accrued_on: string, notes?: ?string} $input */

@@ -7,6 +7,7 @@ use App\Domain\Deadlines\Enums\ReminderStage;
 use App\Domain\Deadlines\Jobs\SendDeadlineReminder;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Notifications\DeadlineMissed;
+use App\Domain\Staff\OutOfOffice;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -94,7 +95,7 @@ class ReminderDispatcher
                     }
 
                     $deadline->logEvent('missed');
-                    $recipients = collect([$deadline->assignee, $deadline->matter?->responsibleLawyer])->filter()->unique('id');
+                    $recipients = OutOfOffice::withCover(collect([$deadline->assignee, $deadline->matter?->responsibleLawyer])->filter()->unique('id'));
                     $recipients->each->notify(new DeadlineMissed($deadline));
                     $missed++;
                 }

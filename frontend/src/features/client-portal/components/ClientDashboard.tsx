@@ -1,4 +1,4 @@
-import { CalendarClock, ChevronRight, CreditCard, Landmark, PenLine, ReceiptText, X } from 'lucide-react'
+import { CalendarClock, ChevronRight, CreditCard, FileDown, Landmark, PenLine, ReceiptText, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError } from '@/shared/api/axios'
@@ -10,6 +10,7 @@ import { Card, CardHeader, PageHeader, StatCard, Table, Td, Th } from '@/shared/
 import { usePayInvoice, usePortalInvoices, usePortalMatters, usePortalSession, usePortalSignatureRequests, usePortalTrust } from '../api'
 import { DocumentRequestsBanner } from './PortalDocumentRequests'
 import { t } from '@/shared/lib/i18n'
+import { CalendarCard } from './PortalExperience'
 
 export function ClientDashboard() {
   const session = usePortalSession()
@@ -69,7 +70,7 @@ export function ClientDashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title={t('Invoices')} description={invoices.data?.data.some((i) => i.can_pay_online) ? t('Pay by card, GCash, Maya or QR Ph through PayMongo.') : undefined} />
+          <CardHeader title={t('Invoices')} description={invoices.data?.data.some((i) => i.can_pay_online) ? t('Pay by card, GCash, Maya or QR Ph through PayMongo.') : undefined} actions={<a href="/api/portal/statement/pdf" download className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><FileDown className="size-4" aria-hidden />{t('Statement of account')}</a>} />
           {pay.isError && <div className="px-5 pt-3"><FormError message={ApiError.from(pay.error).message} /></div>}
           {invoices.isPending ? <PageLoader /> : !invoices.data?.data.length ? <EmptyState icon={<ReceiptText className="size-6" />} title={t('No invoices')} /> : (
             <>
@@ -147,6 +148,8 @@ export function ClientDashboard() {
           )}
         </Card>
       </div>
+
+      <CalendarCard />
     </>
   )
 }

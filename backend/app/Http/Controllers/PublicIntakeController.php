@@ -6,6 +6,7 @@ use App\Domain\Intake\Services\IntakeService;
 use App\Domain\Matters\Models\Firm;
 use App\Domain\Privacy\PrivacyNotice;
 use App\Http\Controllers\Api\V1\LookupController;
+use App\Support\Localization\PortalLocale;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,12 @@ class PublicIntakeController extends Controller
 {
     private const RECEIVED = 'Thank you. Your request was received; we will email you to confirm a consultation schedule.';
 
+    /** Also the label shown for each case type (translated where a Filipino name exists). */
+    private static function caseTypes(): array
+    {
+        return array_map(fn (string $type) => ['value' => $type, 'label' => __($type)], LookupController::CASE_TYPES);
+    }
+
     public function show(string $slug): JsonResponse
     {
         $firm = $this->firm($slug);
@@ -26,8 +33,8 @@ class PublicIntakeController extends Controller
         return response()->json([
             'firm' => $firm->only(['name', 'address', 'phone', 'email']),
             'message' => $firm->intake_message,
-            'case_types' => LookupController::CASE_TYPES,
-            'privacy_notice' => PrivacyNotice::text($firm),
+            'case_types' => self::caseTypes(),
+            'privacy_notice' => PrivacyNotice::text($firm, PortalLocale::normalize(app()->getLocale())),
         ]);
     }
 
@@ -37,7 +44,7 @@ class PublicIntakeController extends Controller
 
         // Bots fill every field. Answer as usual so they learn nothing, but keep nothing.
         if ($request->filled('website')) {
-            return response()->json(['message' => self::RECEIVED], 201);
+            return response()->json(['message' => __(self::RECEIVED)], 201);
         }
 
         $validated = $request->validate([
@@ -51,10 +58,14 @@ class PublicIntakeController extends Controller
             'opposing_parties.*' => ['nullable', 'string', 'min:2', 'max:255'],
             'preferred_times' => ['array', 'max:3'],
             'preferred_times.*' => ['date', 'after:now', 'before:+6 months'],
+            // When the problem arose, as the applicant remembers it: lets a lawyer see
+            // early whether the claim is about to prescribe.
+            'incident_on' => ['nullable', 'date_format:Y-m-d', 'after:1900-01-01', 'before_or_equal:today'],
             'consent' => ['accepted'],
         ], [
-            'consent.accepted' => 'Please agree to the processing of your information so we can respond.',
-            'description.min' => 'Please tell us a little more about your concern (at least 20 characters).',
+            'consent.accepted' => __('Please agree to the processing of your information so we can respond.'),
+            'description.min' => __('Please tell us a little more about your concern (at least 20 characters).'),
+            'incident_on.before_or_equal' => __('The date cannot be in the future.'),
         ]);
 
         // The form's times are Philippine time as typed; store them with the offset.
@@ -65,7 +76,7 @@ class PublicIntakeController extends Controller
 
         $intake->submit($firm, $validated, $request->ip());
 
-        return response()->json(['message' => self::RECEIVED], 201);
+        return response()->json(['message' => __(self::RECEIVED)], 201);
     }
 
     private function firm(string $slug): Firm

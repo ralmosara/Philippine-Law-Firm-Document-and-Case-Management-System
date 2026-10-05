@@ -2,8 +2,12 @@
 
 use App\Domain\Billing\Collections\Collections;
 use App\Domain\Billing\Services\Disbursements;
+use App\Domain\Billing\Statements\ClientStatements;
+use App\Domain\Billing\TimeReminders\TimeReminders;
 use App\Domain\Business\Pipeline;
+use App\Domain\Compliance\Services\CounselCredentials;
 use App\Domain\Corporate\CorporateSecretarial;
+use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
 use App\Domain\Documents\Jobs\ExtractMatterFileText;
 use App\Domain\Documents\Models\MatterFile;
@@ -15,6 +19,7 @@ use App\Domain\Prescription\Prescriptions;
 use App\Domain\Tax\TaxFilingReminders;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Domain\Trust\Services\TrustLedgerService;
+use App\Domain\Trust\Services\TrustReconciliations;
 use App\Jobs\QueueHeartbeat;
 use App\Support\Ops\OpsAlert;
 use App\Support\Ops\SystemHealth;
@@ -117,6 +122,11 @@ Artisan::command('ops:health-check', function (SystemHealth $health) {
 // point an external uptime monitor at /api/health for that.
 Schedule::command('ops:health-check')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 
+Artisan::command('hearings:remind-clients', function (ClientHearingNotices $notices) {
+    $this->info("Sent {$notices->sendReminders()} client hearing reminder(s).");
+})->purpose('Remind clients of their hearings a week before and the day before (firms that turned it on)');
+Schedule::command('hearings:remind-clients')->dailyAt('09:00')->withoutOverlapping()->onOneServer();
+
 Artisan::command('prescriptions:remind', function (Prescriptions $prescriptions, TenantContext $tenant) {
     $total = 0;
     Firm::query()->each(function (Firm $firm) use ($prescriptions, $tenant, &$total) {
@@ -151,3 +161,28 @@ Artisan::command('files:extract-text {--failed : Also retry files whose extracti
     });
     $this->info("Queued {$queued} file(s) for text extraction.");
 })->purpose('Re-read files that could not be read before, now that more formats are supported');
+
+Artisan::command('statements:send', function (ClientStatements $statements) {
+    $this->info("Sent {$statements->sendDue()} statement(s) of account.");
+})->purpose('Email each client their monthly statement of account on the firm\'s statement day (firms that turned it on)');
+Schedule::command('statements:send')->dailyAt('08:30')->withoutOverlapping()->onOneServer();
+
+Artisan::command('time:remind', function (TimeReminders $reminders) {
+    $this->info("Sent {$reminders->remindMissing()} missing-time reminder(s).");
+})->purpose('Remind people who logged less than their daily target on the previous working day (firms that turned it on)');
+Schedule::command('time:remind')->weekdays()->at('08:00')->withoutOverlapping()->onOneServer();
+
+Artisan::command('time:weekly-summary', function (TimeReminders $reminders) {
+    $this->info("Sent {$reminders->sendWeeklySummary()} weekly time summary(ies).");
+})->purpose('Last week\'s hours against target for everyone, to the managing partners (firms that turned it on)');
+Schedule::command('time:weekly-summary')->mondays()->at('08:15')->withoutOverlapping()->onOneServer();
+
+Artisan::command('credentials:remind', function (CounselCredentials $credentials) {
+    $this->info("Sent {$credentials->sendReminders()} PTR/IBP renewal reminder(s).");
+})->purpose('In January, remind lawyers whose PTR or IBP details are not for the new year');
+Schedule::command('credentials:remind')->dailyAt('08:45')->withoutOverlapping()->onOneServer();
+
+Artisan::command('trust:reconciliation-reminder', function (TrustReconciliations $reconciliations) {
+    $this->info("Sent {$reconciliations->remind()} trust reconciliation reminder(s).");
+})->purpose('On the 10th, remind partners when last month\'s trust funds are not yet reconciled with the bank and signed off');
+Schedule::command('trust:reconciliation-reminder')->dailyAt('09:15')->withoutOverlapping()->onOneServer();

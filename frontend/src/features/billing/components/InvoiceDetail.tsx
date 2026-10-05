@@ -14,6 +14,9 @@ import { useInvoice, useInvoiceAction, usePaymentLink } from '../api'
 import { InvoiceReminders } from './InvoiceReminders'
 import { PaymentsCard, RecordPaymentDialog } from './InvoicePayments'
 import { InvoiceEInvoiceCard } from '@/features/einvoicing/components/EInvoicing'
+import { RefundDialog } from './RefundDialog'
+import { AdjustLineDialog, DiscountDialog, WriteOffDialog, WrittenOffNotice } from './InvoiceAdjustments'
+import type { InvoiceLine } from '@/shared/api/types'
 
 export function InvoiceDetail() {
   const id = Number(useParams().id)
@@ -21,12 +24,15 @@ export function InvoiceDetail() {
   const { firm } = useCurrentSession()
   const abilities = useAbilities()
   const actions = useInvoiceAction(id)
-  const [dialog, setDialog] = useState<'pay' | 'void' | 'link' | null>(null)
+  const [dialog, setDialog] = useState<'pay' | 'void' | 'link' | 'discount' | 'write-off' | null>(null)
+  const [adjusting, setAdjusting] = useState<InvoiceLine | null>(null)
+  const [refunding, setRefunding] = useState<number | null>(null)
 
   if (invoice.isPending) return <PageLoader />
   if (invoice.isError) return <ErrorState error={invoice.error} onRetry={() => invoice.refetch()} />
   const inv = invoice.data
   const receivable = inv.status === 'issued' || inv.status === 'partially_paid'
+  const adjustable = abilities.manage_finances && inv.status === 'draft'
 
   return (
     <>
@@ -37,9 +43,11 @@ export function InvoiceDetail() {
           <div className="flex gap-2 print:hidden">
             <DownloadButton href={`/api/v1/invoices/${inv.id}/pdf`} icon={<FileDown className="size-4" />}>PDF</DownloadButton>
             <Button variant="text" icon={<Printer className="size-4" />} onClick={() => window.print()}>Print</Button>
+            {adjustable && <Button variant="outlined" onClick={() => setDialog('discount')}>{inv.discount_cents ? 'Change discount' : 'Discount'}</Button>}
             {abilities.manage_finances && inv.status === 'draft' && <Button onClick={() => actions.issue.mutate()} loading={actions.issue.isPending}>Issue to client</Button>}
             {abilities.manage_finances && inv.can_pay_online && <Button variant="tonal" icon={<Link2 className="size-4" />} onClick={() => setDialog('link')}>Payment link</Button>}
             {abilities.manage_finances && receivable && <Button onClick={() => setDialog('pay')}>Record payment</Button>}
+            {abilities.manage_finances && receivable && inv.balance_cents > 0 && <Button variant="outlined" onClick={() => setDialog('write-off')}>Write off</Button>}
             {abilities.manage_finances && (inv.status === 'draft' || (inv.status === 'issued' && inv.settled_cents === 0)) && <Button variant="outlined" onClick={() => setDialog('void')}>Void</Button>}
           </div>
         }
@@ -74,21 +82,26 @@ export function InvoiceDetail() {
         <div className="mt-8">
           <Table caption="Invoice lines">
             <thead>
-              <tr><Th>Date</Th><Th>Description</Th><Th align="right">Time</Th><Th align="right">Rate</Th><Th align="right">Amount</Th></tr>
+              <tr><Th>Date</Th><Th>Description</Th><Th align="right">Time</Th><Th align="right">Rate</Th><Th align="right">Amount</Th>{adjustable && <Th><span className="sr-only">Adjust</span></Th>}</tr>
             </thead>
             {[
               { title: 'Professional fees', lines: inv.lines?.filter((l) => l.kind !== 'expense') ?? [] },
               { title: 'Reimbursable expenses (at cost, not subject to VAT)', lines: inv.lines?.filter((l) => l.kind === 'expense') ?? [] },
             ].filter((group) => group.lines.length > 0).map((group) => (
               <tbody key={group.title}>
-                <tr><Td colSpan={5} className="bg-surface-container text-xs font-semibold tracking-wide text-on-surface-variant uppercase">{group.title}</Td></tr>
+                <tr><Td colSpan={adjustable ? 6 : 5} className="bg-surface-container text-xs font-semibold tracking-wide text-on-surface-variant uppercase">{group.title}</Td></tr>
                 {group.lines.map((line) => (
                   <tr key={line.id}>
                     <Td className="whitespace-nowrap">{date(line.work_date)}</Td>
                     <Td>{line.description}</Td>
                     <Td align="right">{line.minutes ? duration(line.minutes) : '—'}</Td>
                     <Td align="right">{line.rate_cents ? `${money(line.rate_cents)}/hr` : '—'}</Td>
-                    <Td align="right">{money(line.amount_cents)}</Td>
+                    <Td align="right">
+                      {line.original_amount_cents !== null && <div className="text-xs text-on-surface-variant line-through print:hidden">{money(line.original_amount_cents)}</div>}
+                      {money(line.amount_cents)}
+                      {line.adjustment_reason && <div className="text-xs text-on-surface-variant print:hidden">{line.adjustment_reason}</div>}
+                    </Td>
+                    {adjustable && <Td align="right"><Button size="sm" variant="text" onClick={() => setAdjusting(line)} aria-label={`Write down ${line.description}`}>Write down</Button></Td>}
                   </tr>
                 ))}
               </tbody>
@@ -97,7 +110,15 @@ export function InvoiceDetail() {
         </div>
 
         <dl className="mt-6 ml-auto flex w-full max-w-xs flex-col gap-2 text-sm">
-          <div className="flex justify-between"><dt className="text-on-surface-variant">Professional fees</dt><dd className="tabular-nums">{money(inv.subtotal_cents)}</dd></div>
+          {inv.discount_cents > 0 ? (
+            <>
+              <div className="flex justify-between"><dt className="text-on-surface-variant">Professional fees</dt><dd className="tabular-nums">{money(inv.subtotal_cents + inv.discount_cents)}</dd></div>
+              <div className="flex justify-between"><dt className="text-on-surface-variant">Less: {inv.discount_reason || 'discount'}</dt><dd className="tabular-nums">({money(inv.discount_cents)})</dd></div>
+              <div className="flex justify-between"><dt className="text-on-surface-variant">Professional fees, net</dt><dd className="tabular-nums">{money(inv.subtotal_cents)}</dd></div>
+            </>
+          ) : (
+            <div className="flex justify-between"><dt className="text-on-surface-variant">Professional fees</dt><dd className="tabular-nums">{money(inv.subtotal_cents)}</dd></div>
+          )}
           <div className="flex justify-between"><dt className="text-on-surface-variant">VAT (12%)</dt><dd className="tabular-nums">{money(inv.vat_cents)}</dd></div>
           {inv.expenses_cents > 0 && <div className="flex justify-between"><dt className="text-on-surface-variant">Reimbursable expenses</dt><dd className="tabular-nums">{money(inv.expenses_cents)}</dd></div>}
           <div className="flex justify-between border-t border-outline-variant pt-2 text-base font-semibold"><dt>Total due</dt><dd className="tabular-nums">{money(inv.total_cents)}</dd></div>
@@ -115,6 +136,7 @@ export function InvoiceDetail() {
             Paid {date(inv.paid_at)}{inv.payment_reference && ` · Ref. ${inv.payment_reference}`}
           </p>
         )}
+        {inv.status === 'written_off' && <WrittenOffNotice invoice={inv} canUndo={abilities.manage_finances} />}
         {inv.notes && <p className="mt-6 text-sm whitespace-pre-line text-on-surface-variant">{inv.notes}</p>}
       </Card>
 
@@ -133,7 +155,13 @@ export function InvoiceDetail() {
                   <Td className="whitespace-nowrap">{dateTime(p.created_at)}</Td>
                   <Td>
                     {p.status === 'paid' ? <Badge tone="success">Paid {dateTime(p.paid_at)}</Badge> : p.status === 'unapplied' ? <Badge tone="danger">Received, not applied</Badge> : <Badge>Not completed</Badge>}
-                    {p.status === 'unapplied' && <div className="mt-1 text-xs text-on-surface-variant">The invoice was already settled or voided. Refund or reallocate this payment in PayMongo.</div>}
+                    {p.status === 'unapplied' && !p.refund && (
+                      <div className="mt-1 text-xs text-on-surface-variant">
+                        The invoice was already settled or voided.
+                        {abilities.manage_finances && <> <button type="button" className="font-medium text-primary hover:underline" onClick={() => setRefunding(p.id)}>Refund through PayMongo</button></>}
+                      </div>
+                    )}
+                    {p.refund && <div className="mt-1 text-xs text-on-surface-variant">Refund {p.refund.status} · {p.refund.id}{p.refund.at && ` · ${dateTime(p.refund.at)}`}{p.refund.reason && ` · ${p.refund.reason}`}</div>}
                   </Td>
                   <Td>{p.method ?? '—'}</Td>
                   <Td className="font-mono text-xs">{p.reference ?? '—'}</Td>
@@ -148,6 +176,9 @@ export function InvoiceDetail() {
       {dialog === 'link' && <PaymentLinkDialog invoiceId={id} onClose={() => setDialog(null)} />}
 
       {dialog === 'pay' && <RecordPaymentDialog invoice={inv} onClose={() => setDialog(null)} />}
+      {dialog === 'discount' && <DiscountDialog invoice={inv} onClose={() => setDialog(null)} />}
+      {dialog === 'write-off' && <WriteOffDialog invoice={inv} onClose={() => setDialog(null)} />}
+      {adjusting && <AdjustLineDialog invoice={inv} line={adjusting} onClose={() => setAdjusting(null)} />}
       <ConfirmDialog
         open={dialog === 'void'}
         onClose={() => setDialog(null)}
@@ -158,6 +189,7 @@ export function InvoiceDetail() {
         loading={actions.void.isPending}
         onConfirm={() => actions.void.mutate(undefined, { onSuccess: () => setDialog(null) })}
       />
+      {refunding !== null && inv.payments?.find((p) => p.id === refunding) && <RefundDialog invoiceId={inv.id} payment={inv.payments.find((p) => p.id === refunding)!} onClose={() => setRefunding(null)} />}
     </>
   )
 }

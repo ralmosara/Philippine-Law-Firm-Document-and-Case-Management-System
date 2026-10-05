@@ -44,6 +44,7 @@ export function InvoiceStatusBadge({ status, overdue }: { status: InvoiceStatus;
     partially_paid: ['Partly paid', 'primary'],
     paid: ['Paid', 'success'],
     void: ['Void', 'neutral'],
+    written_off: ['Written off', 'neutral'],
   }
   const [label, tone] = map[status]
   return <Badge tone={tone}>{label}</Badge>

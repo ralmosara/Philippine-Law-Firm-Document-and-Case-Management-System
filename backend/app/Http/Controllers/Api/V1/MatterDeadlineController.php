@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Enums\DeadlineKind;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
 use App\Domain\Deadlines\Enums\TaskPriority;
@@ -9,7 +10,10 @@ use App\Domain\Deadlines\Models\DeadlineRule;
 use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Services\DeadlineCalculator;
 use App\Domain\Deadlines\Services\DeadlineScheduler;
+use App\Domain\Deadlines\Services\HearingClashes;
+use App\Domain\Deadlines\Services\RecurringTasks;
 use App\Domain\Matters\Models\Matter;
+use App\Domain\Staff\OutOfOffice;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DeadlineResource;
 use App\Models\User;
@@ -89,9 +93,13 @@ class MatterDeadlineController extends Controller
             'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')->where('firm_id', $matter->firm_id)],
             'notes' => ['nullable', 'string', 'max:5000'],
             'priority' => ['nullable', new Enum(TaskPriority::class)],
+            'notify_client' => ['boolean'],
+            // Tasks only: finishing one creates the next.
+            'repeat' => ['nullable', Rule::in(array_keys(RecurringTasks::REPEATS)), Rule::prohibitedIf(fn () => $request->input('kind') !== DeadlineKind::Task->value)],
+            'repeat_until' => ['nullable', 'date', 'after_or_equal:due_date'],
         ]);
 
-        $attributes = collect($validated)->only(['due_time', 'location', 'assigned_to', 'notes', 'priority'])->filter(fn ($v) => $v !== null)->all();
+        $attributes = collect($validated)->only(['due_time', 'location', 'assigned_to', 'notes', 'priority', 'notify_client', 'repeat', 'repeat_until'])->filter(fn ($v) => $v !== null)->all();
 
         if (isset($validated['deadline_rule_id'])) {
             $rule = DeadlineRule::availableTo($matter->firm_id)->where('is_active', true)->findOrFail($validated['deadline_rule_id']);
@@ -126,20 +134,46 @@ class MatterDeadlineController extends Controller
             'assigned_to' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('firm_id', $deadline->firm_id)],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'priority' => ['sometimes', new Enum(TaskPriority::class)],
+            'notify_client' => ['sometimes', 'boolean'],
+            'repeat' => ['sometimes', 'nullable', Rule::in(array_keys(RecurringTasks::REPEATS)), Rule::prohibitedIf(fn () => $deadline->kind !== DeadlineKind::Task)],
+            'repeat_until' => ['sometimes', 'nullable', 'date', 'after_or_equal:'.$deadline->due_date->toDateString()],
         ]));
 
         if ($deadline->wasChanged('assigned_to')) {
             $this->tellAssignee($deadline, $request->user());
         }
+        // A hearing at another time is a move, for the client too.
+        if ($deadline->wasChanged('due_time') && $deadline->status === DeadlineStatus::Pending) {
+            app(ClientHearingNotices::class)->moved($deadline, $deadline->due_date->toDateString());
+        }
 
         return new DeadlineResource($deadline->load(['matter', 'assignee', 'rule']));
+    }
+
+    /** Hearings the same lawyer already has at that date and time (checked while scheduling). */
+    public function clashes(Request $request, HearingClashes $clashes): JsonResponse
+    {
+        Gate::authorize('work-matters');
+        $validated = $request->validate([
+            'date' => ['required', 'date'],
+            'time' => ['nullable', 'date_format:H:i'],
+            'matter_id' => ['required', 'integer'],
+            'assigned_to' => ['nullable', 'integer'],
+            'except' => ['nullable', 'integer'],
+        ]);
+        $lawyer = $validated['assigned_to'] ?? Matter::findOrFail($validated['matter_id'])->responsible_lawyer_id;
+        $found = $lawyer ? $clashes->forSlot(CarbonImmutable::parse($validated['date']), $validated['time'] ?? null, (int) $lawyer, $validated['except'] ?? null) : collect();
+
+        return response()->json(['clashes' => $found->map(fn ($h) => $clashes->describe($h))->values()]);
     }
 
     /** The new assignee hears about it, unless they assigned it to themselves. */
     private function tellAssignee(MatterDeadline $deadline, User $by): void
     {
         if ($deadline->assigned_to && $deadline->assigned_to !== $by->id) {
-            User::find($deadline->assigned_to)?->notify(new WorkAssigned($deadline, $by));
+            $assignee = User::find($deadline->assigned_to);
+            // Their cover hears too while they are away.
+            OutOfOffice::withCover(collect([$assignee])->filter())->each->notify(new WorkAssigned($deadline, $by));
         }
     }
 

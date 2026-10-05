@@ -2,6 +2,7 @@
 
 namespace App\Domain\Matters\Models;
 
+use App\Casts\DateOnly;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Trust\Models\TrustAccount;
 use App\Models\Traits\Auditable;
@@ -36,12 +37,14 @@ class Client extends Authenticatable implements HasLocalePreference
         'aliases',
         'portal_enabled',
         'locale',
+        'hearing_reminders',
         'password',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'calendar_token_hash',
     ];
 
     protected $attributes = [
@@ -51,6 +54,10 @@ class Client extends Authenticatable implements HasLocalePreference
         'privacy_accepted_at' => null,
         'anonymized_at' => null,
         'aliases' => null,
+        'hearing_reminders' => true,
+        'calendar_token_hash' => null,
+        'calendar_created_at' => null,
+        'calendar_accessed_at' => null,
     ];
 
     protected function casts(): array
@@ -59,9 +66,13 @@ class Client extends Authenticatable implements HasLocalePreference
             'portal_enabled' => 'boolean',
             'password' => 'hashed',
             'last_portal_login_at' => 'datetime',
+            'statement_sent_on' => DateOnly::class,
             'privacy_notice_version' => 'integer',
             'privacy_accepted_at' => 'datetime',
             'anonymized_at' => 'datetime',
+            'calendar_created_at' => 'datetime',
+            'hearing_reminders' => 'boolean',
+            'calendar_accessed_at' => 'datetime',
         ];
     }
 
@@ -83,6 +94,12 @@ class Client extends Authenticatable implements HasLocalePreference
     protected static function newFactory(): ClientFactory
     {
         return ClientFactory::new();
+    }
+
+    /** Text messages (hearing reminders) go to the client's mobile number. */
+    public function routeNotificationForSms(): ?string
+    {
+        return filled($this->phone) ? (string) $this->phone : null;
     }
 
     /** Emails to the client go out in the language they chose in the portal. */

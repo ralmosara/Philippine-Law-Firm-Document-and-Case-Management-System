@@ -34,6 +34,8 @@ export interface PortalMatterDetail extends PortalMatter {
   description: string | null
   /** Shared by the firm: centavos (basis amount) or minutes (basis hours). */
   budget: { basis: 'amount' | 'hours'; total: number; used: number; percent: number; includes_expenses: boolean } | null
+  /** Asked for once the matter closed. */
+  feedback: { id: number; rating: number | null; comment: string | null; responded_at: string | null; can_change: boolean } | null
   timeline: { status: string; date: string }[]
   documents: { id: number; title: string; status: string; updated_at: string }[]
   files: { id: number; name: string; description: string | null; size_bytes: number; created_at: string }[]

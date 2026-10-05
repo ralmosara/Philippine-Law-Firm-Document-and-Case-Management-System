@@ -20,11 +20,12 @@ const schema = (creating: boolean) =>
     ibp_number: z.string().max(32),
     mobile_number: z.union([z.literal(''), z.string().regex(/^(\+63|0)9\d{9}$/, 'Use 09XXXXXXXXX or +639XXXXXXXXX.')]),
     hourly_rate: z.string().refine((v) => v === '' || Number.isFinite(toCents(v)), 'Enter an amount.'),
+    daily_target: z.string().refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 12), 'Enter hours from 0 to 12.'),
     is_active: z.boolean(),
   })
 
 type Values = z.infer<ReturnType<typeof schema>>
-const FIELDS = ['name', 'email', 'role', 'password', 'roll_number', 'ibp_number', 'mobile_number', 'hourly_rate', 'is_active'] as const
+const FIELDS = ['name', 'email', 'role', 'password', 'roll_number', 'ibp_number', 'mobile_number', 'hourly_rate', 'daily_target', 'is_active'] as const
 
 export function UserForm({ open, onClose, user }: { open: boolean; onClose: () => void; user?: User }) {
   const lookups = useLookups()
@@ -41,6 +42,7 @@ export function UserForm({ open, onClose, user }: { open: boolean; onClose: () =
       ibp_number: user?.ibp_number ?? '',
       mobile_number: user?.mobile_number ?? '',
       hourly_rate: user ? String(user.hourly_rate_cents / 100) : '',
+      daily_target: user?.daily_target_minutes == null ? '' : String(user.daily_target_minutes / 60),
       is_active: user?.is_active ?? true,
     },
   })
@@ -50,7 +52,7 @@ export function UserForm({ open, onClose, user }: { open: boolean; onClose: () =
     onClose()
   }
 
-  const onSubmit = handleSubmit(async ({ hourly_rate, password, ...values }) => {
+  const onSubmit = handleSubmit(async ({ hourly_rate, daily_target, password, ...values }) => {
     try {
       await save.mutateAsync({
         ...values,
@@ -60,6 +62,7 @@ export function UserForm({ open, onClose, user }: { open: boolean; onClose: () =
         ibp_number: values.ibp_number || null,
         mobile_number: values.mobile_number || null,
         hourly_rate_cents: hourly_rate ? toCents(hourly_rate) : 0,
+        daily_target_minutes: daily_target === '' ? null : Math.round(Number(daily_target) * 60),
       })
       close()
     } catch (error) {
@@ -94,6 +97,9 @@ export function UserForm({ open, onClose, user }: { open: boolean; onClose: () =
         </Field>
         <Field label="Standard hourly rate (₱)" error={formState.errors.hourly_rate?.message}>
           {(a) => <Input {...a} inputMode="decimal" placeholder="3,500.00" {...register('hourly_rate')} />}
+        </Field>
+        <Field label="Daily time target (hours)" error={formState.errors.daily_target?.message} hint="Blank follows the firm's target; 0 leaves them out of time reminders.">
+          {(a) => <Input {...a} inputMode="decimal" placeholder="Firm's target" {...register('daily_target')} />}
         </Field>
         {user && <Checkbox label="Active (can sign in)" className="sm:col-span-2" {...register('is_active')} />}
       </form>

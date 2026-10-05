@@ -25,6 +25,7 @@ use App\Domain\Documents\Scanning\ClamAvScanner;
 use App\Domain\Documents\Scanning\NullVirusScanner;
 use App\Domain\Documents\Scanning\VirusScanner;
 use App\Domain\Evidence\Models\Exhibit;
+use App\Domain\Feedback\MatterFeedback;
 use App\Domain\Filing\Models\EFiling;
 use App\Domain\Knowledge\Models\KnowledgeItem;
 use App\Domain\Matters\Models\Client;
@@ -33,6 +34,7 @@ use App\Domain\Prescription\MatterPrescription;
 use App\Domain\Privacy\Models\DataSubjectRequest;
 use App\Domain\Privacy\Models\PrivacyIncident;
 use App\Domain\Tax\Models\TaxFiling;
+use App\Domain\Trust\Models\TrustReconciliation;
 use App\Models\User;
 use App\Support\Ops\OpsAlert;
 use App\Support\Tenancy\DatabaseTenancy;
@@ -99,7 +101,9 @@ class AppServiceProvider extends ServiceProvider
             'prospect' => Prospect::class,
             'e_filing' => EFiling::class,
             'matter_budget' => MatterBudget::class,
+            'matter_feedback' => MatterFeedback::class,
             'matter_prescription' => MatterPrescription::class,
+            'trust_reconciliation' => TrustReconciliation::class,
         ]);
 
         $this->configureDatabaseTenancy();

@@ -19,9 +19,10 @@ class ReportController extends Controller
         'aged-receivables' => ['client' => 'Client', 'invoices' => 'Invoices', 'current' => 'Not yet due', 'd1_30' => '1-30 days', 'd31_60' => '31-60 days', 'd61_90' => '61-90 days', 'd90_plus' => 'Over 90 days', 'total' => 'Total outstanding'],
         'collections' => ['lawyer' => 'Responsible lawyer', 'payments' => 'Payments', 'received' => 'Cash received', 'withheld' => 'Tax withheld (2307)', 'total' => 'Total collected'],
         'matter-profitability' => ['reference' => 'Reference', 'title' => 'Matter', 'client' => 'Client', 'lawyer' => 'Lawyer', 'status' => 'Status', 'recorded' => 'Time recorded', 'billed' => 'Fees billed', 'collected' => 'Fees collected', 'unbilled' => 'Unbilled time', 'expenses' => 'Expenses', 'collection_rate' => 'Collection rate %'],
+        'write-offs' => ['lawyer' => 'Responsible lawyer', 'invoices' => 'Invoices', 'written_down' => 'Written down', 'discounted' => 'Discounts', 'written_off' => 'Written off', 'total' => 'Total not charged'],
     ];
 
-    private const MONEY = ['current', 'd1_30', 'd31_60', 'd61_90', 'd90_plus', 'total', 'received', 'withheld', 'expenses', 'recorded', 'billed', 'collected', 'unbilled'];
+    private const MONEY = ['current', 'd1_30', 'd31_60', 'd61_90', 'd90_plus', 'total', 'received', 'withheld', 'expenses', 'recorded', 'billed', 'collected', 'unbilled', 'written_down', 'discounted', 'written_off'];
 
     public function show(Request $request, string $report, Reports $reports): JsonResponse|StreamedResponse
     {
@@ -41,6 +42,10 @@ class ReportController extends Controller
                 CarbonImmutable::parse($validated['to'] ?? 'today'),
             ),
             'matter-profitability' => $reports->matterProfitability(),
+            'write-offs' => $reports->writeOffs(
+                CarbonImmutable::parse($validated['from'] ?? now()->startOfYear()->toDateString()),
+                CarbonImmutable::parse($validated['to'] ?? 'today'),
+            ),
             default => abort(404),
         };
 

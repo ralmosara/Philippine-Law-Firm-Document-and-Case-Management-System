@@ -2,6 +2,7 @@
 
 namespace App\Domain\Documents\Pleadings;
 
+use App\Domain\Compliance\Services\CounselCredentials;
 use App\Domain\Matters\Enums\PartyRole;
 use App\Domain\Matters\Models\Firm;
 use App\Domain\Matters\Models\Matter;
@@ -214,8 +215,8 @@ class PleadingAssembler
             '',
             mb_strtoupper($counsel->name),
             'Roll of Attorneys No. '.($counsel->roll_number ?: '______'),
-            'IBP No. '.($counsel->ibp_number ?: '______'),
-            'PTR No. '.($counsel->ptr_number ?: '______'),
+            app(CounselCredentials::class)->ibpLine($counsel),
+            app(CounselCredentials::class)->ptrLine($counsel),
             'MCLE Compliance No. '.($counsel->mcle_compliance_number ?: '______'),
             $counsel->email,
         ];

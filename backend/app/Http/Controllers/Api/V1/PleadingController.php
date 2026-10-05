@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Compliance\Services\CounselCredentials;
 use App\Domain\Documents\Actions\CreateDocumentVersion;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Pleadings\DocxWriter;
@@ -36,7 +37,13 @@ class PleadingController extends Controller
     {
         Gate::authorize('work-matters');
 
-        return response()->json(['text' => $this->assembler->assemble($matter, $this->counsel($request, $matter), $this->pleadingOptions($request))]);
+        $counsel = $this->counsel($request, $matter);
+
+        return response()->json([
+            'text' => $this->assembler->assemble($matter, $counsel, $this->pleadingOptions($request)),
+            // Shown above the preview: a PTR or IBP not for this year, or not recorded.
+            'warnings' => array_map(fn ($p) => "{$counsel->name}: {$p}", app(CounselCredentials::class)->problems($counsel)),
+        ]);
     }
 
     public function store(Request $request, Matter $matter): JsonResponse

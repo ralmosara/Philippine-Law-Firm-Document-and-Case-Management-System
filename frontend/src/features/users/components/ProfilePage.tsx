@@ -7,6 +7,7 @@ import { Field, FormError, Input } from '@/shared/ui/Form'
 import { Card, CardHeader, DescriptionList, PageHeader } from '@/shared/ui/Layout'
 import { useChangePassword } from '../api'
 import { CalendarSubscription } from './CalendarSubscription'
+import { AwayCard } from './AwayCard'
 import { CounselCredentials } from './CounselCredentials'
 import { PhoneNotifications } from './PhoneNotifications'
 import { TwoFactorSettings } from './TwoFactorSettings'
@@ -69,6 +70,9 @@ export function ProfilePage() {
             <CounselCredentials />
           </div>
         )}
+        <div className="lg:col-span-2">
+          <AwayCard />
+        </div>
         <div className="lg:col-span-2">
           <PhoneNotifications />
         </div>

@@ -9,6 +9,8 @@ enum InvoiceStatus: string
     case PartiallyPaid = 'partially_paid';
     case Paid = 'paid';
     case Void = 'void';
+    /** The balance will not be collected; the firm wrote it off. */
+    case WrittenOff = 'written_off';
 
     /**
      * Manual transitions. Issued, partially paid and paid also follow the
@@ -19,8 +21,10 @@ enum InvoiceStatus: string
     {
         return match ($this) {
             self::Draft => in_array($next, [self::Issued, self::Void], true),
-            self::Issued => in_array($next, [self::PartiallyPaid, self::Paid, self::Void], true),
-            self::PartiallyPaid => in_array($next, [self::Paid], true),
+            self::Issued => in_array($next, [self::PartiallyPaid, self::Paid, self::Void, self::WrittenOff], true),
+            self::PartiallyPaid => in_array($next, [self::Paid, self::WrittenOff], true),
+            // Undoing a write-off puts the invoice back where its payments left it.
+            self::WrittenOff => in_array($next, [self::Issued, self::PartiallyPaid], true),
             self::Paid, self::Void => false,
         };
     }

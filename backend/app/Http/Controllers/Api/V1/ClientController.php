@@ -7,13 +7,13 @@ use App\Domain\Matters\Models\Client;
 use App\Domain\Matters\Services\ClientPasswordResets;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClientResource;
+use App\Support\Localization\PortalLocale;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
-use App\Support\Localization\PortalLocale;
 
 class ClientController extends Controller
 {
@@ -131,6 +131,7 @@ class ClientController extends Controller
                 Rule::unique('clients', 'email')->where('firm_id', $client?->firm_id ?? request()->user()->firm_id)->ignore($client?->id),
             ],
             'phone' => ['nullable', 'string', 'max:30'],
+            'hearing_reminders' => ['sometimes', 'boolean'],
             'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
             // Maiden or former names, trade names, affiliates: one per line.

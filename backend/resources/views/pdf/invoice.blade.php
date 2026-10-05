@@ -40,7 +40,13 @@
 </table>
 
 <table style="width: 45%; margin: 12pt 0 0 auto">
-    <tr><td>Professional fees</td><td class="right">{{ $money($invoice->subtotal_cents) }}</td></tr>
+    @if ($invoice->discount_cents > 0)
+        <tr><td>Professional fees</td><td class="right">{{ $money($invoice->subtotal_cents + $invoice->discount_cents) }}</td></tr>
+        <tr><td>Less: {{ $invoice->discount_reason ?: 'discount' }}</td><td class="right">({{ $money($invoice->discount_cents) }})</td></tr>
+        <tr><td>Professional fees, net</td><td class="right">{{ $money($invoice->subtotal_cents) }}</td></tr>
+    @else
+        <tr><td>Professional fees</td><td class="right">{{ $money($invoice->subtotal_cents) }}</td></tr>
+    @endif
     <tr><td>VAT (12%)</td><td class="right">{{ $money($invoice->vat_cents) }}</td></tr>
     @if ($invoice->expenses_cents > 0)<tr><td>Reimbursable expenses</td><td class="right">{{ $money($invoice->expenses_cents) }}</td></tr>@endif
     <tr><td style="font-weight:bold;border-bottom:0;border-top:1pt solid #1f2328">Total due</td><td class="right" style="font-weight:bold;border-bottom:0;border-top:1pt solid #1f2328">{{ $money($invoice->total_cents) }}</td></tr>

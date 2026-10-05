@@ -233,7 +233,7 @@ class DataImportTest extends TestCase
     {
         $this->get('/api/v1/imports/template/matters')->assertOk()->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
         $types = $this->getJson('/api/v1/imports/types')->assertOk()->json();
-        $this->assertSame(['clients', 'matters', 'deadlines', 'trust_balances'], array_column($types, 'type'));
+        $this->assertSame(['clients', 'matters', 'deadlines', 'trust_balances', 'invoices', 'time_entries'], array_column($types, 'type'));
 
         $id = $this->preview('clients', $this->csv([['Name'], ['Somebody']]))->json('id');
 

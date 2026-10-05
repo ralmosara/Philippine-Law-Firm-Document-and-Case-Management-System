@@ -2,6 +2,7 @@
 
 namespace App\Domain\Deadlines\Services;
 
+use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Enums\DeadlineKind;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
 use App\Domain\Deadlines\Enums\TaskProgress;
@@ -56,6 +57,7 @@ class DeadlineScheduler
                 'completed_by' => $by->id,
             ])->save();
             $deadline->logEvent('completed', $by, array_filter(['notes' => $notes]));
+            app(RecurringTasks::class)->afterCompleted($deadline, $by);
 
             return $deadline;
         });
@@ -68,6 +70,7 @@ class DeadlineScheduler
         return DB::transaction(function () use ($deadline, $by, $reason) {
             $deadline->forceFill(['status' => DeadlineStatus::Cancelled])->save();
             $deadline->logEvent('cancelled', $by, ['reason' => $reason]);
+            app(ClientHearingNotices::class)->cancelled($deadline);
 
             return $deadline;
         });
@@ -93,6 +96,7 @@ class DeadlineScheduler
                 'to' => $newDueDate->toDateString(),
                 'reason' => $reason,
             ]);
+            app(ClientHearingNotices::class)->moved($deadline, $previous);
 
             return $deadline;
         });
@@ -107,6 +111,7 @@ class DeadlineScheduler
                 ...$attributes,
             ]);
             $deadline->logEvent('created', $by, $eventPayload);
+            app(ClientHearingNotices::class)->scheduled($deadline);
 
             return $deadline;
         });
@@ -134,6 +139,7 @@ class DeadlineScheduler
                 return DB::transaction(function () use ($task, $by) {
                     $task->forceFill(['status' => DeadlineStatus::Completed, 'completed_at' => now(), 'completed_by' => $by->id])->save();
                     $task->logEvent('completed', $by, ['late' => true]);
+                    app(RecurringTasks::class)->afterCompleted($task, $by);
 
                     return $task;
                 });

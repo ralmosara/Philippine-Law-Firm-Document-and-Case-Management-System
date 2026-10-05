@@ -28,6 +28,45 @@ class OnlinePayments
         private readonly TenantContext $tenant,
     ) {}
 
+    /**
+     * Refund an online payment that could not be applied to its invoice (it
+     * was paid or voided meanwhile), through PayMongo. Applied payments are
+     * not refunded here: the invoice payment would have to be undone too.
+     */
+    public function refund(Payment $payment, string $reason, ?string $notes, User $by): Payment
+    {
+        return DB::transaction(function () use ($payment, $reason, $notes, $by) {
+            $payment = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
+
+            if ($payment->status !== Payment::UNAPPLIED) {
+                throw ValidationException::withMessages(['payment' => 'Only a payment received but not applied to its invoice can be refunded here.']);
+            }
+            if (in_array($payment->refund_status, ['pending', 'succeeded'], true)) {
+                throw ValidationException::withMessages(['payment' => 'This payment has already been refunded.']);
+            }
+            if (blank($payment->provider_payment_id)) {
+                throw ValidationException::withMessages(['payment' => 'PayMongo did not report a payment ID; refund it in the PayMongo dashboard.']);
+            }
+
+            try {
+                $refund = $this->gateway->refund($payment->provider_payment_id, $payment->amount_cents, $reason, $notes);
+            } catch (RequestException $e) {
+                $message = (string) data_get($e->response->json(), 'errors.0.detail', 'PayMongo did not accept the refund.');
+                throw ValidationException::withMessages(['payment' => "PayMongo: {$message}"]);
+            }
+
+            $payment->forceFill([
+                'refund_id' => $refund['id'],
+                'refund_status' => $refund['status'],
+                'refund_reason' => trim($reason.($notes ? ": {$notes}" : '')),
+                'refunded_at' => now(),
+                'refunded_by' => $by->id,
+            ])->save();
+
+            return $payment;
+        });
+    }
+
     public function isEnabled(): bool
     {
         return $this->gateway->isEnabled();

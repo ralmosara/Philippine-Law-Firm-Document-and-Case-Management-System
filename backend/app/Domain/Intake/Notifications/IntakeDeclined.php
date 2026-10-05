@@ -27,10 +27,10 @@ class IntakeDeclined extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("Your consultation request: {$this->firm->name}")
-            ->greeting("Dear {$this->request->name},")
-            ->line("Thank you for considering {$this->firm->name}. After review, we are unable to take on your matter.")
-            ->line('This is not a judgment on the merits of your concern. Legal remedies can be subject to deadlines, so we encourage you to consult another lawyer promptly. The Integrated Bar of the Philippines chapter in your area or the Public Attorney’s Office may be able to help.')
+            ->subject(__('Your consultation request: :firm', ['firm' => $this->firm->name]))
+            ->greeting(__('Dear :name,', ['name' => $this->request->name]))
+            ->line(__('Thank you for considering :firm. After review, we are unable to take on your matter.', ['firm' => $this->firm->name]))
+            ->line(__('This is not a judgment on the merits of your concern. Legal remedies can be subject to deadlines, so we encourage you to consult another lawyer promptly. The Integrated Bar of the Philippines chapter in your area or the Public Attorney’s Office may be able to help.'))
             ->salutation($this->firm->name);
     }
 }

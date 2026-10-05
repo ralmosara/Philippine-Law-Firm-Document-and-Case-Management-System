@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Domain\Compliance\Models\ConflictCheck;
 use App\Domain\Intake\Models\IntakeRequest;
 use App\Domain\Intake\Services\IntakeService;
+use App\Domain\Prescription\PrescriptionPeriods;
+use App\Domain\Prescription\Prescriptions;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -75,6 +77,27 @@ class IntakeController extends Controller
         return response()->json($this->detail($intakeRequest->fresh()));
     }
 
+    /**
+     * The lawyer's screening for prescription: the type of claim, and (to
+     * correct what the applicant wrote) when it arose. Tracked on the matter
+     * once the case is taken.
+     */
+    public function prescription(Request $request, IntakeRequest $intakeRequest): JsonResponse
+    {
+        Gate::authorize('work-matters');
+        $validated = $request->validate([
+            'period_key' => ['nullable', Rule::in(array_keys(PrescriptionPeriods::PERIODS))],
+            'incident_on' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+        ]);
+
+        $intakeRequest->forceFill([
+            'prescription_period_key' => $validated['period_key'] ?? null,
+            ...(array_key_exists('incident_on', $validated) ? ['incident_on' => $validated['incident_on']] : []),
+        ])->save();
+
+        return response()->json($this->detail($intakeRequest->fresh()));
+    }
+
     public function accept(Request $request, IntakeRequest $intakeRequest): JsonResponse
     {
         Gate::authorize('practice-law');
@@ -101,6 +124,10 @@ class IntakeController extends Controller
             'consultation_at' => $r->consultation_at?->toIso8601String(),
             'assigned_lawyer' => $r->assignedLawyer ? ['id' => $r->assignedLawyer->id, 'name' => $r->assignedLawyer->name] : null,
             'created_at' => $r->created_at?->toIso8601String(),
+            'incident_on' => $r->incident_on?->toDateString(),
+            'locale' => $r->locale,
+            // Only while the case is still to be decided; once taken, the matter tracks it.
+            'prescription' => $r->isOpen() ? app(Prescriptions::class)->screen($r->incident_on, $r->prescription_period_key) : null,
         ];
     }
 

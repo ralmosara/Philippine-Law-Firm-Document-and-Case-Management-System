@@ -7,9 +7,10 @@ import { longDate, today } from '@/shared/lib/format'
 import { Button } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
 import { Spinner } from '@/shared/ui/Feedback'
-import { Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
+import { Checkbox, Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
 import { Tabs } from '@/shared/ui/Layout'
 import { useComputeDeadline, useCreateDeadline, useDeadlineRules } from '../api'
+import { ClashWarning, useHearingClashes } from './HearingClashes'
 
 type Mode = 'rule' | 'manual'
 
@@ -24,10 +25,13 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
   const [triggerDate, setTriggerDate] = useState(today())
   const [kind, setKind] = useState<DeadlineKind>(initialKind ?? 'hearing')
   const [priority, setPriority] = useState('normal')
+  const [repeat, setRepeat] = useState('')
+  const [repeatUntil, setRepeatUntil] = useState('')
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [dueTime, setDueTime] = useState('')
   const [location, setLocation] = useState('')
+  const [notifyClient, setNotifyClient] = useState(true)
   const [assignedTo, setAssignedTo] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<ApiError | null>(null)
@@ -37,6 +41,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
   const preview = useComputeDeadline(mode === 'rule' ? ruleId : null, triggerDate)
   const create = useCreateDeadline(matterId)
   const selectedRule = rules.data?.find((r) => r.id === ruleId)
+  const clashes = useHearingClashes({ matter_id: matterId, date: dueDate, time: dueTime || undefined, assigned_to: assignedTo ? Number(assignedTo) : undefined }, open && mode === 'manual' && kind === 'hearing')
 
   const close = () => {
     setError(null)
@@ -46,6 +51,8 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
     setDueTime('')
     setLocation('')
     setNotes('')
+    setRepeat('')
+    setRepeatUntil('')
     onClose()
   }
 
@@ -58,7 +65,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
         if (!ruleId) return
         await create.mutateAsync({ deadline_rule_id: ruleId, trigger_date: triggerDate, assigned_to, notes: notes || undefined })
       } else {
-        await create.mutateAsync({ kind, title, due_date: dueDate, due_time: dueTime || null, location: location || null, assigned_to, notes: notes || undefined, ...(kind === 'task' ? { priority } : {}) })
+        await create.mutateAsync({ kind, title, due_date: dueDate, due_time: dueTime || null, location: location || null, assigned_to, notes: notes || undefined, ...(kind === 'task' ? { priority, repeat: repeat || null, repeat_until: repeat && repeatUntil ? repeatUntil : null } : {}), ...(kind === 'hearing' ? { notify_client: notifyClient } : {}) })
       }
       close()
     } catch (err) {
@@ -169,10 +176,36 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
                 )}
               </Field>
             )}
+            {kind === 'task' && (
+              <Field label="Repeats" hint="When it is done, the next one is created." error={error?.field('repeat')}>
+                {(a) => (
+                  <Select {...a} value={repeat} onChange={(e) => setRepeat(e.target.value)}>
+                    <option value="">Does not repeat</option>
+                    <option value="weekly">Every week</option>
+                    <option value="monthly">Every month</option>
+                    <option value="quarterly">Every 3 months</option>
+                    <option value="yearly">Every year</option>
+                  </Select>
+                )}
+              </Field>
+            )}
+            {kind === 'task' && repeat && (
+              <Field label="Until" hint="Optional. Leave blank to repeat while the matter is open." error={error?.field('repeat_until')}>
+                {(a) => <Input {...a} type="date" value={repeatUntil} min={dueDate || undefined} onChange={(e) => setRepeatUntil(e.target.value)} />}
+              </Field>
+            )}
             {kind === 'hearing' && (
               <Field label="Location" className="sm:col-span-2">
                 {(a) => <Input {...a} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Sala of RTC Branch 58, Makati City Hall" />}
               </Field>
+            )}
+            {kind === 'hearing' && clashes.data && clashes.data.clashes.length > 0 && (
+              <div className="sm:col-span-2"><ClashWarning clashes={clashes.data.clashes} intro="This lawyer already has a hearing at about that time:" /></div>
+            )}
+            {kind === 'hearing' && (
+              <div className="sm:col-span-2">
+                <Checkbox label="Tell the client (notice now, reminders a week before and the day before), if the firm sends client hearing reminders" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} />
+              </div>
             )}
           </>
         )}
@@ -181,7 +214,7 @@ export function DeadlineForm({ matterId, open, onClose, initialKind }: { matterI
           {(a) => (
             <Select {...a} value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
               <option value="">Responsible lawyer</option>
-              {staff.data?.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {staff.data?.map((u) => <option key={u.id} value={u.id}>{u.name}{u.is_away ? ` (away until ${u.away_until})` : ''}</option>)}
             </Select>
           )}
         </Field>

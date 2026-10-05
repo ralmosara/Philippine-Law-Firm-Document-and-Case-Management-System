@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Billing\Enums\InvoiceStatus;
 use App\Domain\Billing\Models\Invoice;
+use App\Domain\Billing\Models\Payment;
 use App\Domain\Billing\Payments\OnlinePayments;
 use App\Domain\Billing\Services\InvoiceGenerator;
 use App\Domain\Matters\Models\Firm;
@@ -17,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
 class InvoiceController extends Controller
@@ -76,7 +78,7 @@ class InvoiceController extends Controller
     {
         Gate::authorize('practice-law');
 
-        return new InvoiceResource($invoice->load(['client', 'matter', 'lines', 'payments', 'invoicePayments.recorder:id,name', 'reminders.sender:id,name']));
+        return new InvoiceResource($invoice->load(['client', 'matter', 'lines', 'payments', 'invoicePayments.recorder:id,name', 'reminders.sender:id,name', 'writtenOffBy:id,name']));
     }
 
     public function pdf(Invoice $invoice, PdfRenderer $pdf): Response
@@ -118,6 +120,20 @@ class InvoiceController extends Controller
      * A PayMongo checkout link the firm can send to the client (email, Viber)
      * for an issued invoice. The webhook marks the invoice paid.
      */
+    /** Refund through PayMongo an online payment that could not be applied to its invoice. */
+    public function refundOnlinePayment(Request $request, Payment $payment, OnlinePayments $payments): InvoiceResource
+    {
+        Gate::authorize('manage-finances');
+        $validated = $request->validate([
+            'reason' => ['required', Rule::in(['duplicate', 'requested_by_customer', 'fraudulent', 'others'])],
+            'notes' => ['nullable', 'string', 'max:255'],
+        ]);
+        $payments->refund($payment, $validated['reason'], $validated['notes'] ?? null, $request->user());
+        $invoice = Invoice::findOrFail($payment->invoice_id);
+
+        return new InvoiceResource($invoice->load(['client', 'matter', 'lines', 'payments', 'invoicePayments.recorder:id,name', 'reminders.sender:id,name']));
+    }
+
     public function paymentLink(Invoice $invoice, OnlinePayments $payments): JsonResponse
     {
         Gate::authorize('manage-finances');

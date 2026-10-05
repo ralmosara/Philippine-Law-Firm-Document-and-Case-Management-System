@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InvoiceLine extends Model
 {
-    protected $fillable = ['invoice_id', 'kind', 'time_entry_id', 'expense_id', 'work_date', 'description', 'minutes', 'rate_cents', 'amount_cents'];
+    protected $fillable = ['invoice_id', 'kind', 'time_entry_id', 'expense_id', 'work_date', 'description', 'minutes', 'rate_cents', 'amount_cents', 'original_amount_cents', 'adjustment_reason'];
 
     protected function casts(): array
     {
@@ -17,6 +17,7 @@ class InvoiceLine extends Model
             'minutes' => 'integer',
             'rate_cents' => 'integer',
             'amount_cents' => 'integer',
+            'original_amount_cents' => 'integer',
         ];
     }
 

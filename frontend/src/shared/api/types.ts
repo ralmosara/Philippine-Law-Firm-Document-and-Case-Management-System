@@ -19,7 +19,7 @@ export type MatterStatus = 'intake' | 'filed' | 'pre_trial' | 'trial' | 'decisio
 export type DeadlineKind = 'filing' | 'hearing' | 'task'
 export type DeadlineStatus = 'pending' | 'completed' | 'missed' | 'cancelled'
 export type DocumentStatus = 'draft' | 'final' | 'pending_signature' | 'signed' | 'notarized'
-export type InvoiceStatus = 'draft' | 'issued' | 'partially_paid' | 'paid' | 'void'
+export type InvoiceStatus = 'draft' | 'issued' | 'partially_paid' | 'paid' | 'void' | 'written_off'
 export type FeeArrangement = 'hourly' | 'flat' | 'retainer' | 'contingency' | 'pro_bono'
 export type ConflictStatus = 'clear' | 'flagged' | 'waived' | 'declined'
 
@@ -37,8 +37,20 @@ export interface User extends UserRef {
   roll_number: string | null
   ptr_number?: string | null
   mcle_compliance_number?: string | null
+  ptr_date?: string | null
+  ptr_place?: string | null
+  ibp_date?: string | null
+  ibp_chapter?: string | null
+  ibp_lifetime?: boolean
+  /** For lawyers: PTR or IBP details missing or not for this year. */
+  credential_problems?: string[]
+  away_from?: string | null
+  away_until?: string | null
+  cover_user_id?: number | null
+  is_away?: boolean
   mobile_number: string | null
   hourly_rate_cents: number
+  daily_target_minutes: number | null
   is_active: boolean
   two_factor_enabled: boolean
   last_login_at: string | null
@@ -94,6 +106,8 @@ export interface Client {
   aliases?: string | null
   portal_enabled: boolean
   portal_locale: 'en' | 'fil'
+  /** Hearing notices and reminders by email and SMS (when the firm sends them). */
+  hearing_reminders: boolean
   portal_password_set: boolean
   last_portal_login_at: string | null
   matters_count?: number
@@ -185,6 +199,10 @@ export interface Deadline {
   location: string | null
   status: DeadlineStatus
   notes: string | null
+  /** Tasks only: finishing one creates the next. */
+  repeat: 'weekly' | 'monthly' | 'quarterly' | 'yearly' | null
+  repeat_until: string | null
+  next_task_id: number | null
   days_remaining: number
   completed_at: string | null
   rule?: { id: number; name: string; legal_basis: string | null } | null
@@ -323,6 +341,9 @@ export interface InvoiceLine {
   minutes: number | null
   rate_cents: number | null
   amount_cents: number
+  /** Set when the line was written down before issue. */
+  original_amount_cents: number | null
+  adjustment_reason: string | null
 }
 
 export interface Invoice {
@@ -340,6 +361,13 @@ export interface Invoice {
   balance_cents: number
   /** Fees (before VAT) on which tax can still be withheld. */
   withholding_room_cents: number
+  /** Off professional fees, before VAT; subtotal_cents is after it. */
+  discount_cents: number
+  discount_reason: string | null
+  written_off_cents: number
+  written_off_at: string | null
+  write_off_reason: string | null
+  written_off_by?: string | null
   issued_at: string | null
   due_at: string | null
   paid_at: string | null
@@ -385,6 +413,8 @@ export interface OnlinePayment {
   provider: string
   /** `unapplied`: money received after the invoice was paid or voided; needs a refund. */
   status: 'pending' | 'paid' | 'unapplied'
+  /** A refund through PayMongo of an unapplied payment. */
+  refund: { id: string; status: string; reason: string | null; at: string | null } | null
   method: string | null
   amount_cents: number
   reference: string | null

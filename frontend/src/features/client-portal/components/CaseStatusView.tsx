@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, PageLoader, ProgressBar } from '@/shared/ui/Fee
 import { Card, CardHeader, DescriptionList, PageHeader } from '@/shared/ui/Layout'
 import { portalFileUrl, usePortalDocument, usePortalMatter } from '../api'
 import { t } from '@/shared/lib/i18n'
+import { FeedbackCard } from './PortalExperience'
 
 /** A client's view of one matter: stage, hearings, history and shared documents. */
 export function CaseStatusView() {
@@ -31,6 +32,8 @@ export function CaseStatusView() {
         <div className="mb-2 flex justify-between text-sm"><span>{t('Current stage:')} <strong>{m.status_label}</strong></span><span className="text-on-surface-variant">{m.progress}%</span></div>
         <ProgressBar value={m.progress} label={t('Case progress')} tone={m.status === 'closed' ? 'success' : 'primary'} />
       </Card>
+
+      {m.feedback && <FeedbackCard matterId={m.id} feedback={m.feedback} />}
 
       {m.budget && (
         <Card className="mb-6 p-5">
