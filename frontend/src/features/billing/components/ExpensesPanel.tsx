@@ -1,4 +1,4 @@
-import { Pencil, Plus, Receipt, Trash2 } from 'lucide-react'
+import { Calculator, Pencil, Plus, Receipt, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useAbilities, useCurrentSession, useLookups } from '@/features/auth/session'
 import { fileDownloadUrl, useMatterFiles } from '@/features/documents/api'
@@ -11,6 +11,7 @@ import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox, Field, FormError, Input, Select } from '@/shared/ui/Form'
 import { Card, CardHeader, Table, Td, Th } from '@/shared/ui/Layout'
 import { useDeleteExpense, useExpenses, useSaveExpense } from '../api'
+import { FilingFeeEstimateDialog } from './FilingFees'
 
 /** Costs advanced for the client on a matter, billed at cost on the next invoice. */
 export function ExpensesPanel({ matterId }: { matterId: number }) {
@@ -19,6 +20,8 @@ export function ExpensesPanel({ matterId }: { matterId: number }) {
   const expenses = useExpenses({ matter_id: matterId })
   const remove = useDeleteExpense()
   const [editing, setEditing] = useState<Expense | 'new' | null>(null)
+  const [estimating, setEstimating] = useState(false)
+  const [preset, setPreset] = useState<{ amount_cents: number; description: string } | undefined>()
   const [deleting, setDeleting] = useState<Expense | null>(null)
   const canModify = (e: Expense) => !e.is_invoiced && (e.user?.id === user.id || abilities.manage_finances)
 
@@ -27,7 +30,7 @@ export function ExpensesPanel({ matterId }: { matterId: number }) {
       <CardHeader
         title="Expenses"
         description={expenses.data ? `${money(expenses.data.totals.amount_cents)} recorded · reimbursed at cost, outside VAT` : undefined}
-        actions={abilities.work_matters && <Button variant="tonal" size="sm" icon={<Plus className="size-4" />} onClick={() => setEditing('new')}>Add expense</Button>}
+        actions={abilities.work_matters && <div className="flex gap-2"><Button variant="text" size="sm" icon={<Calculator className="size-4" />} onClick={() => setEstimating(true)}>Estimate filing fees</Button><Button variant="tonal" size="sm" icon={<Plus className="size-4" />} onClick={() => { setPreset(undefined); setEditing('new') }}>Add expense</Button></div>}
       />
       {expenses.isPending ? (
         <PageLoader />
@@ -63,7 +66,8 @@ export function ExpensesPanel({ matterId }: { matterId: number }) {
         </Table>
       )}
 
-      {editing && <ExpenseDialog matterId={matterId} expense={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />}
+      {editing && <ExpenseDialog matterId={matterId} expense={editing === 'new' ? undefined : editing} preset={editing === 'new' ? preset : undefined} onClose={() => setEditing(null)} />}
+      {estimating && <FilingFeeEstimateDialog matterId={matterId} onClose={() => setEstimating(false)} onRecord={(p) => { setEstimating(false); setPreset(p); setEditing('new') }} />}
       <ConfirmDialog
         open={deleting !== null}
         onClose={() => setDeleting(null)}
@@ -78,15 +82,15 @@ export function ExpensesPanel({ matterId }: { matterId: number }) {
   )
 }
 
-function ExpenseDialog({ matterId, expense, onClose }: { matterId: number; expense?: Expense; onClose: () => void }) {
+function ExpenseDialog({ matterId, expense, preset, onClose }: { matterId: number; expense?: Expense; preset?: { amount_cents: number; description: string }; onClose: () => void }) {
   const lookups = useLookups()
   const files = useMatterFiles(matterId)
   const save = useSaveExpense(expense?.id)
   const [form, setForm] = useState({
     expense_date: expense?.expense_date ?? today(),
     category: expense?.category ?? 'filing_fee',
-    description: expense?.description ?? '',
-    amount: expense ? (expense.amount_cents / 100).toFixed(2) : '',
+    description: expense?.description ?? preset?.description ?? '',
+    amount: expense ? (expense.amount_cents / 100).toFixed(2) : preset ? (preset.amount_cents / 100).toFixed(2) : '',
     is_billable: expense?.is_billable ?? true,
     receipt_file_id: expense?.receipt ? String(expense.receipt.id) : '',
   })

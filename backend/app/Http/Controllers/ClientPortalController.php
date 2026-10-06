@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Billing\Enums\InvoiceStatus;
+use App\Domain\Billing\Models\PaymentProof;
+use App\Domain\Billing\PaymentProofs;
 use App\Domain\Billing\Payments\OnlinePayments;
 use App\Domain\Billing\Statements\StatementOfAccount;
 use App\Domain\Budgets\MatterBudgets;
 use App\Domain\Deadlines\Enums\DeadlineKind;
 use App\Domain\Deadlines\Enums\DeadlineStatus;
+use App\Domain\Documents\Actions\StoreMatterFile;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Documents\Models\SignatureRequest;
@@ -19,6 +22,7 @@ use App\Domain\Trust\Models\TrustAccount;
 use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\MatterFileController;
+use App\Http\Controllers\Api\V1\PaymentProofController;
 use App\Support\Pdf\PdfRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -232,10 +236,28 @@ class ClientPortalController extends Controller
         return $pdf->download('pdf.statement', $statements->build(Client::findOrFail($this->client($request)->id)), 'statement-of-account-'.today()->toDateString());
     }
 
+    /** A deposit slip or transfer screenshot for one of the client's bills, for the firm to confirm. */
+    public function submitPaymentProof(Request $request, int $invoice, PaymentProofs $proofs): JsonResponse
+    {
+        $model = $this->client($request)->invoices()->findOrFail($invoice);
+        $validated = $request->validate([
+            'file' => ['required', StoreMatterFile::rule()],
+            'amount_cents' => ['required', 'integer', 'min:1', 'max:2000000000'],
+            'paid_on' => ['required', 'date', 'before_or_equal:today', 'after:'.now()->subYear()->toDateString()],
+            'method' => ['required', Rule::in(array_keys(PaymentProof::METHODS))],
+            'reference' => ['nullable', 'string', 'max:100'],
+            'note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $proof = $proofs->submit($model, Client::findOrFail($this->client($request)->id), $request->file('file'), $validated);
+
+        return response()->json(PaymentProofController::payload($proof, forClient: true), 201);
+    }
+
     public function getInvoices(Request $request, OnlinePayments $payments): JsonResponse
     {
         $invoices = $this->client($request)->invoices()
-            ->with('matter:id,reference,title')
+            ->with(['matter:id,reference,title', 'paymentProofs'])
             ->whereIn('status', [...InvoiceStatus::receivableValues(), InvoiceStatus::Paid->value])
             ->latest('issued_at')
             ->get()
@@ -252,6 +274,8 @@ class ClientPortalController extends Controller
                 'due_at' => $invoice->due_at?->toDateString(),
                 'paid_at' => $invoice->paid_at?->toDateString(),
                 'matter' => $invoice->matter ? ['reference' => $invoice->matter->reference, 'title' => $invoice->matter->title] : null,
+                // Slips and screenshots the client sent, and what became of them.
+                'payment_proofs' => $invoice->paymentProofs->take(5)->map(fn ($p) => PaymentProofController::payload($p, forClient: true))->values(),
             ]);
 
         return response()->json([

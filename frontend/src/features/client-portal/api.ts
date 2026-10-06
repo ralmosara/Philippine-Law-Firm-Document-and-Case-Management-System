@@ -54,6 +54,8 @@ export interface PortalInvoice {
   due_at: string | null
   paid_at: string | null
   matter: { reference: string; title: string } | null
+  /** Deposit slips and screenshots the client sent, newest first. */
+  payment_proofs?: { id: number; status: 'pending' | 'confirmed' | 'rejected'; amount_cents: number; paid_on: string; reject_reason: string | null; created_at: string }[]
 }
 
 export interface PortalTrustAccount {

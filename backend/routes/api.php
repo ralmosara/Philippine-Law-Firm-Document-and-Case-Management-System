@@ -21,9 +21,11 @@ use App\Http\Controllers\Api\V1\DocumentRequestController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
 use App\Http\Controllers\Api\V1\EFilingController;
 use App\Http\Controllers\Api\V1\EInvoiceController;
+use App\Http\Controllers\Api\V1\EngagementLetterController;
 use App\Http\Controllers\Api\V1\ExhibitController;
 use App\Http\Controllers\Api\V1\ExpenseController;
 use App\Http\Controllers\Api\V1\FeedbackController;
+use App\Http\Controllers\Api\V1\FilingFeeController;
 use App\Http\Controllers\Api\V1\FirmController;
 use App\Http\Controllers\Api\V1\HolidayController;
 use App\Http\Controllers\Api\V1\ImportController;
@@ -43,6 +45,7 @@ use App\Http\Controllers\Api\V1\McleController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotarialEntryController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\PaymentProofController;
 use App\Http\Controllers\Api\V1\PleadingController;
 use App\Http\Controllers\Api\V1\PrescriptionController;
 use App\Http\Controllers\Api\V1\PrivacyController;
@@ -67,6 +70,7 @@ use App\Http\Controllers\PortalDocumentRequestController;
 use App\Http\Controllers\PortalExperienceController;
 use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
+use App\Http\Controllers\PublicEngagementController;
 use App\Http\Controllers\PublicIntakeController;
 use App\Http\Middleware\SetPortalLocale;
 use Illuminate\Http\Request;
@@ -146,6 +150,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('prospects/{prospect}/stage', [ProspectController::class, 'move']);
         Route::post('prospects/{prospect}/notes', [ProspectController::class, 'note']);
         Route::post('prospects/{prospect}/convert', [ProspectController::class, 'convert']);
+        Route::get('prospects/{prospect}/engagement-letters', [EngagementLetterController::class, 'index']);
+        Route::post('prospects/{prospect}/engagement-letters', [EngagementLetterController::class, 'store']);
+        Route::post('prospects/{prospect}/engagement-letters/{letter}/send', [EngagementLetterController::class, 'send']);
+        Route::post('prospects/{prospect}/engagement-letters/{letter}/cancel', [EngagementLetterController::class, 'cancel']);
         Route::post('intake-requests/{intakeRequest}/prospect', [ProspectController::class, 'fromIntake']);
         Route::get('knowledge', [KnowledgeController::class, 'index']);
         Route::post('knowledge', [KnowledgeController::class, 'store']);
@@ -212,6 +220,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('deadlines', [MatterDeadlineController::class, 'index']);
         Route::post('deadlines/compute', [MatterDeadlineController::class, 'compute']);
         Route::get('deadlines/clashes', [MatterDeadlineController::class, 'clashes']);
+        Route::post('matters/{matter}/files/{file}/deadline-suggestions', [MatterDeadlineController::class, 'suggestFromOrder'])->whereNumber('file')->middleware('throttle:assistant');
         Route::get('deadlines/{deadline}', [MatterDeadlineController::class, 'show']);
         Route::patch('deadlines/{deadline}', [MatterDeadlineController::class, 'update']);
         Route::post('deadlines/{deadline}/complete', [MatterDeadlineController::class, 'complete']);
@@ -304,6 +313,12 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('e-invoices/{eInvoice}/retry', [EInvoiceController::class, 'retry']);
         Route::post('invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink']);
         Route::post('online-payments/{payment}/refund', [InvoiceController::class, 'refundOnlinePayment']);
+        Route::get('filing-fees', [FilingFeeController::class, 'show']);
+        Route::put('filing-fees', [FilingFeeController::class, 'update']);
+        Route::post('matters/{matter}/filing-fees/estimate', [FilingFeeController::class, 'estimate']);
+        Route::get('payment-proofs', [PaymentProofController::class, 'index']);
+        Route::post('payment-proofs/{paymentProof}/confirm', [PaymentProofController::class, 'confirm']);
+        Route::post('payment-proofs/{paymentProof}/reject', [PaymentProofController::class, 'reject']);
         Route::get('privacy/summary', [PrivacyController::class, 'summary']);
         Route::get('privacy/settings', [PrivacyController::class, 'settings']);
         Route::put('privacy/settings', [PrivacyController::class, 'updateSettings']);
@@ -411,6 +426,7 @@ Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->g
         Route::get('invoices', [ClientPortalController::class, 'getInvoices']);
         Route::get('statement/pdf', [ClientPortalController::class, 'getStatementPdf']);
         Route::post('invoices/{invoice}/checkout', [ClientPortalController::class, 'checkout'])->whereNumber('invoice');
+        Route::post('invoices/{invoice}/payment-proofs', [ClientPortalController::class, 'submitPaymentProof'])->whereNumber('invoice');
         Route::get('trust-accounts', [ClientPortalController::class, 'getTrustAccounts']);
         Route::get('files/{file}/download', [ClientPortalController::class, 'downloadFile'])->whereNumber('file');
         Route::get('message-threads', [PortalMessageController::class, 'index']);
@@ -444,6 +460,13 @@ Route::post('webhooks/inbound-email', InboundEmailWebhookController::class)->mid
 // In English or Filipino (X-Locale, like the portal before sign-in).
 Route::get('public/intake/{slug}', [PublicIntakeController::class, 'show'])->middleware(['throttle:api', SetPortalLocale::class]);
 Route::post('public/intake/{slug}', [PublicIntakeController::class, 'submit'])->middleware(['throttle:intake', SetPortalLocale::class]);
+
+// A prospect's engagement letter; the token in the URL is the credential.
+Route::prefix('public/engagement/{token}')->where(['token' => '[A-Za-z0-9]{48}'])->middleware('throttle:login')->group(function () {
+    Route::get('/', [PublicEngagementController::class, 'show']);
+    Route::post('sign', [PublicEngagementController::class, 'sign']);
+    Route::post('decline', [PublicEngagementController::class, 'decline']);
+});
 
 // Calendar subscriptions: calendar apps cannot sign in, so the unguessable
 // token in the URL authenticates the request.

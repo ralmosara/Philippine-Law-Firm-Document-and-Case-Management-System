@@ -8,6 +8,7 @@ import { Button } from '@/shared/ui/Button'
 import { Dialog } from '@/shared/ui/Dialog'
 import { Badge, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Field, FormError, Input, Select, Textarea } from '@/shared/ui/Form'
+import { EngagementLetterDialog } from './EngagementLetterDialog'
 import { OPEN_STAGES, useConvertProspect, useMoveProspect, useProspect, useProspectNote, useSaveProspect, type Prospect, type ProspectInput } from '../api'
 
 export function ProspectForm({ prospect, sources, onClose }: { prospect?: Prospect; sources: Record<string, string>; onClose: () => void }) {
@@ -68,12 +69,13 @@ export function ProspectDetailDialog({ id, stages, onClose, onEdit }: { id: numb
   const query = useProspect(id)
   const move = useMoveProspect(id)
   const note = useProspectNote(id)
-  const [mode, setMode] = useState<'view' | 'lost' | 'convert'>('view')
+  const [mode, setMode] = useState<'view' | 'lost' | 'convert' | 'engagement'>('view')
   const [text, setText] = useState('')
   const [noteType, setNoteType] = useState('note')
   const p = query.data
   const moveError = move.error ? ApiError.from(move.error) : null
 
+  if (p && mode === 'engagement') return <EngagementLetterDialog prospectId={p.id} name={p.name} email={p.email} onClose={() => setMode('view')} />
   if (p && mode === 'convert') return <ConvertDialog prospectId={p.id} name={p.name} caseType={p.case_type} onClose={() => setMode('view')} onDone={onClose} />
 
   const open = p && (OPEN_STAGES as readonly string[]).includes(p.stage)
@@ -88,6 +90,7 @@ export function ProspectDetailDialog({ id, stages, onClose, onEdit }: { id: numb
           <Button variant="text" onClick={() => { setText(''); setMode('lost') }}>Lost</Button>
           <Button variant="outlined" onClick={() => onEdit(p)}>Edit</Button>
           {OPEN_STAGES.filter((s) => s !== p.stage).map((s) => <Button key={s} variant="outlined" loading={move.isPending && move.variables?.stage === s} onClick={() => move.mutate({ stage: s })}>{stages[s]}</Button>)}
+          {abilities.practice_law && <Button variant="tonal" onClick={() => setMode('engagement')}>Engagement letter</Button>}
           {abilities.practice_law && <Button onClick={() => setMode('convert')}>Engaged: open matter</Button>}
         </>
       ))}>

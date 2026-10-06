@@ -7,8 +7,10 @@ use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\Payment;
+use App\Domain\Billing\Models\PaymentProof;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Budgets\MatterBudget;
+use App\Domain\Business\Models\EngagementLetter;
 use App\Domain\Business\Models\Prospect;
 use App\Domain\Compliance\Models\McleCredit;
 use App\Domain\Corporate\Models\CorporateObligation;
@@ -104,6 +106,8 @@ class AppServiceProvider extends ServiceProvider
             'matter_feedback' => MatterFeedback::class,
             'matter_prescription' => MatterPrescription::class,
             'trust_reconciliation' => TrustReconciliation::class,
+            'engagement_letter' => EngagementLetter::class,
+            'payment_proof' => PaymentProof::class,
         ]);
 
         $this->configureDatabaseTenancy();

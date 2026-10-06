@@ -31,7 +31,7 @@ class Firm extends Model
 
     protected function casts(): array
     {
-        return ['statements_enabled' => 'boolean', 'statement_day' => 'integer', 'time_reminders_enabled' => 'boolean', 'daily_target_minutes' => 'integer', 'client_hearing_reminders' => 'boolean', 'einvoicing_enabled' => 'boolean', 'has_employees' => 'boolean', 'pleading_font_size' => 'integer', 'payment_reminders_enabled' => 'boolean', 'privacy_notice_version' => 'integer', 'retention_years' => 'integer', 'privacy_notice_updated_at' => 'datetime', 'default_withholding_bps' => 'integer', 'vat_registered' => 'boolean', 'require_two_factor' => 'boolean', 'intake_enabled' => 'boolean', 'ai_enabled' => 'boolean'];
+        return ['filing_fee_schedule' => 'array', 'filing_fee_schedule_confirmed_at' => 'datetime', 'statements_enabled' => 'boolean', 'statement_day' => 'integer', 'time_reminders_enabled' => 'boolean', 'daily_target_minutes' => 'integer', 'client_hearing_reminders' => 'boolean', 'einvoicing_enabled' => 'boolean', 'has_employees' => 'boolean', 'pleading_font_size' => 'integer', 'payment_reminders_enabled' => 'boolean', 'privacy_notice_version' => 'integer', 'retention_years' => 'integer', 'privacy_notice_updated_at' => 'datetime', 'default_withholding_bps' => 'integer', 'vat_registered' => 'boolean', 'require_two_factor' => 'boolean', 'intake_enabled' => 'boolean', 'ai_enabled' => 'boolean'];
     }
 
     public function users(): HasMany

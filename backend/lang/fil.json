@@ -156,5 +156,16 @@
     "Total amount due: :amount.": "Kabuuang halagang dapat bayaran: :amount.",
     "Nothing is owed. Thank you.": "Wala po kayong balanseng dapat bayaran. Salamat po.",
     "Funds we hold in trust for you: :amount.": "Pondong hawak namin para sa inyo (trust): :amount.",
-    "Please contact us if anything does not match your records. If you have paid recently, thank you: your payment may not appear yet.": "Mangyaring makipag-ugnayan sa amin kung may hindi tugma sa inyong talaan. Kung kayo ay nakabayad kamakailan, salamat po: maaaring hindi pa ito nakikita rito."
+    "Please contact us if anything does not match your records. If you have paid recently, thank you: your payment may not appear yet.": "Mangyaring makipag-ugnayan sa amin kung may hindi tugma sa inyong talaan. Kung kayo ay nakabayad kamakailan, salamat po: maaaring hindi pa ito nakikita rito.",
+
+    "This bill is not awaiting payment.": "Wala nang hinihintay na bayad sa billing statement na ito.",
+    "This is more than the balance of :balance.": "Mas malaki ito sa natitirang balanse na :balance.",
+    "Payment received: :number": "Natanggap ang bayad: :number",
+    "Thank you. We have received your payment of :amount on billing statement :number, paid on :date.": "Salamat po. Natanggap namin ang inyong bayad na :amount para sa billing statement :number, na binayaran noong :date.",
+    "The remaining balance is :balance.": "Ang natitirang balanse ay :balance.",
+    "This billing statement is now fully paid.": "Bayad na nang buo ang billing statement na ito.",
+    "We could not confirm your payment: :number": "Hindi namin makumpirma ang inyong bayad: :number",
+    "We could not match the proof of payment you sent for :amount on billing statement :number with our records.": "Hindi namin maitugma sa aming talaan ang patunay ng bayad na ipinadala ninyo para sa :amount sa billing statement :number.",
+    "Reason: :reason": "Dahilan: :reason",
+    "Please check the details and send it again from the client portal, or reply to this email.": "Pakisuri ang mga detalye at ipadala itong muli mula sa client portal, o sumagot sa email na ito."
 }
