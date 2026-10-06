@@ -105,6 +105,8 @@ export interface Client {
   notes: string | null
   aliases?: string | null
   portal_enabled: boolean
+  /** The client has turned on two-step sign-in for the portal. */
+  portal_two_factor?: boolean
   portal_locale: 'en' | 'fil'
   /** Hearing notices and reminders by email and SMS (when the firm sends them). */
   hearing_reminders: boolean

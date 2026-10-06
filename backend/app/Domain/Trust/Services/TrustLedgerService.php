@@ -2,6 +2,7 @@
 
 namespace App\Domain\Trust\Services;
 
+use App\Domain\Compliance\Services\AmlMonitor;
 use App\Domain\Trust\Enums\TrustTransactionType;
 use App\Domain\Trust\Exceptions\InsufficientTrustFunds;
 use App\Domain\Trust\Models\TrustAccount;
@@ -38,7 +39,7 @@ class TrustLedgerService
             throw new InvalidArgumentException('Trust transaction amounts must be positive.');
         }
 
-        return DB::transaction(function () use ($account, $type, $amountCents, $description, $reference, $by) {
+        $transaction = DB::transaction(function () use ($account, $type, $amountCents, $description, $reference, $by) {
             $locked = TrustAccount::withoutGlobalScopes()->lockForUpdate()->findOrFail($account->id);
 
             if (! $locked->isOpen()) {
@@ -65,6 +66,13 @@ class TrustLedgerService
 
             return $transaction;
         });
+
+        // Large deposits are flagged for an anti-money-laundering review once the posting is final.
+        if ($type === TrustTransactionType::Deposit) {
+            DB::afterCommit(fn () => app(AmlMonitor::class)->afterDeposit($transaction));
+        }
+
+        return $transaction;
     }
 
     /**

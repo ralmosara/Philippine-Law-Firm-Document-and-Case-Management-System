@@ -8,8 +8,9 @@ import { DownloadButton } from '@/shared/ui/Button'
 import { EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Field, Input } from '@/shared/ui/Form'
 import { Card, PageHeader, StatCard, Table, Tabs, Td, Th } from '@/shared/ui/Layout'
+import { BooksOfAccounts } from './BooksOfAccounts'
 
-type Report = 'aged-receivables' | 'collections' | 'matter-profitability' | 'write-offs'
+type Report = 'aged-receivables' | 'collections' | 'matter-profitability' | 'write-offs' | 'books'
 type Row = Record<string, string | number | null>
 interface ReportData { rows: Row[]; totals: Record<string, number> }
 
@@ -37,12 +38,14 @@ export function ReportsPage() {
           { value: 'collections', label: 'Collections by lawyer' },
           { value: 'matter-profitability', label: 'Matter profitability' },
           { value: 'write-offs', label: 'Write-offs' },
+          { value: 'books', label: 'Books of accounts' },
         ]}
       />
       {tab === 'aged-receivables' && <AgedReceivables />}
       {tab === 'collections' && <Collections />}
       {tab === 'matter-profitability' && <Profitability />}
       {tab === 'write-offs' && <WriteOffs />}
+      {tab === 'books' && <BooksOfAccounts />}
     </>
   )
 }

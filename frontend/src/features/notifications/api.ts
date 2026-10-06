@@ -43,6 +43,7 @@ const AFFECTS: Record<string, string[][]> = {
   time: [['time-entries']],
   credentials: [['session']],
   trust: [['trust']],
+  aml: [['aml-reviews'], ['kyc']],
 }
 
 export function useNotifications() {

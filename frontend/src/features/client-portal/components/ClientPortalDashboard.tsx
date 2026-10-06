@@ -1,5 +1,6 @@
 import { LogOut, MessagesSquare, Scale, ShieldCheck } from 'lucide-react'
 import { Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { TwoFactorRequired } from './PortalTwoFactor'
 import { Button, ButtonLink } from '@/shared/ui/Button'
 import { ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { usePortalLogout, usePortalSession, usePortalThreads } from '../api'
@@ -42,9 +43,11 @@ export function ClientPortalDashboard() {
         </div>
       </header>
       <main id="main" className="mx-auto max-w-5xl px-4 py-8">
-        <PrivacyConsentGate firmName={client.firm.name}>
-          <Outlet />
-        </PrivacyConsentGate>
+        {client.two_factor_required && !client.two_factor_enabled ? <TwoFactorRequired firmName={client.firm.name} /> : (
+          <PrivacyConsentGate firmName={client.firm.name}>
+            <Outlet />
+          </PrivacyConsentGate>
+        )}
       </main>
       <footer className="mx-auto max-w-5xl px-4 pb-8 text-xs text-on-surface-variant">
         <LanguageSwitcher signedIn className="mb-3 block sm:hidden" />

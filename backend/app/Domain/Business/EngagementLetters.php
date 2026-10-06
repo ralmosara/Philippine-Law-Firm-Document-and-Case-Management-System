@@ -33,6 +33,21 @@ class EngagementLetters
 {
     public const DAYS_TO_SIGN = 30;
 
+    /**
+     * The firm's standard clauses after scope and fees, in order. A firm can
+     * replace the text of any of them (Firm Settings); the headings stay.
+     * {dpo_email} is replaced by the Data Protection Officer's address.
+     */
+    public const CLAUSES = [
+        'expenses' => ['title' => 'Expenses', 'text' => 'Filing and docket fees, transcripts, notarial fees, courier, travel outside the city and similar costs are billed at cost, without mark-up. We may ask you to deposit an amount to cover them; it will be held in trust for you, accounted for, and any balance returned when the engagement ends.'],
+        'billing' => ['title' => 'Billing', 'text' => 'We will send billing statements as fees and expenses are incurred. Each is due within 30 days. You will also receive a statement of your account each month while anything is owed or held in trust.'],
+        'your_part' => ['title' => 'Your part', 'text' => 'Please give us complete and truthful information and documents, tell us promptly of any change that may affect the matter, and keep us informed of how to reach you.'],
+        'no_guarantee' => ['title' => 'No guarantee', 'text' => 'We will handle your matter with competence and diligence, but we cannot and do not guarantee any particular outcome.'],
+        'conflicts' => ['title' => 'Conflicts of interest', 'text' => 'We have checked our records for conflicts of interest with you and the parties you have named and found none that prevents us from acting. Please tell us if you know of any other party involved.'],
+        'privacy' => ['title' => 'Confidentiality and personal data', 'text' => 'We keep your information confidential. By signing, you consent to our collecting and processing the personal data you give us, and that of the persons involved in the matter, for this engagement, in accordance with the Data Privacy Act of 2012 (RA 10173) and our privacy notice, which we will give you on request. Our Data Protection Officer can be reached at {dpo_email}.'],
+        'ending' => ['title' => 'Ending the engagement', 'text' => 'You may end this engagement at any time by telling us in writing. We may withdraw for good cause as the Code of Professional Responsibility and Accountability allows, with the court\'s approval where required. Fees earned and expenses incurred up to then remain payable.'],
+    ];
+
     public function __construct(private readonly Pipeline $pipeline) {}
 
     /**
@@ -93,18 +108,34 @@ class EngagementLetters
             "Thank you for choosing {$firm->name}. This letter sets out the terms on which we will act for you. Please read it carefully; by signing below you confirm that you agree to them.",
             "1. Scope of our engagement\n\n{$letter->scope}\n\nOur engagement does not include appeals, related cases or other matters unless we agree in writing.",
             "2. Professional fees\n\n".implode("\n\n", array_map(fn ($f) => "• {$f}", $fees))."\n\n{$taxes}",
-            '3. Expenses'."\n\n".'Filing and docket fees, transcripts, notarial fees, courier, travel outside the city and similar costs are billed at cost, without mark-up. We may ask you to deposit an amount to cover them; it will be held in trust for you, accounted for, and any balance returned when the engagement ends.',
-            '4. Billing'."\n\n".'We will send billing statements as fees and expenses are incurred. Each is due within 30 days. You will also receive a statement of your account each month while anything is owed or held in trust.',
-            '5. Your part'."\n\n".'Please give us complete and truthful information and documents, tell us promptly of any change that may affect the matter, and keep us informed of how to reach you.',
-            '6. No guarantee'."\n\n".'We will handle your matter with competence and diligence, but we cannot and do not guarantee any particular outcome.',
-            '7. Conflicts of interest'."\n\n".'We have checked our records for conflicts of interest with you and the parties you have named and found none that prevents us from acting. Please tell us if you know of any other party involved.',
-            '8. Confidentiality and personal data'."\n\n".'We keep your information confidential. By signing, you consent to our collecting and processing the personal data you give us, and that of the persons involved in the matter, for this engagement, in accordance with the Data Privacy Act of 2012 (RA 10173) and our privacy notice, which we will give you on request.'.($firm->dpo_email ? " Our Data Protection Officer can be reached at {$firm->dpo_email}." : ''),
-            '9. Ending the engagement'."\n\n".'You may end this engagement at any time by telling us in writing. We may withdraw for good cause as the Code of Professional Responsibility and Accountability allows, with the court\'s approval where required. Fees earned and expenses incurred up to then remain payable.',
+            ...$this->clauses($firm),
             "If these terms are acceptable, please sign below. We look forward to working with you.\n\nVery truly yours,\n\n\n".mb_strtoupper($lawyer?->name ?? $firm->name)."\n{$firm->name}",
             "CONFORME:\n\nI have read and agree to the terms of this engagement.",
         ];
 
         return implode("\n\n", $sections);
+    }
+
+    /**
+     * Sections 3 onwards: the firm's own wording where it has one, else the standard.
+     *
+     * @return list<string>
+     */
+    public function clauses(Firm $firm): array
+    {
+        $custom = $firm->engagement_clauses ?? [];
+        $sections = [];
+        $number = 3;
+        foreach (self::CLAUSES as $key => $clause) {
+            $text = filled($custom[$key] ?? null) ? $custom[$key] : $clause['text'];
+            // Without a DPO on file, the standard sentence naming one is left out.
+            $text = $firm->dpo_email
+                ? str_replace('{dpo_email}', $firm->dpo_email, $text)
+                : trim(preg_replace('/[^.]*\{dpo_email\}[^.]*\.?/', '', $text));
+            $sections[] = ($number++).". {$clause['title']}\n\n{$text}";
+        }
+
+        return $sections;
     }
 
     /** Fix the text and email the prospect a private link to sign. */

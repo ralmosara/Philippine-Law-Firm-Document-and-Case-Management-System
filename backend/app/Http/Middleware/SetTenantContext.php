@@ -21,6 +21,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SetTenantContext
 {
+    private const PORTAL_ENROLLMENT_PATHS = ['api/portal/me', 'api/portal/logout', 'api/portal/locale', 'api/portal/two-factor', 'api/portal/two-factor/*'];
+
     private const ENROLLMENT_PATHS = ['api/v1/auth/me', 'api/v1/auth/logout', 'api/v1/auth/two-factor', 'api/v1/auth/two-factor/*'];
 
     public function __construct(
@@ -42,6 +44,14 @@ class SetTenantContext
 
         if ($principal instanceof Client && ! $principal->portal_enabled) {
             abort(403, 'Portal access has been disabled for this account.');
+        }
+
+        if ($principal instanceof Client && $this->clientMustEnroll($request, $principal)) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 'two_factor_required',
+                'message' => __('Your lawyers require two-step sign-in for the portal. Set it up to continue.'),
+            ], 403);
         }
 
         if ($principal instanceof User && $this->mustEnrollInTwoFactor($request, $principal)) {
@@ -67,6 +77,15 @@ class SetTenantContext
      * When the firm requires two-step verification, a user without it can
      * only reach what they need to set it up (or sign out).
      */
+    private function clientMustEnroll(Request $request, Client $client): bool
+    {
+        if ($client->hasTwoFactorEnabled() || $request->is(self::PORTAL_ENROLLMENT_PATHS)) {
+            return false;
+        }
+
+        return Firm::whereKey($client->firm_id)->value('portal_two_factor') === 'required';
+    }
+
     private function mustEnrollInTwoFactor(Request $request, User $user): bool
     {
         if ($user->hasTwoFactorEnabled() || $request->is(self::ENROLLMENT_PATHS)) {

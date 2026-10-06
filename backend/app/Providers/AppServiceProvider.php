@@ -12,6 +12,9 @@ use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Budgets\MatterBudget;
 use App\Domain\Business\Models\EngagementLetter;
 use App\Domain\Business\Models\Prospect;
+use App\Domain\Compliance\Models\AmlReview;
+use App\Domain\Compliance\Models\BeneficialOwner;
+use App\Domain\Compliance\Models\ClientIdentification;
 use App\Domain\Compliance\Models\McleCredit;
 use App\Domain\Corporate\Models\CorporateObligation;
 use App\Domain\Corporate\Models\CorporateProfile;
@@ -108,6 +111,9 @@ class AppServiceProvider extends ServiceProvider
             'trust_reconciliation' => TrustReconciliation::class,
             'engagement_letter' => EngagementLetter::class,
             'payment_proof' => PaymentProof::class,
+            'client_identification' => ClientIdentification::class,
+            'beneficial_owner' => BeneficialOwner::class,
+            'aml_review' => AmlReview::class,
         ]);
 
         $this->configureDatabaseTenancy();

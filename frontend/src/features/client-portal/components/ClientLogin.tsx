@@ -16,6 +16,9 @@ export function ClientLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [challenge, setChallenge] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [recovery, setRecovery] = useState(false)
 
   if (session.isPending) return <PageLoader />
   if (session.data) return <Navigate to="/portal" replace />
@@ -24,11 +27,19 @@ export function ClientLogin() {
     e.preventDefault()
     setError(null)
     try {
-      await login.mutateAsync({ email, password })
+      const result = challenge
+        ? await login.mutateAsync(recovery ? { challenge, recovery_code: code } : { challenge, code })
+        : await login.mutateAsync({ email, password })
+      if ('two_factor' in result) {
+        setChallenge(result.challenge)
+        return
+      }
       navigate('/portal', { replace: true })
     } catch (err) {
       const apiError = ApiError.from(err)
-      setError(apiError.field('email') ?? apiError.message)
+      setError(apiError.field('email') ?? apiError.field('code') ?? apiError.field('recovery_code') ?? apiError.message)
+      // An expired or used challenge needs the password again.
+      if (challenge && /sign in again/i.test(apiError.message + (apiError.field('code') ?? ''))) setChallenge(null)
     }
   }
 
@@ -45,10 +56,24 @@ export function ClientLogin() {
           </div>
           <form onSubmit={submit} className="flex flex-col gap-5">
             <FormError message={error} />
-            <Field label={t('Email')}>{(a) => <Input {...a} type="email" autoComplete="username" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>
-            <Field label={t('Password')}>{(a) => <Input {...a} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
-            <Link to="/portal/forgot-password" className="self-end text-sm font-medium text-primary hover:underline">{t('Forgot password?')}</Link>
-            <Button type="submit" loading={login.isPending} className="w-full">{t('Sign in')}</Button>
+            {challenge ? (
+              <>
+                <Field label={recovery ? t('Recovery code') : t('Code from your authenticator app')}>
+                  {(a) => <Input {...a} inputMode={recovery ? 'text' : 'numeric'} autoComplete="one-time-code" required autoFocus value={code} onChange={(e) => setCode(e.target.value)} />}
+                </Field>
+                <button type="button" className="self-end text-sm font-medium text-primary hover:underline" onClick={() => { setRecovery(!recovery); setCode('') }}>
+                  {recovery ? t('Use the app code instead') : t('Lost your phone? Use a recovery code')}
+                </button>
+                <Button type="submit" loading={login.isPending} className="w-full">{t('Verify')}</Button>
+              </>
+            ) : (
+              <>
+                <Field label={t('Email')}>{(a) => <Input {...a} type="email" autoComplete="username" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>
+                <Field label={t('Password')}>{(a) => <Input {...a} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
+                <Link to="/portal/forgot-password" className="self-end text-sm font-medium text-primary hover:underline">{t('Forgot password?')}</Link>
+                <Button type="submit" loading={login.isPending} className="w-full">{t('Sign in')}</Button>
+              </>
+            )}
           </form>
           <p className="mt-6 text-center text-xs text-on-surface-variant">{t('No account? Your lawyer can give you portal access.')}</p>
         </div>

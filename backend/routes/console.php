@@ -6,6 +6,7 @@ use App\Domain\Billing\Statements\ClientStatements;
 use App\Domain\Billing\TimeReminders\TimeReminders;
 use App\Domain\Business\Pipeline;
 use App\Domain\Compliance\Services\CounselCredentials;
+use App\Domain\Compliance\Services\KnowYourClient;
 use App\Domain\Corporate\CorporateSecretarial;
 use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
@@ -186,3 +187,8 @@ Artisan::command('trust:reconciliation-reminder', function (TrustReconciliations
     $this->info("Sent {$reconciliations->remind()} trust reconciliation reminder(s).");
 })->purpose('On the 10th, remind partners when last month\'s trust funds are not yet reconciled with the bank and signed off');
 Schedule::command('trust:reconciliation-reminder')->dailyAt('09:15')->withoutOverlapping()->onOneServer();
+
+Artisan::command('kyc:remind-expiring', function (KnowYourClient $kyc) {
+    $this->info("Sent {$kyc->remindExpiring()} identification expiry reminder(s).");
+})->purpose('Tell the lawyers on a client\'s open matters when the client\'s identification is about to expire, or has');
+Schedule::command('kyc:remind-expiring')->dailyAt('08:20')->withoutOverlapping()->onOneServer();

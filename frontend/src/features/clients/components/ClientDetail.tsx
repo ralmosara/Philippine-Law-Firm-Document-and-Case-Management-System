@@ -6,8 +6,10 @@ import { MatterForm } from '@/features/matters/components/MatterForm'
 import { MatterStatusBadge } from '@/features/matters/components/StatusBadge'
 import { CorporateCard } from '@/features/corporate/components/CorporateCard'
 import { StatementCard } from '@/features/statements/StatementCard'
+import { KycCard } from '@/features/compliance/components/KnowYourClient'
 import { useTrustAccounts } from '@/features/trust/api'
-import { ApiError } from '@/shared/api/axios'
+import { ApiError, post } from '@/shared/api/axios'
+import { useApiMutation } from '@/shared/api/hooks'
 import type { Client } from '@/shared/api/types'
 import { date, dateTime, money } from '@/shared/lib/format'
 import { Button, DownloadButton } from '@/shared/ui/Button'
@@ -101,6 +103,7 @@ export function ClientDetail() {
             </div>
           </Card>
           {abilities.practice_law && <StatementCard clientId={c.id} clientEmail={c.email} />}
+          {abilities.practice_law && <KycCard clientId={c.id} corporate={c.type === 'corporate'} />}
           {c.type === 'corporate' && <CorporateCard clientId={c.id} clientName={c.name} />}
         </div>
       </div>
@@ -129,6 +132,7 @@ function PortalAccessDialog({ client, onClose }: { client: Client; onClose: () =
   const [method, setMethod] = useState<'keep' | 'invite' | 'password'>(client.portal_password_set ? 'keep' : 'invite')
   const [locale, setLocale] = useState<Locale>(client.portal_locale)
   const [error, setError] = useState<ApiError | null>(null)
+  const resetTwoFactor = useApiMutation(() => post(`/v1/clients/${client.id}/portal-two-factor/reset`), { invalidate: [['clients']], success: 'Two-step sign-in reset' })
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -181,6 +185,12 @@ function PortalAccessDialog({ client, onClose }: { client: Client; onClose: () =
               </Select>
             )}
           </Field>
+        )}
+        {client.portal_two_factor && (
+          <div className="flex items-center gap-3 rounded-[3px] bg-surface-container p-3 text-sm">
+            <p className="flex-1">Two-step sign-in is on. If the client has lost their phone, confirm who they are, then reset it; they set it up again at the next sign-in.</p>
+            <Button type="button" size="sm" variant="outlined" loading={resetTwoFactor.isPending} onClick={() => resetTwoFactor.mutate()}>Reset</Button>
+          </div>
         )}
         {enabled && method === 'password' && (
           <Field label="Password" required error={error?.field('password')} hint={`Share it with ${client.email} through a secure channel; they sign in at /portal.`}>

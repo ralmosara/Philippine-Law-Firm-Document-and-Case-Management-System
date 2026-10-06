@@ -9,6 +9,8 @@ import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Field, FormError, Select, Textarea } from '@/shared/ui/Form'
 import { Card, CardHeader, PageHeader } from '@/shared/ui/Layout'
 import { t } from '@/shared/lib/i18n'
+import { usePortalSession } from '../api'
+import { TwoFactorCard } from './PortalTwoFactor'
 
 export interface PortalPrivacy {
   notice: string
@@ -59,6 +61,7 @@ export function PrivacyConsentGate({ firmName, children }: { firmName: string; c
 /** "My data": the notice, and requests to see, correct or delete personal data. */
 export function PortalPrivacyPage() {
   const privacy = usePortalPrivacy()
+  const session = usePortalSession()
   const [type, setType] = useState('access')
   const [details, setDetails] = useState('')
   const send = useApiMutation((input: { type: string; details?: string }) => post<PortalPrivacy>('/portal/privacy/requests', input), {
@@ -81,6 +84,7 @@ export function PortalPrivacyPage() {
     <>
       <PageHeader title={t('My data')} description={t('Under the Data Privacy Act you may see, correct or delete the information we hold about you, object to how we use it, or get a copy to take elsewhere.')} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {session.data && <div className="lg:col-span-2"><TwoFactorCard client={session.data} /></div>}
         <Card>
           <CardHeader title={t('Make a request')} />
           <form onSubmit={submit} className="flex flex-col gap-4 p-5">

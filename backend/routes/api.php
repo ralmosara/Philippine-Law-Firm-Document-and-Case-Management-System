@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AssistantController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BooksController;
 use App\Http\Controllers\Api\V1\CalendarFeedController;
 use App\Http\Controllers\Api\V1\ClientAuthController;
 use App\Http\Controllers\Api\V1\ClientController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Api\V1\DocumentRequestController;
 use App\Http\Controllers\Api\V1\DocumentTemplateController;
 use App\Http\Controllers\Api\V1\EFilingController;
 use App\Http\Controllers\Api\V1\EInvoiceController;
+use App\Http\Controllers\Api\V1\EngagementClauseController;
 use App\Http\Controllers\Api\V1\EngagementLetterController;
 use App\Http\Controllers\Api\V1\ExhibitController;
 use App\Http\Controllers\Api\V1\ExpenseController;
@@ -34,6 +36,7 @@ use App\Http\Controllers\Api\V1\InvoiceAdjustmentController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoicePaymentController;
 use App\Http\Controllers\Api\V1\KnowledgeController;
+use App\Http\Controllers\Api\V1\KycController;
 use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MatterBudgetController;
 use App\Http\Controllers\Api\V1\MatterController;
@@ -70,6 +73,7 @@ use App\Http\Controllers\PortalDocumentRequestController;
 use App\Http\Controllers\PortalExperienceController;
 use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
+use App\Http\Controllers\PortalTwoFactorController;
 use App\Http\Controllers\PublicEngagementController;
 use App\Http\Controllers\PublicIntakeController;
 use App\Http\Middleware\SetPortalLocale;
@@ -128,6 +132,16 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('clients/options', [ClientController::class, 'options']);
         Route::apiResource('clients', ClientController::class);
         Route::put('clients/{client}/portal-access', [ClientController::class, 'portalAccess']);
+        Route::post('clients/{client}/portal-two-factor/reset', [PortalTwoFactorController::class, 'reset']);
+        Route::get('clients/{client}/kyc', [KycController::class, 'show']);
+        Route::post('clients/{client}/kyc/identifications', [KycController::class, 'storeIdentification']);
+        Route::delete('clients/{client}/kyc/identifications/{identification}', [KycController::class, 'destroyIdentification']);
+        Route::get('clients/{client}/kyc/identifications/{identification}/scan', [KycController::class, 'scan']);
+        Route::post('clients/{client}/kyc/owners', [KycController::class, 'storeOwner']);
+        Route::delete('clients/{client}/kyc/owners/{owner}', [KycController::class, 'destroyOwner']);
+        Route::put('clients/{client}/kyc/review', [KycController::class, 'review']);
+        Route::get('aml-reviews', [KycController::class, 'reviews']);
+        Route::post('aml-reviews/{review}/decide', [KycController::class, 'decide']);
 
         Route::get('matters/options', [MatterController::class, 'options']);
         Route::apiResource('matters', MatterController::class);
@@ -150,6 +164,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('prospects/{prospect}/stage', [ProspectController::class, 'move']);
         Route::post('prospects/{prospect}/notes', [ProspectController::class, 'note']);
         Route::post('prospects/{prospect}/convert', [ProspectController::class, 'convert']);
+        Route::get('engagement-clauses', [EngagementClauseController::class, 'show']);
+        Route::put('engagement-clauses', [EngagementClauseController::class, 'update']);
         Route::get('prospects/{prospect}/engagement-letters', [EngagementLetterController::class, 'index']);
         Route::post('prospects/{prospect}/engagement-letters', [EngagementLetterController::class, 'store']);
         Route::post('prospects/{prospect}/engagement-letters/{letter}/send', [EngagementLetterController::class, 'send']);
@@ -313,6 +329,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('e-invoices/{eInvoice}/retry', [EInvoiceController::class, 'retry']);
         Route::post('invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink']);
         Route::post('online-payments/{payment}/refund', [InvoiceController::class, 'refundOnlinePayment']);
+        Route::get('books', [BooksController::class, 'index']);
+        Route::get('books/{book}', [BooksController::class, 'show']);
         Route::get('filing-fees', [FilingFeeController::class, 'show']);
         Route::put('filing-fees', [FilingFeeController::class, 'update']);
         Route::post('matters/{matter}/filing-fees/estimate', [FilingFeeController::class, 'estimate']);
@@ -404,6 +422,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->group(function () {
     Route::middleware('throttle:login')->group(function () {
         Route::post('login', [ClientAuthController::class, 'login']);
+        Route::post('two-factor-challenge', [ClientAuthController::class, 'twoFactorChallenge']);
         Route::post('forgot-password', [ClientAuthController::class, 'forgotPassword']);
         Route::post('reset-password', [ClientAuthController::class, 'resetPassword']);
     });
@@ -412,6 +431,10 @@ Route::prefix('portal')->middleware(['throttle:api', SetPortalLocale::class])->g
         Route::get('me', [ClientAuthController::class, 'me']);
         Route::post('logout', [ClientAuthController::class, 'logout']);
         Route::put('locale', [ClientAuthController::class, 'locale']);
+        Route::post('two-factor', [PortalTwoFactorController::class, 'enable']);
+        Route::post('two-factor/confirm', [PortalTwoFactorController::class, 'confirm']);
+        Route::post('two-factor/disable', [PortalTwoFactorController::class, 'disable']);
+        Route::post('two-factor/recovery-codes', [PortalTwoFactorController::class, 'regenerateRecoveryCodes']);
         Route::post('feedback/{feedback}', [PortalExperienceController::class, 'respond'])->whereNumber('feedback');
         Route::get('calendar', [PortalExperienceController::class, 'calendar']);
         Route::post('calendar', [PortalExperienceController::class, 'createCalendar']);

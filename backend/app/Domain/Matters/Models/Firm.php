@@ -13,7 +13,7 @@ class Firm extends Model
     /** @use HasFactory<FirmFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'dpo_name', 'dpo_email', 'privacy_notice', 'privacy_notice_fil', 'retention_years', 'payment_reminders_enabled', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees', 'einvoicing_enabled', 'tin_branch_code', 'client_hearing_reminders', 'statements_enabled', 'statement_day', 'time_reminders_enabled', 'daily_target_minutes'];
+    protected $fillable = ['name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'dpo_name', 'dpo_email', 'privacy_notice', 'privacy_notice_fil', 'retention_years', 'payment_reminders_enabled', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees', 'einvoicing_enabled', 'tin_branch_code', 'client_hearing_reminders', 'statements_enabled', 'statement_day', 'time_reminders_enabled', 'daily_target_minutes', 'portal_two_factor', 'aml_threshold_cents'];
 
     /** The database defaults, so a firm just created in code behaves the same as one loaded. */
     protected $attributes = [
@@ -27,11 +27,12 @@ class Firm extends Model
         'statement_day' => 1,
         'time_reminders_enabled' => false,
         'daily_target_minutes' => 360,
+        'portal_two_factor' => 'optional',
     ];
 
     protected function casts(): array
     {
-        return ['filing_fee_schedule' => 'array', 'filing_fee_schedule_confirmed_at' => 'datetime', 'statements_enabled' => 'boolean', 'statement_day' => 'integer', 'time_reminders_enabled' => 'boolean', 'daily_target_minutes' => 'integer', 'client_hearing_reminders' => 'boolean', 'einvoicing_enabled' => 'boolean', 'has_employees' => 'boolean', 'pleading_font_size' => 'integer', 'payment_reminders_enabled' => 'boolean', 'privacy_notice_version' => 'integer', 'retention_years' => 'integer', 'privacy_notice_updated_at' => 'datetime', 'default_withholding_bps' => 'integer', 'vat_registered' => 'boolean', 'require_two_factor' => 'boolean', 'intake_enabled' => 'boolean', 'ai_enabled' => 'boolean'];
+        return ['aml_threshold_cents' => 'integer', 'aml_threshold_confirmed_at' => 'datetime', 'engagement_clauses' => 'array', 'filing_fee_schedule' => 'array', 'filing_fee_schedule_confirmed_at' => 'datetime', 'statements_enabled' => 'boolean', 'statement_day' => 'integer', 'time_reminders_enabled' => 'boolean', 'daily_target_minutes' => 'integer', 'client_hearing_reminders' => 'boolean', 'einvoicing_enabled' => 'boolean', 'has_employees' => 'boolean', 'pleading_font_size' => 'integer', 'payment_reminders_enabled' => 'boolean', 'privacy_notice_version' => 'integer', 'retention_years' => 'integer', 'privacy_notice_updated_at' => 'datetime', 'default_withholding_bps' => 'integer', 'vat_registered' => 'boolean', 'require_two_factor' => 'boolean', 'intake_enabled' => 'boolean', 'ai_enabled' => 'boolean'];
     }
 
     public function users(): HasMany

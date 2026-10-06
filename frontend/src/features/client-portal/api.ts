@@ -11,6 +11,9 @@ export interface PortalClient {
   locale: Locale
   /** For live message threads; null means poll. */
   realtime: { key: string } | null
+  two_factor_enabled?: boolean
+  /** The firm requires two-step sign-in for the portal. */
+  two_factor_required?: boolean
   firm: { id: number; name: string; email: string | null; phone: string | null; address: string | null }
 }
 
@@ -91,8 +94,11 @@ export function usePortalSession() {
 export function usePortalLogin() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (credentials: { email: string; password: string }) => post<{ client: PortalClient }>('/portal/login', credentials),
+    // Either the client (signed in) or a challenge for the authenticator code.
+    mutationFn: (credentials: { email: string; password: string } | { challenge: string; code?: string; recovery_code?: string }) =>
+      post<{ client: PortalClient } | { two_factor: true; challenge: string }>('challenge' in credentials ? '/portal/two-factor-challenge' : '/portal/login', credentials),
     onSuccess: (data) => {
+      if (!('client' in data)) return
       // A language picked on the sign-in screen is saved to the client's record.
       const chosen = getLocale()
       if (chosen !== data.client.locale) void put('/portal/locale', { locale: chosen })
