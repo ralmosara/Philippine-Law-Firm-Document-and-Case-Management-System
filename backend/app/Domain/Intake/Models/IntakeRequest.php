@@ -28,7 +28,7 @@ class IntakeRequest extends Model
     protected $fillable = [
         'firm_id', 'name', 'email', 'phone', 'client_type', 'case_type', 'description',
         'opposing_parties', 'preferred_times', 'consent_at', 'privacy_notice_version', 'ip_address', 'conflict_check_ids', 'conflict_status',
-        'incident_on', 'locale',
+        'incident_on', 'locale', 'answers',
     ];
 
     protected $attributes = [
@@ -42,6 +42,7 @@ class IntakeRequest extends Model
     {
         return [
             'incident_on' => DateOnly::class,
+            'answers' => 'array',
             'opposing_parties' => 'array',
             'preferred_times' => 'array',
             'conflict_check_ids' => 'array',

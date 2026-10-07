@@ -54,6 +54,10 @@ export const router = createBrowserRouter([
       { path: '/login', element: <LoginForm /> },
       { path: '/forgot-password', element: page(() => import('./features/auth/components/PasswordReset'), 'ForgotPasswordPage') },
       { path: '/reset-password', element: page(() => import('./features/auth/components/PasswordReset'), 'ResetPasswordPage') },
+      // A prospect's engagement letter, signed from the emailed link (no account).
+      { path: '/engage/:token', element: page(() => import('./features/prospects/components/EngagementSignPage'), 'EngagementSignPage') },
+      // Written consent to a possible conflict of interest, from the emailed link.
+      { path: '/consent/:token', element: page(() => import('./features/prospects/components/EngagementSignPage'), 'ConsentSignPage') },
       {
         // The client portal and the public consultation form, in English or Filipino.
         element: <PortalLocaleScope />,

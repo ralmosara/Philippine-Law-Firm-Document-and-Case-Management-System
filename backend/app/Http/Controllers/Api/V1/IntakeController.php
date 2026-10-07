@@ -125,6 +125,7 @@ class IntakeController extends Controller
             'assigned_lawyer' => $r->assignedLawyer ? ['id' => $r->assignedLawyer->id, 'name' => $r->assignedLawyer->name] : null,
             'created_at' => $r->created_at?->toIso8601String(),
             'incident_on' => $r->incident_on?->toDateString(),
+            'answers' => $r->answers ?? [],
             'locale' => $r->locale,
             // Only while the case is still to be decided; once taken, the matter tracks it.
             'prescription' => $r->isOpen() ? app(Prescriptions::class)->screen($r->incident_on, $r->prescription_period_key) : null,

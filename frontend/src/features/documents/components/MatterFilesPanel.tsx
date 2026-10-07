@@ -1,5 +1,7 @@
 import clsx from 'clsx'
-import { Download, FileUp, Paperclip, ShieldCheck, Trash2 } from 'lucide-react'
+import { CalendarPlus, Download, FileUp, Paperclip, ShieldCheck, Trash2 } from 'lucide-react'
+import { useAbilities } from '@/features/auth/session'
+import { OrderDeadlinesDialog } from '@/features/deadlines/components/OrderDeadlinesDialog'
 import { useId, useRef, useState, type DragEvent } from 'react'
 import { ApiError } from '@/shared/api/axios'
 import type { MatterFile } from '@/shared/api/types'
@@ -30,6 +32,8 @@ export function MatterFilesPanel({ matterId, canEdit }: { matterId: number; canE
   const files = useMatterFiles(matterId)
   const update = useUpdateFile()
   const [removing, setRemoving] = useState<MatterFile | null>(null)
+  const [reading, setReading] = useState<MatterFile | null>(null)
+  const abilities = useAbilities()
   const remove = useDeleteFile()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -81,6 +85,7 @@ export function MatterFilesPanel({ matterId, canEdit }: { matterId: number; canE
                   />
                 </Td>
                 <Td align="right" className="whitespace-nowrap">
+                  {abilities.practice_law && f.text_status === 'extracted' && <IconButton label={`Suggest deadlines from ${f.name}`} onClick={() => setReading(f)}><CalendarPlus className="size-4" /></IconButton>}
                   <a href={fileDownloadUrl(f.id)} download aria-label={`Download ${f.name}`} className="inline-flex size-9 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/8">
                     <Download className="size-4" />
                   </a>
@@ -92,6 +97,7 @@ export function MatterFilesPanel({ matterId, canEdit }: { matterId: number; canE
         </Table>
       )}
 
+      {reading && <OrderDeadlinesDialog matterId={matterId} file={reading} onClose={() => setReading(null)} />}
       <ConfirmDialog
         open={removing !== null}
         onClose={() => setRemoving(null)}

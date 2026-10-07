@@ -11,7 +11,9 @@ use App\Domain\Deadlines\Models\MatterDeadline;
 use App\Domain\Deadlines\Services\DeadlineCalculator;
 use App\Domain\Deadlines\Services\DeadlineScheduler;
 use App\Domain\Deadlines\Services\HearingClashes;
+use App\Domain\Deadlines\Services\OrderDeadlines;
 use App\Domain\Deadlines\Services\RecurringTasks;
+use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Matters\Models\Matter;
 use App\Domain\Staff\OutOfOffice;
 use App\Http\Controllers\Controller;
@@ -148,6 +150,14 @@ class MatterDeadlineController extends Controller
         }
 
         return new DeadlineResource($deadline->load(['matter', 'assignee', 'rule']));
+    }
+
+    /** The deadlines a court order filed with the matter appears to create, for a lawyer to check and schedule. */
+    public function suggestFromOrder(Request $request, Matter $matter, int $file, OrderDeadlines $orders): JsonResponse
+    {
+        Gate::authorize('practice-law');
+
+        return response()->json($orders->suggest($matter, MatterFile::where('matter_id', $matter->id)->findOrFail($file), $request->user()));
     }
 
     /** Hearings the same lawyer already has at that date and time (checked while scheduling). */

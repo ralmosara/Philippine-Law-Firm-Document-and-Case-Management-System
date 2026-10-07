@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/Button'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Checkbox } from '@/shared/ui/Form'
 import { Card, CardHeader, Table, Td, Th } from '@/shared/ui/Layout'
+import { PaymentProofQueue } from './PaymentProofQueue'
 import { useCollections, usePauseReminders, useRequestReplenishment, useSendReminder } from '../api'
 
 /** Everything that needs following up: unpaid invoices, low trust deposits, retainers. */
@@ -23,6 +24,7 @@ export function CollectionsTab() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PaymentProofQueue />
       <Card>
         <CardHeader
           title="Payment reminders"

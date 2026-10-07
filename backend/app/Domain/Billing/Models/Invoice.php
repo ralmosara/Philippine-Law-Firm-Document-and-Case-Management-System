@@ -116,6 +116,11 @@ class Invoice extends Model
         return $this->belongsTo(Matter::class);
     }
 
+    public function paymentProofs(): HasMany
+    {
+        return $this->hasMany(PaymentProof::class)->latest('id');
+    }
+
     public function writtenOffBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'written_off_by');

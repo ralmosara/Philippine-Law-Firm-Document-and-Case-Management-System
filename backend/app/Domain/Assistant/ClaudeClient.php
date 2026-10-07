@@ -19,9 +19,10 @@ class ClaudeClient
     /**
      * @param  list<array{type: string, text: string, cache_control?: array}>  $system
      * @param  list<array{role: string, content: string}>  $messages
-     * @return array{text: string, model: string, input_tokens: int, output_tokens: int, cache_read_tokens: int}
+     * @param  array<string, mixed>|null  $jsonSchema  when given, the answer is JSON matching it (structured outputs)
+     * @return array{text: string, model: string, input_tokens: int, output_tokens: int, cache_read_tokens: int, stop_reason: string}
      */
-    public function send(array $system, array $messages): array
+    public function send(array $system, array $messages, ?array $jsonSchema = null): array
     {
         try {
             $response = Http::withHeaders([
@@ -35,6 +36,7 @@ class ClaudeClient
                     'max_tokens' => (int) config('services.anthropic.max_tokens', 4096),
                     'system' => $system,
                     'messages' => $messages,
+                    ...$jsonSchema ? ['output_config' => ['format' => ['type' => 'json_schema', 'schema' => $jsonSchema]]] : [],
                 ]);
         } catch (ConnectionException) {
             throw new RuntimeException('The assistant could not be reached. Please try again.');
@@ -57,6 +59,7 @@ class ClaudeClient
             'input_tokens' => (int) $response->json('usage.input_tokens'),
             'output_tokens' => (int) $response->json('usage.output_tokens'),
             'cache_read_tokens' => (int) $response->json('usage.cache_read_input_tokens'),
+            'stop_reason' => (string) $response->json('stop_reason'),
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Domain\Business\Models\ProspectEvent;
 use App\Domain\Business\Notifications\ProspectFollowUp;
 use App\Domain\Compliance\Enums\ConflictCheckStatus;
 use App\Domain\Compliance\Services\ConflictChecker;
+use App\Domain\Intake\IntakeQuestions;
 use App\Domain\Intake\Models\IntakeRequest;
 use App\Domain\Matters\Actions\OpenMatter;
 use App\Domain\Matters\Enums\PartyRole;
@@ -67,7 +68,7 @@ class Pipeline
                 'phone' => $intake->phone,
                 'source' => 'website',
                 'case_type' => $intake->case_type,
-                'description' => $intake->description,
+                'description' => IntakeQuestions::withAnswers($intake->description, $intake->answers),
                 'opposing_parties' => $intake->opposing_parties ?? [],
                 'owner_id' => $intake->assigned_lawyer_id ?? $by->id,
                 'intake_request_id' => $intake->id,

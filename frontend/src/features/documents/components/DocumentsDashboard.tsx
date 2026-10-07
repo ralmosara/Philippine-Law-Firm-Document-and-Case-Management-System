@@ -2,6 +2,7 @@ import { FilePlus2 } from 'lucide-react'
 import { useState } from 'react'
 import { useAbilities } from '@/features/auth/session'
 import { useDebounced, useUrlPage, useUrlState } from '@/shared/lib/hooks'
+import { NotarialReports } from './NotarialReports'
 import { Button } from '@/shared/ui/Button'
 import { ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { SearchInput, Select } from '@/shared/ui/Form'
@@ -36,7 +37,7 @@ export function DocumentsDashboard() {
       {tab === 'documents' && <DocumentsTab />}
       {tab === 'files' && <FilesSearchTab />}
       {tab === 'templates' && <TemplatesManager />}
-      {tab === 'notarial' && abilities.practice_law && <NotarialRegister />}
+      {tab === 'notarial' && abilities.practice_law && <div className="flex flex-col gap-6"><NotarialReports /><NotarialRegister /></div>}
     </>
   )
 }

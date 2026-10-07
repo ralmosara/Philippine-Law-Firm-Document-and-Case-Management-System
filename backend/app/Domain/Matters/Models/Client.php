@@ -45,6 +45,8 @@ class Client extends Authenticatable implements HasLocalePreference
         'password',
         'remember_token',
         'calendar_token_hash',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $attributes = [
@@ -58,6 +60,14 @@ class Client extends Authenticatable implements HasLocalePreference
         'calendar_token_hash' => null,
         'calendar_created_at' => null,
         'calendar_accessed_at' => null,
+        'two_factor_secret' => null,
+        'two_factor_recovery_codes' => null,
+        'two_factor_confirmed_at' => null,
+        'kyc_risk' => null,
+        'is_pep' => false,
+        'kyc_notes' => null,
+        'kyc_reviewed_at' => null,
+        'kyc_reviewed_by' => null,
     ];
 
     protected function casts(): array
@@ -73,6 +83,11 @@ class Client extends Authenticatable implements HasLocalePreference
             'calendar_created_at' => 'datetime',
             'hearing_reminders' => 'boolean',
             'calendar_accessed_at' => 'datetime',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
+            'is_pep' => 'boolean',
+            'kyc_reviewed_at' => 'datetime',
         ];
     }
 
@@ -100,6 +115,12 @@ class Client extends Authenticatable implements HasLocalePreference
     public function routeNotificationForSms(): ?string
     {
         return filled($this->phone) ? (string) $this->phone : null;
+    }
+
+    /** Whether portal sign-in asks for an authenticator code after the password. */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
     }
 
     /** Emails to the client go out in the language they chose in the portal. */

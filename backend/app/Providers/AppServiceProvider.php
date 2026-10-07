@@ -7,9 +7,15 @@ use App\Domain\Billing\Models\Expense;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Billing\Models\InvoicePayment;
 use App\Domain\Billing\Models\Payment;
+use App\Domain\Billing\Models\PaymentProof;
 use App\Domain\Billing\Models\TimeEntry;
 use App\Domain\Budgets\MatterBudget;
+use App\Domain\Business\Models\EngagementLetter;
 use App\Domain\Business\Models\Prospect;
+use App\Domain\Compliance\Models\AmlReview;
+use App\Domain\Compliance\Models\BeneficialOwner;
+use App\Domain\Compliance\Models\ClientIdentification;
+use App\Domain\Compliance\Models\ConflictWaiver;
 use App\Domain\Compliance\Models\McleCredit;
 use App\Domain\Corporate\Models\CorporateObligation;
 use App\Domain\Corporate\Models\CorporateProfile;
@@ -19,6 +25,7 @@ use App\Domain\Directory\Models\Contact;
 use App\Domain\Directory\Models\Court;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
+use App\Domain\Documents\Models\NotarialReport;
 use App\Domain\Documents\Models\SignatureRequest;
 use App\Domain\Documents\Requests\DocumentRequest;
 use App\Domain\Documents\Scanning\ClamAvScanner;
@@ -104,6 +111,13 @@ class AppServiceProvider extends ServiceProvider
             'matter_feedback' => MatterFeedback::class,
             'matter_prescription' => MatterPrescription::class,
             'trust_reconciliation' => TrustReconciliation::class,
+            'engagement_letter' => EngagementLetter::class,
+            'payment_proof' => PaymentProof::class,
+            'client_identification' => ClientIdentification::class,
+            'beneficial_owner' => BeneficialOwner::class,
+            'aml_review' => AmlReview::class,
+            'notarial_report' => NotarialReport::class,
+            'conflict_waiver' => ConflictWaiver::class,
         ]);
 
         $this->configureDatabaseTenancy();

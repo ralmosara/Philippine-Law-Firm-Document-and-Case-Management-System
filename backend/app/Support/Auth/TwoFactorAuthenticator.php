@@ -2,6 +2,7 @@
 
 namespace App\Support\Auth;
 
+use App\Domain\Matters\Models\Client;
 use App\Models\User;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Collection;
@@ -9,7 +10,7 @@ use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 
 /**
- * Time-based one-time passwords (RFC 6238) for staff sign-in, compatible
+ * Time-based one-time passwords (RFC 6238) for staff and portal sign-in, compatible
  * with Google Authenticator, Microsoft Authenticator, 1Password, etc.
  */
 class TwoFactorAuthenticator
@@ -28,7 +29,7 @@ class TwoFactorAuthenticator
     }
 
     /** The otpauth:// URI an authenticator app reads from the QR code. */
-    public function provisioningUri(User $user, string $secret): string
+    public function provisioningUri(User|Client $user, string $secret): string
     {
         return $this->engine->getQRCodeUrl(config('app.name'), $user->email, $secret);
     }
@@ -37,7 +38,7 @@ class TwoFactorAuthenticator
      * Check a code against the user's secret. A code is accepted at most once,
      * so an intercepted code cannot be replayed within its validity window.
      */
-    public function verify(User $user, string $secret, string $code): bool
+    public function verify(User|Client $user, string $secret, string $code): bool
     {
         $code = preg_replace('/\s+/', '', $code);
 
@@ -47,7 +48,7 @@ class TwoFactorAuthenticator
 
         // With a non-null previous step the library returns the matched step,
         // and only accepts steps after it.
-        $key = "two-factor:last-step:{$user->id}";
+        $key = $user instanceof Client ? "two-factor:last-step:client:{$user->id}" : "two-factor:last-step:{$user->id}";
         $step = $this->engine->verifyKeyNewer($secret, $code, (int) $this->cache->get($key, 0), self::WINDOW);
 
         if (! is_int($step)) {
@@ -66,7 +67,7 @@ class TwoFactorAuthenticator
     }
 
     /** Consume a recovery code; each works exactly once. */
-    public function useRecoveryCode(User $user, string $code): bool
+    public function useRecoveryCode(User|Client $user, string $code): bool
     {
         $codes = $user->two_factor_recovery_codes ?? [];
         $code = Str::lower(trim($code));

@@ -20,6 +20,8 @@ class PdfRenderer
         'folio' => [0, 0, 612, 936],          // 8.5 x 13 in (long bond)
         'a4' => [0, 0, 595.28, 841.89],
         'letter' => [0, 0, 612, 792],
+        // Wide tables such as the books of accounts.
+        'a4-landscape' => [0, 0, 841.89, 595.28],
     ];
 
     /** The shared layout (pdf.layout) asks for "Page n of N" in its footer with this tag. */
@@ -76,11 +78,11 @@ class PdfRenderer
         );
     }
 
-    public function download(string $view, array $data, string $name): Response
+    public function download(string $view, array $data, string $name, string $paper = 'a4'): Response
     {
         $filename = (Str::slug($name) ?: 'document').'.pdf';
 
-        return response($this->render($view, $data), 200, [
+        return response($this->render($view, $data, $paper), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
             'X-Content-Type-Options' => 'nosniff',

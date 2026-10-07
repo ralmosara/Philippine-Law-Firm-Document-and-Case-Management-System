@@ -39,5 +39,26 @@
     </table>
 @endif
 
+@if ($waivers->isNotEmpty())
+    <h2 style="font-size: 12pt; margin: 14pt 0 4pt">Written consents</h2>
+    <table>
+        <thead><tr><th>Person</th><th>Status</th><th>Signed or answered</th></tr></thead>
+        @foreach ($waivers as $w)
+            <tr>
+                <td>{{ $w->signer_name }}<br><span class="muted">{{ $w->signer_email }}</span></td>
+                <td>{{ ['signed' => 'Consented', 'declined' => 'Declined', 'sent' => 'Awaiting answer', 'cancelled' => 'Withdrawn'][$w->status] ?? $w->status }}</td>
+                <td>@if ($w->responded_at){{ $w->responded_at->timezone('Asia/Manila')->format('F j, Y g:i A') }}@if ($w->status === 'signed') · signed as "{{ $w->signed_name }}" ({{ $w->signature_method }}) from {{ $w->signer_ip }}@endif @if ($w->decline_reason)<br>{{ $w->decline_reason }}@endif @else — @endif</td>
+            </tr>
+        @endforeach
+    </table>
+    @foreach ($waivers->where('status', 'signed') as $w)
+        <div style="page-break-before: always"></div>
+        <h2 style="font-size: 12pt; margin: 0 0 6pt">Consent signed by {{ $w->signer_name }}</h2>
+        <div style="white-space: pre-wrap; font-size: 9.5pt">{{ $w->content }}</div>
+        <p style="margin-top: 10pt">@if ($w->signature_method === 'typed')/s/ {{ $w->signed_name }}@else [Signed electronically: {{ $w->signed_name }}]@endif</p>
+        <p class="muted">Signed {{ $w->responded_at->timezone('Asia/Manila')->format('F j, Y g:i A') }} from {{ $w->signer_ip }}. Text fingerprint (SHA-256): {{ $w->content_sha256 }}</p>
+    @endforeach
+@endif
+
 <p class="muted" style="margin-top: 18pt">Matching ignores word order, punctuation, titles and company forms, joins name particles (de la, delos) and allows small misspellings. A match is a lead to review, not a finding that a conflict exists.</p>
 @endsection

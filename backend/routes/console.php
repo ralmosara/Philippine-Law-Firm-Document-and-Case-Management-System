@@ -6,6 +6,7 @@ use App\Domain\Billing\Statements\ClientStatements;
 use App\Domain\Billing\TimeReminders\TimeReminders;
 use App\Domain\Business\Pipeline;
 use App\Domain\Compliance\Services\CounselCredentials;
+use App\Domain\Compliance\Services\KnowYourClient;
 use App\Domain\Corporate\CorporateSecretarial;
 use App\Domain\Deadlines\ClientHearingNotices;
 use App\Domain\Deadlines\Services\ReminderDispatcher;
@@ -13,6 +14,7 @@ use App\Domain\Documents\Jobs\ExtractMatterFileText;
 use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Documents\Requests\DocumentRequests;
 use App\Domain\Documents\Search\FileTextExtractor;
+use App\Domain\Documents\Services\NotarialReports;
 use App\Domain\EInvoicing\EInvoicing;
 use App\Domain\Matters\Models\Firm;
 use App\Domain\Prescription\Prescriptions;
@@ -186,3 +188,13 @@ Artisan::command('trust:reconciliation-reminder', function (TrustReconciliations
     $this->info("Sent {$reconciliations->remind()} trust reconciliation reminder(s).");
 })->purpose('On the 10th, remind partners when last month\'s trust funds are not yet reconciled with the bank and signed off');
 Schedule::command('trust:reconciliation-reminder')->dailyAt('09:15')->withoutOverlapping()->onOneServer();
+
+Artisan::command('kyc:remind-expiring', function (KnowYourClient $kyc) {
+    $this->info("Sent {$kyc->remindExpiring()} identification expiry reminder(s).");
+})->purpose('Tell the lawyers on a client\'s open matters when the client\'s identification is about to expire, or has');
+Schedule::command('kyc:remind-expiring')->dailyAt('08:20')->withoutOverlapping()->onOneServer();
+
+Artisan::command('notarial:remind', function (NotarialReports $reports) {
+    $this->info("Sent {$reports->remind()} notarial report reminder(s).");
+})->purpose('On the 1st, 5th and 9th, remind notaries whose report for last month is not yet marked sent to the clerk of court');
+Schedule::command('notarial:remind')->dailyAt('08:10')->withoutOverlapping()->onOneServer();

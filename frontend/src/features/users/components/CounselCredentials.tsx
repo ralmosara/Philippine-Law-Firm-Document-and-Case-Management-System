@@ -28,6 +28,9 @@ export function CounselCredentials() {
     ptr_date: user.ptr_date ?? '',
     ptr_place: user.ptr_place ?? '',
     mcle_compliance_number: user.mcle_compliance_number ?? '',
+    notarial_commission_number: user.notarial_commission_number ?? '',
+    notarial_commission_place: user.notarial_commission_place ?? '',
+    notarial_commission_expires_on: user.notarial_commission_expires_on ?? '',
   })
   const [lifetime, setLifetime] = useState(user.ibp_lifetime ?? false)
   const error = save.error ? ApiError.from(save.error) : null
@@ -59,6 +62,9 @@ export function CounselCredentials() {
         <Field label={lifetime ? 'IBP Lifetime Member No.' : 'IBP O.R. No.'} error={error?.field('ibp_number')}>{(a) => <Input {...a} value={form.ibp_number} onChange={set('ibp_number')} placeholder="123456" />}</Field>
         {!lifetime && <Field label="IBP date paid" error={error?.field('ibp_date')}>{(a) => <Input {...a} type="date" value={form.ibp_date} onChange={set('ibp_date')} />}</Field>}
         <Field label="IBP chapter" error={error?.field('ibp_chapter')}>{(a) => <Input {...a} value={form.ibp_chapter} onChange={set('ibp_chapter')} placeholder="Makati" />}</Field>
+        <Field label="Notarial commission No." hint="If you are a notary public: printed on the monthly report." error={error?.field('notarial_commission_number')}>{(a) => <Input {...a} value={form.notarial_commission_number} onChange={set('notarial_commission_number')} />}</Field>
+        <Field label="Commissioned for" error={error?.field('notarial_commission_place')}>{(a) => <Input {...a} value={form.notarial_commission_place} onChange={set('notarial_commission_place')} placeholder="Makati City" />}</Field>
+        <Field label="Commission valid until" error={error?.field('notarial_commission_expires_on')}>{(a) => <Input {...a} type="date" value={form.notarial_commission_expires_on} onChange={set('notarial_commission_expires_on')} />}</Field>
         <Checkbox label="IBP lifetime member (no annual dues)" checked={lifetime} onChange={(e) => setLifetime(e.target.checked)} className="sm:col-span-3" />
 
         <div className="sm:col-span-3"><FormError message={error && !Object.keys(error.errors).length ? error.message : null} /></div>

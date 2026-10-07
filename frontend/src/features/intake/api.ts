@@ -9,6 +9,8 @@ export interface PublicIntakePage {
   firm: { name: string; address: string | null; phone: string | null; email: string | null }
   message: string | null
   case_types: { value: string; label: string }[]
+  /** The firm's own questions, by type of case. */
+  questions?: Record<string, { key: string; label: string; type: 'text' | 'textarea' | 'date' | 'number'; required: boolean; hint: string | null }[]>
   privacy_notice?: string
 }
 
@@ -23,6 +25,8 @@ export interface IntakeForm {
   incident_on: string | null
   opposing_parties: string[]
   preferred_times: string[]
+  /** Answers to the firm's questions for the chosen type of case, by question key. */
+  answers: Record<string, string>
   consent: boolean
   website: string
 }
@@ -38,6 +42,7 @@ export interface IntakeRequest {
   assigned_lawyer: { id: number; name: string } | null
   created_at: string
   incident_on: string | null
+  answers?: { label: string; answer: string }[]
   locale: 'en' | 'fil'
   /** The lawyer's prescription screening, while the request is open. */
   prescription: { period_key: string; label: string; basis: string; last_day: string; file_by: string; days_left: number; state: 'running' | 'soon' | 'urgent' | 'prescribed' } | null

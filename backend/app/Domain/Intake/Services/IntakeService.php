@@ -4,6 +4,7 @@ namespace App\Domain\Intake\Services;
 
 use App\Domain\Compliance\Enums\ConflictCheckStatus;
 use App\Domain\Compliance\Services\ConflictChecker;
+use App\Domain\Intake\IntakeQuestions;
 use App\Domain\Intake\Models\IntakeRequest;
 use App\Domain\Intake\Notifications\ConsultationScheduled;
 use App\Domain\Intake\Notifications\IntakeDeclined;
@@ -67,6 +68,7 @@ class IntakeService
                         'conflict_check_ids' => $checks->pluck('id')->all(),
                         'conflict_status' => $checks->contains(fn ($c) => $c->status === ConflictCheckStatus::Flagged) ? 'flagged' : 'clear',
                         'incident_on' => $data['incident_on'] ?? null,
+                        'answers' => $data['answers'] ?? null,
                         // The language the form was filled in: the applicant's emails follow it.
                         'locale' => PortalLocale::normalize(app()->getLocale()),
                     ]);
@@ -145,7 +147,7 @@ class IntakeService
                 'client_id' => $client->id,
                 'title' => $title ?: "{$request->name}: {$request->case_type}",
                 'case_type' => $request->case_type,
-                'description' => $request->description,
+                'description' => IntakeQuestions::withAnswers($request->description, $request->answers),
                 'responsible_lawyer_id' => $lawyerId ?? $request->assigned_lawyer_id,
             ], $by, array_map(fn (string $name) => ['role' => PartyRole::AdverseParty->value, 'name' => $name], $request->opposing_parties ?? []));
 

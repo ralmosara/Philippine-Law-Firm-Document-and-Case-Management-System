@@ -45,6 +45,9 @@ class FirmController extends Controller
             'statement_day' => ['sometimes', 'integer', 'min:1', 'max:28'],
             'time_reminders_enabled' => ['sometimes', 'boolean'],
             'daily_target_minutes' => ['sometimes', 'integer', 'min:30', 'max:720'],
+            'portal_two_factor' => ['sometimes', Rule::in(['optional', 'required'])],
+            // Trust deposits a client makes in one day at or above this are flagged for an AML review.
+            'aml_threshold_cents' => ['sometimes', 'integer', 'min:100000', 'max:100000000000'],
             'pleading_paper' => ['sometimes', Rule::in(array_keys(DocxWriter::PAPERS))],
             'pleading_font' => ['sometimes', 'string', 'max:64', 'regex:/^[A-Za-z0-9 ]+$/'],
             'pleading_font_size' => ['sometimes', 'integer', 'min:10', 'max:16'],
@@ -70,6 +73,9 @@ class FirmController extends Controller
 
         $before = $firm->only(array_keys($validated));
         $firm->update($validated);
+        if (array_key_exists('aml_threshold_cents', $validated)) {
+            $firm->forceFill(['aml_threshold_confirmed_at' => now()])->save();
+        }
 
         if ($firm->wasChanged()) {
             AuditLog::record('firm_settings_updated', $firm->id, $user, null, [
@@ -92,7 +98,7 @@ class FirmController extends Controller
     private function payload(Firm $firm): array
     {
         return [
-            ...$firm->only(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'payment_reminders_enabled', 'client_hearing_reminders', 'statements_enabled', 'statement_day', 'time_reminders_enabled', 'daily_target_minutes', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees']),
+            ...$firm->only(['id', 'name', 'tin', 'address', 'email', 'phone', 'vat_registered', 'require_two_factor', 'slug', 'intake_enabled', 'intake_message', 'ai_enabled', 'default_withholding_bps', 'payment_reminders_enabled', 'client_hearing_reminders', 'statements_enabled', 'statement_day', 'time_reminders_enabled', 'daily_target_minutes', 'portal_two_factor', 'aml_threshold_cents', 'aml_threshold_confirmed_at', 'pleading_paper', 'pleading_font', 'pleading_font_size', 'taxpayer_type', 'withholding_atc', 'has_employees']),
             'ai_configured' => filled(config('services.anthropic.api_key')),
             'users_without_two_factor' => User::where('firm_id', $firm->id)
                 ->where('is_active', true)

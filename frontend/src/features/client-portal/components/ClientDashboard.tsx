@@ -11,6 +11,7 @@ import { usePayInvoice, usePortalInvoices, usePortalMatters, usePortalSession, u
 import { DocumentRequestsBanner } from './PortalDocumentRequests'
 import { t } from '@/shared/lib/i18n'
 import { CalendarCard } from './PortalExperience'
+import { PaymentProofControls } from './PortalPaymentProof'
 
 export function ClientDashboard() {
   const session = usePortalSession()
@@ -92,6 +93,7 @@ export function ClientDashboard() {
                     </span>
                     {i.status === 'partially_paid' && <span className="text-xs text-on-surface-variant">{t('Balance')} {money(i.balance_cents)}</span>}
                   </div>
+                  <PaymentProofControls invoice={i} />
                   {i.can_pay_online && (
                     <Button icon={<CreditCard className="size-4" />} className="h-11 w-full" loading={pay.isPending && pay.variables === i.id} disabled={pay.isPending} onClick={() => pay.mutate(i.id)}>
                       {i.status === 'partially_paid' ? t('Pay {amount}', { amount: money(i.balance_cents) }) : t('Pay')}
@@ -119,6 +121,7 @@ export function ClientDashboard() {
                           </Button>
                         </div>
                       )}
+                      <PaymentProofControls invoice={i} />
                     </Td>
                   </tr>
                 ))}

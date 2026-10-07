@@ -76,6 +76,9 @@ export interface FirmSettings {
   statement_day: number
   time_reminders_enabled: boolean
   daily_target_minutes: number
+  portal_two_factor: 'optional' | 'required'
+  aml_threshold_cents: number
+  aml_threshold_confirmed_at: string | null
   pleading_paper: 'folio' | 'a4' | 'letter'
   pleading_font: string
   pleading_font_size: number
