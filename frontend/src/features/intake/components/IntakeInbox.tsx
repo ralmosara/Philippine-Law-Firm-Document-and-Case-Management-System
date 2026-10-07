@@ -120,6 +120,11 @@ export function IntakeReview() {
           <Card>
             <CardHeader title="Their concern" />
             <p className="p-5 text-sm leading-6 whitespace-pre-wrap">{r.description}</p>
+            {!!r.answers?.length && (
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-2 border-t border-outline-variant p-5 text-sm sm:grid-cols-[max-content_1fr]">
+                {r.answers.map((a) => <div key={a.label} className="contents"><dt className="text-on-surface-variant">{a.label}</dt><dd>{a.answer}</dd></div>)}
+              </dl>
+            )}
           </Card>
           {open && <PrescriptionScreen request={r} canEdit={abilities.work_matters} />}
           <Card>

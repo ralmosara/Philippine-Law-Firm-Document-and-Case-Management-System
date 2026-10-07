@@ -42,6 +42,9 @@ export interface User extends UserRef {
   ibp_date?: string | null
   ibp_chapter?: string | null
   ibp_lifetime?: boolean
+  notarial_commission_number?: string | null
+  notarial_commission_place?: string | null
+  notarial_commission_expires_on?: string | null
   /** For lawyers: PTR or IBP details missing or not for this year. */
   credential_problems?: string[]
   away_from?: string | null

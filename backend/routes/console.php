@@ -14,6 +14,7 @@ use App\Domain\Documents\Jobs\ExtractMatterFileText;
 use App\Domain\Documents\Models\MatterFile;
 use App\Domain\Documents\Requests\DocumentRequests;
 use App\Domain\Documents\Search\FileTextExtractor;
+use App\Domain\Documents\Services\NotarialReports;
 use App\Domain\EInvoicing\EInvoicing;
 use App\Domain\Matters\Models\Firm;
 use App\Domain\Prescription\Prescriptions;
@@ -192,3 +193,8 @@ Artisan::command('kyc:remind-expiring', function (KnowYourClient $kyc) {
     $this->info("Sent {$kyc->remindExpiring()} identification expiry reminder(s).");
 })->purpose('Tell the lawyers on a client\'s open matters when the client\'s identification is about to expire, or has');
 Schedule::command('kyc:remind-expiring')->dailyAt('08:20')->withoutOverlapping()->onOneServer();
+
+Artisan::command('notarial:remind', function (NotarialReports $reports) {
+    $this->info("Sent {$reports->remind()} notarial report reminder(s).");
+})->purpose('On the 1st, 5th and 9th, remind notaries whose report for last month is not yet marked sent to the clerk of court');
+Schedule::command('notarial:remind')->dailyAt('08:10')->withoutOverlapping()->onOneServer();

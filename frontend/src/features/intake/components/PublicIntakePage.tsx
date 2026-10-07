@@ -12,7 +12,7 @@ import { usePublicIntake, useSubmitIntake, type IntakeForm } from '../api'
 
 const EMPTY: IntakeForm = {
   name: '', email: '', phone: '', client_type: 'individual', case_type: '', description: '', incident_on: '',
-  opposing_parties: [''], preferred_times: [''], consent: false, website: '',
+  opposing_parties: [''], preferred_times: [''], answers: {}, consent: false, website: '',
 }
 
 /**
@@ -43,6 +43,7 @@ export function PublicIntakePage() {
     return <main className="mx-auto max-w-lg px-4 py-24"><EmptyState title={t('This page isn’t available')} description={t('The firm may not be accepting online requests. Please contact them directly.')} /></main>
   }
   const { firm, message, case_types, privacy_notice } = page.data
+  const questions = (form.case_type && page.data.questions?.[form.case_type]) || []
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -51,6 +52,8 @@ export function PublicIntakePage() {
       const result = await submit.mutateAsync({
         ...form,
         incident_on: form.incident_on || null,
+        // Only the answers to the chosen type's questions.
+        answers: Object.fromEntries(questions.map((q) => [q.key, form.answers[q.key] ?? ''])),
         opposing_parties: form.opposing_parties.map((p) => p.trim()).filter(Boolean),
         // datetime-local values are Philippine time as typed; send them as-is.
         preferred_times: form.preferred_times.filter(Boolean),
@@ -124,6 +127,13 @@ export function PublicIntakePage() {
                 <Field label={t('When did this happen or start?')} error={error?.field('incident_on')} hint={t('An approximate date is fine. Some claims must be filed within a set time.')}>
                   {(a) => <Input {...a} type="date" max={today()} value={form.incident_on ?? ''} onChange={(e) => set('incident_on', e.target.value)} />}
                 </Field>
+                {questions.map((q) => (
+                  <Field key={q.key} label={q.label} required={q.required} hint={q.hint ?? undefined} error={error?.field(`answers.${q.key}`)} className={q.type === 'textarea' ? 'sm:col-span-2' : undefined}>
+                    {(a) => q.type === 'textarea'
+                      ? <Textarea {...a} rows={3} required={q.required} value={form.answers[q.key] ?? ''} onChange={(e) => set('answers', { ...form.answers, [q.key]: e.target.value })} />
+                      : <Input {...a} type={q.type === 'date' ? 'date' : 'text'} inputMode={q.type === 'number' ? 'decimal' : undefined} required={q.required} value={form.answers[q.key] ?? ''} onChange={(e) => set('answers', { ...form.answers, [q.key]: e.target.value })} />}
+                  </Field>
+                ))}
                 <Field label={t('Briefly, what happened?')} required error={error?.field('description')} className="sm:col-span-2" hint={t('A short summary is enough. Please don’t include confidential documents yet.')}>
                   {(a) => <Textarea {...a} rows={5} required maxLength={5000} value={form.description} onChange={(e) => set('description', e.target.value)} />}
                 </Field>

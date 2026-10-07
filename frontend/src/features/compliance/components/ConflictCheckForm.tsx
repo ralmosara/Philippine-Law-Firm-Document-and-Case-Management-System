@@ -1,15 +1,18 @@
+import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, CheckCircle2, ShieldCheck, FileDown } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAbilities } from '@/features/auth/session'
+import { get } from '@/shared/api/axios'
 import type { ConflictCheck, ConflictStatus } from '@/shared/api/types'
 import { dateTime } from '@/shared/lib/format'
-import { useUrlPage } from '@/shared/lib/hooks'
+import { useUrlPage, useUrlState } from '@/shared/lib/hooks'
 import { Button, DownloadButton } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/Dialog'
 import { Badge, EmptyState, ErrorState, PageLoader } from '@/shared/ui/Feedback'
 import { Input } from '@/shared/ui/Form'
 import { Card, CardHeader, Pagination, Table, Td, Th, Tr } from '@/shared/ui/Layout'
+import { ConflictWaivers } from './ConflictWaivers'
 import { useConflictChecks, useResolveConflict, useRunConflictCheck } from '../api'
 
 const statusBadge: Record<ConflictStatus, [string, 'success' | 'danger' | 'warning' | 'neutral']> = {
@@ -29,10 +32,15 @@ export function ConflictCheckForm() {
   const run = useRunConflictCheck()
   const [page, setPage] = useUrlPage()
   const history = useConflictChecks(page)
+  // The check on screen, kept in the URL so a past check (and its consents)
+  // can be reopened from the history or from a notification.
+  const [openId, setOpenId] = useUrlState('check')
+  const opened = useQuery({ queryKey: ['conflict-checks', 'show', openId], queryFn: () => get<ConflictCheck>(`/v1/conflict-checks/${openId}`), enabled: openId !== '' })
+  const shown = opened.data ?? (run.data && String(run.data.id) === openId ? run.data : undefined)
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (name.trim().length >= 2) run.mutate(name.trim())
+    if (name.trim().length >= 2) run.mutate(name.trim(), { onSuccess: (c) => setOpenId(String(c.id)) })
   }
 
   return (
@@ -43,7 +51,7 @@ export function ConflictCheckForm() {
           <Input aria-label="Name to check" placeholder="Prospective client or adverse party, e.g. Juan Dela Cruz" value={name} onChange={(e) => setName(e.target.value)} className="flex-1" />
           <Button type="submit" loading={run.isPending} disabled={name.trim().length < 2} icon={<ShieldCheck className="size-4" />}>Check</Button>
         </form>
-        {run.data && <ConflictResult check={run.data} />}
+        {shown && <ConflictResult check={shown} />}
       </Card>
 
       <Card>
@@ -62,7 +70,9 @@ export function ConflictCheckForm() {
                 const [label, tone] = statusBadge[c.status]
                 return (
                   <Tr key={c.id}>
-                    <Td className="font-medium">{c.search_term}{c.resolution_notes && <p className="text-xs font-normal text-on-surface-variant">{c.resolution_notes}</p>}</Td>
+                    <Td className="font-medium">
+                      <button type="button" className="text-left text-primary hover:underline" onClick={() => { setOpenId(String(c.id)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{c.search_term}</button>
+                      {c.resolution_notes && <p className="text-xs font-normal text-on-surface-variant">{c.resolution_notes}</p>}</Td>
                     <Td><Badge tone={tone}>{label}</Badge></Td>
                     <Td align="right">{c.match_count}</Td>
                     <Td className="text-on-surface-variant">{c.requester?.name}{c.resolver && <div className="text-xs">Resolved by {c.resolver.name}</div>}</Td>
@@ -119,6 +129,7 @@ function ConflictResult({ check }: { check: ConflictCheck }) {
           ))}
         </tbody>
       </Table>
+      {abilities.practice_law && check.status !== 'declined' && <div className="mt-4"><ConflictWaivers checkId={check.id} searchTerm={check.search_term} /></div>}
       <div className="flex justify-end px-5 py-3">
         <DownloadButton href={`/api/v1/conflict-checks/${check.id}/pdf`} size="sm" icon={<FileDown className="size-4" />}>Download report for the file</DownloadButton>
       </div>

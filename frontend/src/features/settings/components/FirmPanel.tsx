@@ -12,6 +12,7 @@ import { useFirmSettings, useSaveFirmSettings, type FirmSettings } from '../api'
 import { StatementsCard, TimeRemindersCard } from './RevenueReminders'
 import { FilingFeeTableCard } from '@/features/billing/components/FilingFees'
 import { ClientSafeguardsCard, EngagementClausesCard } from './ComplianceSettings'
+import { IntakeQuestionsCard } from '@/features/intake/components/IntakeQuestionsCard'
 
 /** The firm's details (printed on invoices) and firm-wide security rules. */
 export function FirmPanel() {
@@ -32,6 +33,7 @@ export function FirmPanel() {
       <FilingFeeTableCard />
       <ClientSafeguardsCard firm={firm.data} />
       <EngagementClausesCard />
+      <IntakeQuestionsCard />
     </div>
   )
 }

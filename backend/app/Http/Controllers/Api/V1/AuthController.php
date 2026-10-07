@@ -168,6 +168,9 @@ class AuthController extends Controller
             'ibp_date' => ['nullable', 'date', 'before_or_equal:today'],
             'ibp_chapter' => ['nullable', 'string', 'max:100'],
             'ibp_lifetime' => ['sometimes', 'boolean'],
+            'notarial_commission_number' => ['nullable', 'string', 'max:60'],
+            'notarial_commission_place' => ['nullable', 'string', 'max:120'],
+            'notarial_commission_expires_on' => ['nullable', 'date'],
         ]));
 
         return response()->json(['user' => new UserResource($request->user()->fresh())]);

@@ -4,12 +4,14 @@ use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AssistantController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BillingRunController;
 use App\Http\Controllers\Api\V1\BooksController;
 use App\Http\Controllers\Api\V1\CalendarFeedController;
 use App\Http\Controllers\Api\V1\ClientAuthController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\ConflictCheckController;
+use App\Http\Controllers\Api\V1\ConflictWaiverController;
 use App\Http\Controllers\Api\V1\CorporateController;
 use App\Http\Controllers\Api\V1\CourtDayController;
 use App\Http\Controllers\Api\V1\DeadlineRuleController;
@@ -32,6 +34,7 @@ use App\Http\Controllers\Api\V1\FirmController;
 use App\Http\Controllers\Api\V1\HolidayController;
 use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\IntakeController;
+use App\Http\Controllers\Api\V1\IntakeQuestionController;
 use App\Http\Controllers\Api\V1\InvoiceAdjustmentController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\InvoicePaymentController;
@@ -47,6 +50,7 @@ use App\Http\Controllers\Api\V1\MatterPartyController;
 use App\Http\Controllers\Api\V1\McleController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\NotarialEntryController;
+use App\Http\Controllers\Api\V1\NotarialReportController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PaymentProofController;
 use App\Http\Controllers\Api\V1\PleadingController;
@@ -74,6 +78,7 @@ use App\Http\Controllers\PortalExperienceController;
 use App\Http\Controllers\PortalMessageController;
 use App\Http\Controllers\PortalPrivacyController;
 use App\Http\Controllers\PortalTwoFactorController;
+use App\Http\Controllers\PublicConsentController;
 use App\Http\Controllers\PublicEngagementController;
 use App\Http\Controllers\PublicIntakeController;
 use App\Http\Middleware\SetPortalLocale;
@@ -164,6 +169,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('prospects/{prospect}/stage', [ProspectController::class, 'move']);
         Route::post('prospects/{prospect}/notes', [ProspectController::class, 'note']);
         Route::post('prospects/{prospect}/convert', [ProspectController::class, 'convert']);
+        Route::get('intake-questions', [IntakeQuestionController::class, 'show']);
+        Route::put('intake-questions', [IntakeQuestionController::class, 'update']);
         Route::get('engagement-clauses', [EngagementClauseController::class, 'show']);
         Route::put('engagement-clauses', [EngagementClauseController::class, 'update']);
         Route::get('prospects/{prospect}/engagement-letters', [EngagementLetterController::class, 'index']);
@@ -293,6 +300,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('signature-requests/{signatureRequest}/cancel', [SignatureRequestController::class, 'cancel']);
 
         Route::get('notarial-entries/next', [NotarialEntryController::class, 'next']);
+        Route::get('notarial-reports', [NotarialReportController::class, 'index']);
+        Route::get('notarial-reports/{month}/pdf', [NotarialReportController::class, 'pdf']);
+        Route::post('notarial-reports/{month}/submitted', [NotarialReportController::class, 'submit']);
         Route::apiResource('notarial-entries', NotarialEntryController::class)->only(['index', 'store']);
 
         Route::apiResource('trust-accounts', TrustAccountController::class)->only(['index', 'store', 'show']);
@@ -329,6 +339,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('e-invoices/{eInvoice}/retry', [EInvoiceController::class, 'retry']);
         Route::post('invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink']);
         Route::post('online-payments/{payment}/refund', [InvoiceController::class, 'refundOnlinePayment']);
+        Route::get('billing-run', [BillingRunController::class, 'index']);
+        Route::post('billing-run/draft', [BillingRunController::class, 'draft']);
+        Route::post('billing-run/issue', [BillingRunController::class, 'issue']);
         Route::get('books', [BooksController::class, 'index']);
         Route::get('books/{book}', [BooksController::class, 'show']);
         Route::get('filing-fees', [FilingFeeController::class, 'show']);
@@ -402,6 +415,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::apiResource('conflict-checks', ConflictCheckController::class)->only(['index', 'store', 'show']);
         Route::post('conflict-checks/{conflictCheck}/resolve', [ConflictCheckController::class, 'resolve']);
         Route::get('conflict-checks/{conflictCheck}/pdf', [ConflictCheckController::class, 'pdf']);
+        Route::get('conflict-checks/{conflictCheck}/waivers', [ConflictWaiverController::class, 'index']);
+        Route::post('conflict-checks/{conflictCheck}/waivers/draft', [ConflictWaiverController::class, 'draft']);
+        Route::post('conflict-checks/{conflictCheck}/waivers', [ConflictWaiverController::class, 'store']);
+        Route::post('conflict-waivers/{waiver}/cancel', [ConflictWaiverController::class, 'cancel']);
 
         Route::get('mcle/periods', [McleController::class, 'periods']);
         Route::post('mcle/periods', [McleController::class, 'storePeriod']);
@@ -485,6 +502,13 @@ Route::get('public/intake/{slug}', [PublicIntakeController::class, 'show'])->mid
 Route::post('public/intake/{slug}', [PublicIntakeController::class, 'submit'])->middleware(['throttle:intake', SetPortalLocale::class]);
 
 // A prospect's engagement letter; the token in the URL is the credential.
+// A conflict-of-interest consent; the token in the URL is the credential.
+Route::prefix('public/consent/{token}')->where(['token' => '[A-Za-z0-9]{48}'])->middleware('throttle:login')->group(function () {
+    Route::get('/', [PublicConsentController::class, 'show']);
+    Route::post('sign', [PublicConsentController::class, 'sign']);
+    Route::post('decline', [PublicConsentController::class, 'decline']);
+});
+
 Route::prefix('public/engagement/{token}')->where(['token' => '[A-Za-z0-9]{48}'])->middleware('throttle:login')->group(function () {
     Route::get('/', [PublicEngagementController::class, 'show']);
     Route::post('sign', [PublicEngagementController::class, 'sign']);

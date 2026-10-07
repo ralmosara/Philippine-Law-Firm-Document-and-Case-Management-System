@@ -16,10 +16,20 @@ type Method = 'drawn' | 'typed'
 
 /** A prospect reads and signs (or declines) the engagement letter from the link they were emailed. */
 export function EngagementSignPage() {
+  return <SignByLink kind="engagement" title="Engagement letter" signLabel="Sign the letter" signed={(firm) => `${firm} has been told and will be in touch about next steps, including access to your client portal.`} declinedText="You declined the engagement letter." agreeText="I have read this letter and agree to its terms, and I agree to sign it electronically. My electronic signature has the same effect as my handwritten signature." />
+}
+
+/** Someone asked to consent in writing to the firm acting despite a possible conflict of interest. */
+export function ConsentSignPage() {
+  return <SignByLink kind="consent" title="Consent to a possible conflict of interest" signLabel="Sign my consent" signed={(firm) => `${firm} has been told. Thank you.`} declinedText="You declined to consent. The firm has been told." agreeText="I have read this letter, I understand the possible conflict of interest, and I consent. I agree to sign electronically; my electronic signature has the same effect as my handwritten signature." />
+}
+
+/** Read a letter from a private link and sign it or decline. */
+function SignByLink({ kind, title, signLabel, signed, declinedText, agreeText }: { kind: 'engagement' | 'consent'; title: string; signLabel: string; signed: (firm: string) => string; declinedText: string; agreeText: string }) {
   const token = useParams().token ?? ''
-  const letter = useQuery({ queryKey: ['engagement', token], queryFn: () => get<PublicLetter>(`/public/engagement/${token}`), retry: false })
-  const sign = useMutation({ mutationFn: (input: object) => post(`/public/engagement/${token}/sign`, input) })
-  const decline = useMutation({ mutationFn: (reason: string) => post(`/public/engagement/${token}/decline`, { reason: reason || null }) })
+  const letter = useQuery({ queryKey: [kind, token], queryFn: () => get<PublicLetter>(`/public/${kind}/${token}`), retry: false })
+  const sign = useMutation({ mutationFn: (input: object) => post(`/public/${kind}/${token}/sign`, input) })
+  const decline = useMutation({ mutationFn: (reason: string) => post(`/public/${kind}/${token}/decline`, { reason: reason || null }) })
   const [method, setMethod] = useState<Method>('drawn')
   const [name, setName] = useState('')
   const [image, setImage] = useState<string | null>(null)
@@ -33,8 +43,8 @@ export function EngagementSignPage() {
     return shell(
       <Card className="flex flex-col items-center gap-3 p-10 text-center">
         {sign.isSuccess && <CheckCircle2 className="size-12 text-success" aria-hidden />}
-        <p role="status" className="text-lg font-semibold">{sign.isSuccess ? 'Signed. Thank you.' : 'You declined the engagement letter.'}</p>
-        <p className="max-w-md text-sm text-on-surface-variant">{sign.isSuccess ? `${letter.data?.firm ?? 'The firm'} has been told and will be in touch about next steps, including access to your client portal.` : 'The firm has been told. Please contact them if you would like to discuss the terms.'}</p>
+        <p role="status" className="text-lg font-semibold">{sign.isSuccess ? 'Signed. Thank you.' : declinedText}</p>
+        <p className="max-w-md text-sm text-on-surface-variant">{sign.isSuccess ? signed(letter.data?.firm ?? 'The firm') : 'Please contact the firm if you would like to discuss it.'}</p>
       </Card>,
     )
   }
@@ -58,7 +68,7 @@ export function EngagementSignPage() {
     <>
       <header className="mb-6">
         <p className="text-sm text-on-surface-variant">{l.firm}</p>
-        <h1 className="text-2xl font-semibold">Engagement letter</h1>
+        <h1 className="text-2xl font-semibold">{title}</h1>
         {l.expires_at && <p className="text-sm text-on-surface-variant">Please respond by {date(l.expires_at)}.</p>}
       </header>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_22rem]">
@@ -77,8 +87,8 @@ export function EngagementSignPage() {
             {method === 'drawn' ? <SignaturePad label="Signature drawing area" onChange={setImage} /> : (
               <div className="rounded-[3px] border border-outline bg-white px-4 py-6 text-center font-serif text-3xl text-black italic" aria-label="Typed signature preview">{signerName || 'Your name'}</div>
             )}
-            <Checkbox label="I have read this letter and agree to its terms, and I agree to sign it electronically. My electronic signature has the same effect as my handwritten signature." checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-            <Button type="submit" loading={sign.isPending} disabled={!ready} className="w-full">Sign the letter</Button>
+            <Checkbox label={agreeText} checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+            <Button type="submit" loading={sign.isPending} disabled={!ready} className="w-full">{signLabel}</Button>
             <Button variant="text" onClick={() => setDeclining(true)}>Decline</Button>
             <p className="text-xs text-on-surface-variant">We record the time, your IP address and browser with your signature, as evidence under the E-Commerce Act (RA 8792).</p>
           </form>
@@ -87,7 +97,7 @@ export function EngagementSignPage() {
       <ConfirmDialog
         open={declining}
         onClose={() => setDeclining(false)}
-        title="Decline the engagement letter?"
+        title="Decline?"
         description="The firm will be told. You can tell them why below."
         confirmLabel="Decline"
         destructive

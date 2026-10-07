@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Compliance\Enums\ConflictCheckStatus;
 use App\Domain\Compliance\Models\ConflictCheck;
+use App\Domain\Compliance\Models\ConflictWaiver;
 use App\Domain\Compliance\Services\ConflictChecker;
 use App\Domain\Matters\Models\Firm;
 use App\Http\Controllers\Controller;
@@ -54,6 +55,7 @@ class ConflictCheckController extends Controller
         return $pdf->download('pdf.conflict-check', [
             'check' => $conflictCheck,
             'firm' => Firm::findOrFail($conflictCheck->firm_id),
+            'waivers' => ConflictWaiver::query()->where('conflict_check_id', $conflictCheck->id)->orderBy('id')->get(),
         ], 'conflict-check-'.$conflictCheck->id.'-'.$conflictCheck->created_at->format('Y-m-d'));
     }
 

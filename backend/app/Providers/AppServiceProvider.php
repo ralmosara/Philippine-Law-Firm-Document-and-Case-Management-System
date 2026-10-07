@@ -15,6 +15,7 @@ use App\Domain\Business\Models\Prospect;
 use App\Domain\Compliance\Models\AmlReview;
 use App\Domain\Compliance\Models\BeneficialOwner;
 use App\Domain\Compliance\Models\ClientIdentification;
+use App\Domain\Compliance\Models\ConflictWaiver;
 use App\Domain\Compliance\Models\McleCredit;
 use App\Domain\Corporate\Models\CorporateObligation;
 use App\Domain\Corporate\Models\CorporateProfile;
@@ -24,6 +25,7 @@ use App\Domain\Directory\Models\Contact;
 use App\Domain\Directory\Models\Court;
 use App\Domain\Documents\Models\Document;
 use App\Domain\Documents\Models\MatterFile;
+use App\Domain\Documents\Models\NotarialReport;
 use App\Domain\Documents\Models\SignatureRequest;
 use App\Domain\Documents\Requests\DocumentRequest;
 use App\Domain\Documents\Scanning\ClamAvScanner;
@@ -114,6 +116,8 @@ class AppServiceProvider extends ServiceProvider
             'client_identification' => ClientIdentification::class,
             'beneficial_owner' => BeneficialOwner::class,
             'aml_review' => AmlReview::class,
+            'notarial_report' => NotarialReport::class,
+            'conflict_waiver' => ConflictWaiver::class,
         ]);
 
         $this->configureDatabaseTenancy();
